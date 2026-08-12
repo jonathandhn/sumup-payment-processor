@@ -1,0 +1,62 @@
+<?xml version="1.0"?>
+<extension key="sumup-payment-processor" type="module">
+  <file>sumup_payment_processor</file>
+  <name>SumUp Payment Processor</name>
+  <description>Accept SumUp online payments and manage Solo terminal readers in CiviCRM.</description>
+  <license>AGPL-3.0</license>
+  <authors>
+    <author>
+      <name>Jonathan Dahan</name>
+      <email>jonathan@dhn.one</email>
+      <role>Maintainer</role>
+    </author>
+  </authors>
+  <urls>
+    <url desc="Main Extension Page">https://github.com/jonathandhn/sumup-payment-processor</url>
+    <url desc="Documentation">https://github.com/jonathandhn/sumup-payment-processor#readme</url>
+    <url desc="Support">https://github.com/jonathandhn/sumup-payment-processor/issues</url>
+    <url desc="Licensing">https://www.gnu.org/licenses/agpl-3.0.html</url>
+  </urls>
+  <releaseDate>2026-08-12</releaseDate>
+  <version>1.0.0</version>
+  <develStage>alpha</develStage>
+  <compatibility mode="semver">
+    <comments>Semantic versioning. For example, compatibility with "6.1" implies compatibility with "6.2".</comments>
+    <ver>6.16</ver>
+  </compatibility>
+  <php_compatibility mode="list">
+    <comments>Listed versions. For example, specify both "8.1" and "8.2".</comments>
+    <ver>8.2</ver>
+    <ver>8.3</ver>
+    <ver>8.4</ver>
+    <ver>8.5</ver>
+  </php_compatibility>
+  <smarty_compatibility mode="list">
+    <comments>Listed versions. For example, specify both "4" and "5".</comments>
+    <ver>5</ver>
+  </smarty_compatibility>
+  <comments>Supports SumUp Card Widget, wallets, Hosted Checkout, refunds and the first Solo reader-management slice. MJWShared is required for durable webhook processing.</comments>
+  <requires>
+    <ext>civi_contribute</ext>
+    <ext>mjwshared</ext>
+  </requires>
+  <classloader>
+    <psr0 prefix="CRM_" path="."/>
+    <psr4 prefix="Civi\" path="Civi"/>
+  </classloader>
+  <civix>
+    <namespace>CRM/SumupPaymentProcessor</namespace>
+    <format>25.10.2</format>
+    <angularModule>crmSumupPaymentProcessor</angularModule>
+  </civix>
+  <upgrader>CRM_SumupPaymentProcessor_Upgrader</upgrader>
+  <mixins>
+    <mixin>mgd-php@2.0.0</mixin>
+    <mixin>scan-classes@1.0.0</mixin>
+    <mixin>entity-types-php@2.0.0</mixin>
+    <mixin>menu-xml@1.0.0</mixin>
+    <mixin>setting-admin@1.0.0</mixin>
+    <mixin>setting-php@1.0.0</mixin>
+    <mixin>smarty@1.0.3</mixin>
+  </mixins>
+</extension>
