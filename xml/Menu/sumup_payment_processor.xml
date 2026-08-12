@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<menu>
+  <item>
+    <path>civicrm/admin/setting/sumup</path>
+    <page_callback>CRM_Admin_Form_Generic</page_callback>
+    <title>SumUp settings</title>
+    <access_arguments>administer CiviCRM system</access_arguments>
+    <adminGroup>System Settings</adminGroup>
+  </item>
+  <item>
+    <path>civicrm/sumup/widget</path>
+    <page_callback>CRM_SumupPaymentProcessor_Page_Widget</page_callback>
+    <title>Secure card payment</title>
+    <access_callback>1</access_callback>
+    <is_public>true</is_public>
+    <is_ssl>true</is_ssl>
+  </item>
+</menu>

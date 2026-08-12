@@ -1,0 +1,17 @@
+parameters:
+  level: 8
+  phpVersion: 80200
+  paths:
+    - sumup_payment_processor.php
+    - CRM
+    - Civi
+    - schema
+  excludePaths:
+    analyse:
+      - sumup_payment_processor.civix.php
+      - mixin (?)
+      - vendor
+  scanFiles:
+    - phpstan/stubs/civicrm.stub
+  reportUnmatchedIgnoredErrors: true
+  reportIgnoresWithoutComments: true

@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<ruleset name="SumUp CiviCRM extension">
+  <description>Style rules for maintained source code.</description>
+  <arg name="basepath" value="."/>
+  <arg name="colors"/>
+  <arg name="extensions" value="php"/>
+  <arg name="parallel" value="4"/>
+  <file>sumup_payment_processor.php</file>
+  <file>CRM</file>
+  <file>Civi</file>
+  <file>schema</file>
+  <exclude-pattern>*/vendor/*</exclude-pattern>
+  <exclude-pattern>*/mixin/*</exclude-pattern>
+  <exclude-pattern>*/sumup_payment_processor.civix.php</exclude-pattern>
+  <rule ref="PSR12"/>
+</ruleset>

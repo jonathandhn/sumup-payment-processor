@@ -1,0 +1,11 @@
+/vendor/
+/.phpunit.cache/
+/.phpunit.result.cache
+.DS_Store
+/sumup-payment-processor.zip
+/SHA256SUMS
+/.agents/
+/docs/
+/AGENTS.md
+/CLAUDE.md
+/design-qa.md

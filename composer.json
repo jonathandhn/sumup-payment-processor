@@ -1,0 +1,38 @@
+{
+  "name": "jonathandhn/sumup-payment-processor",
+  "description": "SumUp payment processor for CiviCRM.",
+  "type": "civicrm-ext",
+  "license": "AGPL-3.0-or-later",
+  "authors": [
+    {
+      "name": "Jonathan Dahan",
+      "email": "jonathan@dhn.one"
+    }
+  ],
+  "require": {
+    "php": ">=8.2 <8.6",
+    "sumup/sumup-php": "^0.1.4"
+  },
+  "require-dev": {
+    "phpstan/phpstan": "^2.1",
+    "squizlabs/php_codesniffer": "^3.13"
+  },
+  "scripts": {
+    "cs": "phpcs --standard=phpcs.xml.dist",
+    "analyse": "phpstan analyse --configuration=phpstan.neon.dist",
+    "check": [
+      "@cs",
+      "@analyse"
+    ]
+  },
+  "extra": {
+    "installer-name": "sumup-payment-processor"
+  },
+  "support": {
+    "source": "https://github.com/jonathandhn/sumup-payment-processor",
+    "issues": "https://github.com/jonathandhn/sumup-payment-processor/issues"
+  },
+  "config": {
+    "sort-packages": true
+  }
+}
