@@ -1,4 +1,10 @@
-<div class="crm-block crm-sumup-replace-card">
+<div class="crm-block crm-sumup-replace-card crm-sumup-panel">
+  <header class="crm-sumup-panel__header">
+    <div>
+      <p class="crm-sumup-eyebrow">SumUp</p>
+      <h2>{{:: ts('Replace payment card') }}</h2>
+    </div>
+  </header>
   <div class="crm-loading-spinner" ng-if="$ctrl.loading || $ctrl.confirming"></div>
   <div class="messages error" ng-if="$ctrl.error">{{$ctrl.error}}</div>
   <div class="messages status no-popup" ng-if="$ctrl.complete">
@@ -8,7 +14,7 @@
     class="crm-sumup-replacement-widget"
     ng-show="!$ctrl.loading && !$ctrl.complete"
   ></div>
-  <p>
+  <p class="crm-sumup-actions">
     <a class="button btn btn-secondary" ng-href="{{$ctrl.paymentMethodsUrl}}">
       {{:: ts('Back to my recurring payments') }}
     </a>

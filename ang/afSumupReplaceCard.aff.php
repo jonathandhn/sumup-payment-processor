@@ -10,7 +10,8 @@ return [
     'requires' => ['afSumUp'],
     'server_route' => 'civicrm/sumup/payment-method/replace',
     'is_public' => true,
-    'permission' => ['make online contributions'],
+    'permission' => ['make online contributions', 'access CiviContribute'],
+    'permission_operator' => 'OR',
     'submit_enabled' => false,
     'create_submission' => false,
 ];

@@ -155,6 +155,7 @@
           payWithSavedCard(method.payment_token_id, button);
         });
         var paragraph = document.createElement('p');
+        paragraph.className = 'crm-sumup-saved-card-action';
         paragraph.appendChild(button);
         savedCards.appendChild(paragraph);
       });
@@ -252,6 +253,7 @@
       cancel.href = config.cancelUrl;
       cancel.textContent = ts('Cancel payment');
       var cancelParagraph = document.createElement('p');
+      cancelParagraph.className = 'crm-sumup-checkout__cancel';
       cancelParagraph.appendChild(cancel);
       container.appendChild(cancelParagraph);
     }

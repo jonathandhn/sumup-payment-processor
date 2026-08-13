@@ -1,0 +1,346 @@
+.crm-sumup-checkout-block,
+.crm-sumup-embedded-checkout,
+.crm-sumup-payment-methods,
+.crm-sumup-replace-card {
+  --sumup-surface: #fff;
+  --sumup-surface-muted: #f7f7f5;
+  --sumup-text: #101010;
+  --sumup-text-muted: #5f6368;
+  --sumup-border: #dededb;
+  --sumup-accent: #006f69;
+  --sumup-success: #256f3a;
+  --sumup-danger: #b3261e;
+  box-sizing: border-box;
+  color: var(--sumup-text);
+  font-size: 1rem;
+  line-height: 1.45;
+  margin-inline: auto;
+  max-width: 46rem;
+  width: 100%;
+}
+
+.crm-sumup-checkout-block *,
+.crm-sumup-embedded-checkout *,
+.crm-sumup-payment-methods *,
+.crm-sumup-replace-card * {
+  box-sizing: border-box;
+}
+
+.crm-sumup-checkout-block,
+.crm-sumup-embedded-checkout,
+.crm-sumup-panel {
+  background: var(--sumup-surface, #fff);
+  border: 1px solid var(--sumup-border, #dededb);
+  border-radius: 1rem;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 5%);
+  padding: clamp(1rem, 3vw, 1.5rem);
+}
+
+.crm-sumup-payment-methods {
+  display: grid;
+  gap: 1rem;
+}
+
+.crm-sumup-payment-methods > .crm-sumup-panel + .crm-sumup-panel {
+  margin-top: 0;
+}
+
+.crm-sumup-panel__header,
+.crm-sumup-payment-method__header,
+.crm-sumup-checkout-header {
+  align-items: flex-start;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+
+.crm-sumup-panel h2,
+.crm-sumup-payment-method h2,
+.crm-sumup-checkout-block h2 {
+  background: none;
+  border: 0;
+  color: var(--sumup-text, #101010);
+  font-size: clamp(1.2rem, 3vw, 1.45rem);
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 0;
+  padding: 0;
+}
+
+.crm-sumup-payment-method h2 span {
+  color: var(--sumup-text-muted, #5f6368);
+  font-size: 0.75em;
+  font-weight: 500;
+}
+
+.crm-sumup-eyebrow {
+  color: var(--sumup-accent, #006f69);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  margin: 0 0 0.25rem;
+  text-transform: uppercase;
+}
+
+.crm-sumup-count {
+  align-items: center;
+  background: var(--sumup-text, #101010);
+  border-radius: 999px;
+  color: #fff;
+  display: inline-flex;
+  font-size: 0.8rem;
+  font-weight: 700;
+  height: 1.75rem;
+  justify-content: center;
+  min-width: 1.75rem;
+  padding-inline: 0.5rem;
+}
+
+.crm-sumup-card-list {
+  display: grid;
+  gap: 0.65rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.crm-sumup-card-list li {
+  align-items: center;
+  background: var(--sumup-surface-muted, #f7f7f5);
+  border: 1px solid var(--sumup-border, #dededb);
+  border-radius: 0.75rem;
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  min-height: 3.5rem;
+  padding: 0.75rem;
+}
+
+.crm-sumup-card-icon {
+  color: var(--sumup-text, #101010);
+  font-size: 1.25rem;
+}
+
+.crm-sumup-card-list__details {
+  display: grid;
+  flex: 1;
+  gap: 0.1rem;
+}
+
+.crm-sumup-card-list__details small {
+  color: var(--sumup-text-muted, #5f6368);
+}
+
+.crm-sumup-badges {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  justify-content: flex-end;
+}
+
+.crm-sumup-badge {
+  border-radius: 999px;
+  display: inline-flex;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0.45rem 0.65rem;
+  white-space: nowrap;
+}
+
+.crm-sumup-badge--active {
+  background: #e3f3e7;
+  color: var(--sumup-success, #256f3a);
+}
+
+.crm-sumup-badge--test {
+  background: #fff0db;
+  color: #934600;
+}
+
+.crm-sumup-summary {
+  display: grid;
+  gap: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0 0 1.25rem;
+}
+
+.crm-sumup-summary > div {
+  border-top: 1px solid var(--sumup-border, #dededb);
+  padding: 0.85rem 0;
+}
+
+.crm-sumup-summary > div:nth-child(odd) {
+  padding-right: 1rem;
+}
+
+.crm-sumup-summary dt {
+  color: var(--sumup-text-muted, #5f6368);
+  font-size: 0.78rem;
+  font-weight: 600;
+  margin-bottom: 0.2rem;
+}
+
+.crm-sumup-summary dd {
+  color: var(--sumup-text, #101010);
+  font-weight: 600;
+  margin: 0;
+}
+
+.crm-sumup-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin: 0;
+}
+
+.crm-sumup-actions .button,
+.crm-sumup-actions .btn,
+.crm-sumup-saved-card-action .button {
+  align-items: center;
+  border-radius: 999px;
+  display: inline-flex;
+  font-weight: 650;
+  justify-content: center;
+  min-height: 2.6rem;
+  padding: 0.6rem 1rem;
+  text-decoration: none;
+}
+
+.crm-sumup-actions .btn-primary {
+  background: var(--sumup-accent, #006f69);
+  border-color: var(--sumup-accent, #006f69);
+  color: #fff;
+}
+
+.crm-sumup-actions .btn-secondary,
+.crm-sumup-saved-card-action .button {
+  background: #fff;
+  border-color: #8a8a86;
+  color: var(--sumup-text, #101010);
+}
+
+.crm-sumup-actions .btn-danger {
+  background: transparent;
+  border-color: var(--sumup-danger, #b3261e);
+  color: var(--sumup-danger, #b3261e);
+}
+
+.crm-sumup-actions .button:hover,
+.crm-sumup-actions .btn:hover,
+.crm-sumup-saved-card-action .button:hover {
+  filter: brightness(0.94);
+  text-decoration: none;
+}
+
+.crm-sumup-actions .button:focus-visible,
+.crm-sumup-actions .btn:focus-visible,
+.crm-sumup-saved-card-action .button:focus-visible,
+.crm-sumup-checkout__cancel a:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--sumup-accent, #006f69) 35%, transparent);
+  outline-offset: 2px;
+}
+
+.crm-sumup-saved-cards {
+  background: var(--sumup-surface-muted, #f7f7f5);
+  border: 1px solid var(--sumup-border, #dededb);
+  border-radius: 0.75rem;
+  margin-bottom: 1rem;
+  padding: 1rem;
+}
+
+.crm-sumup-saved-cards h3 {
+  background: none;
+  color: var(--sumup-text, #101010);
+  margin: 0 0 0.75rem;
+  padding: 0;
+}
+
+.crm-sumup-saved-card-action {
+  display: inline-block;
+  margin: 0 0.5rem 0.5rem 0;
+}
+
+.crm-sumup-payment-separator {
+  align-items: center;
+  color: var(--sumup-text-muted, #5f6368);
+  display: flex;
+  font-size: 0.85rem;
+  gap: 0.75rem;
+  margin: 1rem 0;
+  text-align: center;
+}
+
+.crm-sumup-payment-separator::before,
+.crm-sumup-payment-separator::after {
+  border-top: 1px solid var(--sumup-border, #dededb);
+  content: '';
+  flex: 1;
+}
+
+.crm-sumup-checkout__cancel {
+  border-top: 1px solid var(--sumup-border, #dededb);
+  margin: 1.25rem 0 0;
+  padding-top: 1rem;
+  text-align: center;
+}
+
+.crm-sumup-checkout__cancel a {
+  color: var(--sumup-text-muted, #5f6368);
+  font-weight: 600;
+}
+
+.crm-sumup-replacement-widget,
+.crm-sumup-embedded-checkout > div[id^='sumup-'],
+.crm-sumup-checkout-block #sumup-checkout {
+  min-height: 10rem;
+  width: 100%;
+}
+
+@media (max-width: 40rem) {
+  .crm-sumup-checkout-block,
+  .crm-sumup-embedded-checkout,
+  .crm-sumup-panel {
+    border-radius: 0.75rem;
+    padding: 1rem;
+  }
+
+  .crm-sumup-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .crm-sumup-summary > div:nth-child(odd) {
+    padding-right: 0;
+  }
+
+  .crm-sumup-payment-method__header {
+    display: grid;
+  }
+
+  .crm-sumup-card-list li {
+    align-items: start;
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .crm-sumup-card-list .crm-sumup-badge {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .crm-sumup-badges {
+    justify-content: flex-start;
+  }
+
+  .crm-sumup-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .crm-sumup-actions .button,
+  .crm-sumup-actions .btn {
+    width: 100%;
+  }
+}

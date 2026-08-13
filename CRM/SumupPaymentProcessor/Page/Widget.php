@@ -84,6 +84,7 @@ class CRM_SumupPaymentProcessor_Page_Widget extends CRM_Core_Page
                 )
             );
 
+            CRM_Core_Resources::singleton()->addStyleFile(E::LONG_NAME, 'ang/afSumUp/sumUp.css');
             CRM_Core_Resources::singleton()->addScriptFile(E::LONG_NAME, 'js/checkout.js', 110);
         } catch (Throwable $exception) {
             Civi::log()->warning('Unable to render SumUp checkout: ' . $exception->getMessage());

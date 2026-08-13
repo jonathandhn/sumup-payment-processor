@@ -1,6 +1,20 @@
 <?php
 
 namespace {
+    class CRM_Contribute_WorkflowMessage_RecurringEdit {
+        public function setReceiptFromEmail(string $email): self { return $this; }
+        public function setContact(array $contact): self { return $this; }
+        public function setContributionRecur(array $contributionRecur): self { return $this; }
+        public function export(string $scope): array { return []; }
+        public function sendTemplate(array $params = []): array { return []; }
+    }
+    class CRM_Contact_BAO_Contact {
+        public static function getContactDetails(int $contactId): array { return ['', '']; }
+    }
+    class CRM_Core_BAO_Domain {
+        public static function getNameAndEmail(bool $required = false): array { return ['', '']; }
+    }
+
     class CRM_Core_Config {
         public CRM_Core_Config_UserSystem $userSystem;
         public static function singleton(): self { return new self(); }
@@ -15,6 +29,7 @@ namespace {
         public function getPaymentInstrumentID(): int { return 0; }
         public function isBackOffice(): bool { return false; }
         public function setBackOffice(bool $isBackOffice): void {}
+        public function subscriptionURL(?int $entityID = null, ?string $entity = null, string $action = 'cancel'): ?string { return null; }
     }
     class CRM_Core_Form {
         public bool $isBackOffice;
@@ -43,6 +58,8 @@ namespace {
     }
     class CRM_Core_Resources {
         public static function singleton(): self { return new self(); }
+        public function getUrl(string $extension, string $file): string { return ''; }
+        public function addStyleFile(string $extension, string $file, int $weight = 0): self { return $this; }
         public function addScriptUrl(string $url, int $weight = 0): self { return $this; }
         public function addScriptFile(string $extension, string $file, int $weight = 0): self { return $this; }
         public function addScript(string $script, int $weight = 0, string $region = 'html-header'): self { return $this; }
@@ -102,7 +119,20 @@ namespace {
     class CRM_Core_DAO {
         public static function executeQuery(string $query, array $params = []): self { return new self(); }
         public static function singleValueQuery(string $query, array $params = []): mixed { return null; }
+        public static function getFieldValue(
+            string $daoName,
+            mixed $searchValue,
+            string $returnColumn = 'name',
+            string $searchColumn = 'id',
+            bool $force = false
+        ): mixed { return null; }
         public function fetch(): bool { return false; }
+    }
+    class CRM_Core_DAO_ActionSchedule extends CRM_Core_DAO {
+        public mixed $entity_value;
+        public mixed $entity_status;
+        public mixed $absolute_date;
+        public mixed $start_action_date;
     }
     abstract class CRM_Core_DAO_Base extends CRM_Core_DAO {}
     class CRM_Extension_Upgrader_Log {
@@ -118,14 +148,46 @@ namespace {
         public static function getWebhookPath(int $paymentProcessorId): string { return ''; }
     }
     class CRM_Core_Session {
+        public static function singleton(): self { return new self(); }
         public static function setStatus(string $text, string $title = '', string $type = 'success'): void {}
         public static function getLoggedInContactID(): ?int { return null; }
+        public function get(string $name, ?string $prefix = null): mixed { return null; }
     }
     class CRM_Contact_BAO_Contact_Utils {
         public static function validChecksum(int $contactId, string $checksum): bool { return false; }
+        public static function generateChecksum(
+            int $entityId,
+            mixed $timestamp = null,
+            mixed $live = null,
+            mixed $hash = null,
+            string $entityType = 'contact',
+            mixed $hashSize = null
+        ): string { return ''; }
     }
     class CRM_Utils_Money {
         public static function format(float $amount, ?string $currency = null): string { return ''; }
+        public static function getCurrencyPrecision(?string $currency = null): int { return 2; }
+    }
+    class CRM_Utils_Array {
+        /** @return list<int|string> */
+        public static function explodePadded(mixed $value): array { return []; }
+    }
+    class CRM_Utils_Type {
+        public static function escape(mixed $value, string $type): mixed { return $value; }
+    }
+    class CRM_Utils_SQL_Select implements \ArrayAccess {
+        public static function from(string $from): self { return new self(); }
+        public function param(string|array $name, mixed $value = null): self { return $this; }
+        public function join(?string $alias, string|array $clause): self { return $this; }
+        public function where(string $clause): self { return $this; }
+        public function offsetExists(mixed $offset): bool { return false; }
+        public function offsetGet(mixed $offset): mixed { return null; }
+        public function offsetSet(mixed $offset, mixed $value): void {}
+        public function offsetUnset(mixed $offset): void {}
+    }
+    class CRM_Contribute_BAO_ContributionRecur {
+        /** @return array<int|string, string> */
+        public static function buildOptions(string $field, string $context, array $params = []): array { return []; }
     }
     class CRM_Core_I18n {
         public static function getLocale(): string { return 'en_US'; }
@@ -153,8 +215,16 @@ namespace {
 }
 
 namespace Civi {
+    class Test {
+        public static function example(string $name): array { return []; }
+    }
+
     class Dispatcher {
-        public function addListener(string $eventName, callable|string|array $listener): void {}
+        public function addListener(
+            string $eventName,
+            callable|string|array $listener,
+            int $priority = 0
+        ): void {}
     }
     class Settings {
         public function get(string $name): mixed { return null; }
@@ -166,6 +236,21 @@ namespace Civi {
     }
 }
 
+namespace Civi\Test {
+    interface ExampleDataInterface {
+        public function getExamples(): iterable;
+        public function build(array &$example): void;
+    }
+}
+
+namespace Civi\WorkflowMessage {
+    class WorkflowMessage {
+        public static function create(string $workflow, array $params = []): \CRM_Contribute_WorkflowMessage_RecurringEdit {
+            return new \CRM_Contribute_WorkflowMessage_RecurringEdit();
+        }
+    }
+}
+
 namespace Civi\Payment {
     class PropertyBag {
         public static function cast(mixed $params): self { return new self(); }
@@ -173,12 +258,29 @@ namespace Civi\Payment {
         public function getCurrency(): string { return ''; }
         public function getContributionID(): ?int { return null; }
         public function getCustomProperty(string $name): mixed { return null; }
+        public function has(string $name): bool { return false; }
+        public function getContributionRecurID(): ?int { return null; }
     }
     class System {
         public static function singleton(): self { return new self(); }
         public function getById(int $id): ?\CRM_Core_Payment { return null; }
         public function getByName(string $name, bool $isTest = false): ?\CRM_Core_Payment { return null; }
         public function getByProcessor(array $paymentProcessor): ?\CRM_Core_Payment { return null; }
+    }
+}
+
+namespace Civi\ActionSchedule {
+    abstract class MappingBase {
+    }
+}
+
+namespace Civi\Api4\Service\Spec {
+    class FieldSpec {
+        public function setLabel(string $label): self { return $this; }
+        public function setRequired(bool $required): self { return $this; }
+    }
+    class RequestSpec {
+        public function getFieldByName(string $name): FieldSpec { return new FieldSpec(); }
     }
 }
 
@@ -218,6 +320,9 @@ namespace Civi\Checkout {
 namespace Civi\Core\Event {
     class GenericHookEvent {
         public array $options = [];
+        public string $tabsetName = '';
+        public array $context = [];
+        public array $tabs = [];
     }
 }
 

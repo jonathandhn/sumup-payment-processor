@@ -1,43 +1,110 @@
 <div class="crm-block crm-sumup-payment-methods">
   <div class="crm-loading-spinner" ng-if="$ctrl.loading"></div>
   <div class="messages error" ng-if="$ctrl.error">{{$ctrl.error}}</div>
-  <section ng-if="!$ctrl.loading && !$ctrl.error">
-    <h3>{{:: ts('Saved SumUp cards') }}</h3>
+  <section class="crm-sumup-panel" ng-if="!$ctrl.loading && !$ctrl.error">
+    <header class="crm-sumup-panel__header">
+      <div>
+        <p class="crm-sumup-eyebrow">SumUp</p>
+        <h2>{{:: ts('Saved cards') }}</h2>
+      </div>
+      <span class="crm-sumup-count" ng-if="$ctrl.cards.length">{{$ctrl.cards.length}}</span>
+    </header>
     <div class="messages status no-popup" ng-if="!$ctrl.cards.length">
       {{:: ts('No active SumUp card is saved for this contact.') }}
     </div>
-    <ul ng-if="$ctrl.cards.length">
+    <ul class="crm-sumup-card-list" ng-if="$ctrl.cards.length">
       <li ng-repeat="card in $ctrl.cards track by card.payment_token_id">
-        <strong>{{card.masked_account_number}}</strong>
-        — {{card.payment_processor_title}}
-        <span class="label label-warning" ng-if="card.is_test">{{:: ts('Test / Sandbox') }}</span>
+        <i class="crm-i fa-credit-card crm-sumup-card-icon" aria-hidden="true"></i>
+        <span class="crm-sumup-card-list__details">
+          <strong>{{card.masked_account_number}}</strong>
+          <small>{{card.payment_processor_title}}</small>
+        </span>
+        <span class="crm-sumup-badge crm-sumup-badge--test" ng-if="card.is_test">{{:: ts('Test / Sandbox') }}</span>
       </li>
     </ul>
   </section>
-  <h3 ng-if="!$ctrl.loading && !$ctrl.error">{{:: ts('Recurring payments') }}</h3>
-  <div class="messages status no-popup" ng-if="!$ctrl.loading && !$ctrl.error && !$ctrl.methods.length">
-    {{:: ts('You have no active SumUp recurring payment.') }}
-  </div>
-  <article class="crm-sumup-payment-method" ng-repeat="method in $ctrl.methods track by method.recur_id">
-    <h3>
-      {{method.amount_display}} / {{method.frequency_interval}} {{method.frequency_unit_label}}
-      <span class="label label-warning" ng-if="method.is_test">{{:: ts('Test / Sandbox') }}</span>
-    </h3>
-    <p>
-      <strong>{{:: ts('Payment card') }}:</strong>
-      {{method.masked_account_number || ts('Saved card') }}
-    </p>
-    <p>
-      <strong>{{:: ts('Next payment') }}:</strong>
-      {{method.next_payment_display}}
-    </p>
+  <section class="crm-sumup-panel" ng-if="!$ctrl.loading && !$ctrl.error">
+    <header class="crm-sumup-panel__header">
+      <div>
+        <p class="crm-sumup-eyebrow">SumUp</p>
+        <h2>{{:: ts('Recurring payments') }}</h2>
+      </div>
+      <span class="crm-sumup-count" ng-if="$ctrl.methods.length">{{$ctrl.methods.length}}</span>
+    </header>
+    <div class="messages status no-popup" ng-if="!$ctrl.methods.length">
+      {{:: ts('No active SumUp recurring payment exists for this contact.') }}
+    </div>
+  </section>
+  <article class="crm-sumup-payment-method crm-sumup-panel" ng-repeat="method in $ctrl.methods track by method.recur_id">
+    <header class="crm-sumup-payment-method__header">
+      <div>
+        <p class="crm-sumup-eyebrow">{{:: ts('Recurring payment') }}</p>
+        <h2>{{method.amount_display}} <span>/ {{method.frequency_interval}} {{method.frequency_unit_label}}</span></h2>
+      </div>
+      <div class="crm-sumup-badges">
+        <span class="crm-sumup-badge crm-sumup-badge--active">{{:: ts('Active') }}</span>
+        <span class="crm-sumup-badge crm-sumup-badge--test" ng-if="method.is_test">{{:: ts('Test / Sandbox') }}</span>
+      </div>
+    </header>
+    <dl class="crm-sumup-summary">
+      <div>
+        <dt>{{:: ts('Payment card') }}</dt>
+        <dd>{{method.masked_account_number || ts('Saved card') }}</dd>
+      </div>
+      <div>
+        <dt>{{:: ts('Start date') }}</dt>
+        <dd>{{method.start_date_display || ts('Not specified') }}</dd>
+      </div>
+      <div>
+        <dt>{{:: ts('Next payment') }}</dt>
+        <dd>{{method.next_payment_display}}</dd>
+      </div>
+      <div ng-if="method.end_date_display">
+        <dt>{{:: ts('End date') }}</dt>
+        <dd>{{method.end_date_display}}</dd>
+      </div>
+      <div ng-if="method.installments">
+        <dt>{{:: ts('Number of installments') }}</dt>
+        <dd>{{method.installments}}</dd>
+      </div>
+      <div ng-if="!method.end_date_display && !method.installments">
+        <dt>{{:: ts('Duration') }}</dt>
+        <dd>{{:: ts('Continues until cancelled') }}</dd>
+      </div>
+    </dl>
     <div class="messages warning" ng-if="method.requires_customer_action && method.remediation_message">
       {{method.remediation_message}}
     </div>
-    <p>
+    <div class="crm-sumup-actions" ng-if="!method.is_admin_view">
       <a class="button btn btn-primary" ng-href="{{method.replacement_url}}">
-        {{method.requires_customer_action ? ts('Update my card') : ts('Replace my card') }}
+        {{method.requires_customer_action ? ts('Update card') : ts('Replace card') }}
       </a>
-    </p>
+      <a class="button btn btn-secondary" ng-if="method.update_plan_url" ng-href="{{method.update_plan_url}}">
+        {{:: ts('Change amount') }}
+      </a>
+      <a class="button btn btn-danger" ng-if="method.cancel_plan_url" ng-href="{{method.cancel_plan_url}}">
+        {{:: ts('Stop future payments') }}
+      </a>
+    </div>
+    <div ng-if="method.is_admin_view">
+      <div class="crm-sumup-actions">
+        <a class="button btn btn-danger" ng-if="method.cancel_plan_url" ng-href="{{method.cancel_plan_url}}">
+          {{:: ts('Stop future payments') }}
+        </a>
+        <button class="button btn btn-secondary" type="button"
+                ng-disabled="method.sending_link"
+                ng-click="$ctrl.sendManagementLink(method, 'card')">
+          {{:: ts('Send card-change link') }}
+        </button>
+        <button class="button btn btn-secondary" type="button"
+                ng-disabled="method.sending_link"
+                ng-click="$ctrl.sendManagementLink(method, 'plan')">
+          {{:: ts('Send plan-change link') }}
+        </button>
+      </div>
+      <div class="messages status no-popup" ng-if="method.send_result">
+        {{method.send_result}}
+      </div>
+    </div>
   </article>
 </div>

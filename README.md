@@ -22,7 +22,10 @@ CiviCRM records a payment only after retrieving and validating the checkout thro
 - server-side checkout creation and verification;
 - recurring card setup with explicit SumUp consent and a CiviCRM payment token;
 - API4 processing of due recurring-card instalments;
-- full and partial online refunds through CiviCRM;
+- contact and administrator visibility of saved cards;
+- card replacement, recurring amount changes and cancellation through native CiviCRM self-service;
+- configurable CiviCRM Scheduled Reminders for SumUp recurring payments and card remediation;
+- full online refunds through CiviCRM;
 - native CiviCRM success and cancellation URLs;
 - durable SumUp checkout notifications through MJWShared;
 - an API4 `SumupCheckout` registry that counts attempts independently from payments;
@@ -46,10 +49,10 @@ Under **Contributions > SumUp settings**, choose:
 
 - **Card Widget**;
 - **Card Widget and wallets**;
-- **Wallets only**.
+- **Wallets only**;
 - **SumUp Hosted Checkout**.
 
-Drupal Webform uses its native AJAX refresh command for Hosted Checkout when available, with a portable CiviCRM redirect command as fallback. Widget and wallet modes stay embedded in the Webform/CiviCRM payment page.
+Drupal Webform mounts Widget and wallet modes directly after the validated form creates the Pending contribution. Hosted Checkout returns Webform's native `WebformRefreshCommand`; an optional Drupal module can decorate payment redirects by using the `paymentRedirect` and `paymentProvider` response metadata. A bundled command remains available only for legacy Webform versions that do not provide the native command.
 
 The merchant country code defaults to the ISO alpha-2 country of the primary address of the CiviCRM domain organisation. The setting can override it when the SumUp merchant's principal place of business differs. Wallet checkout requires HTTPS. Apple Pay also requires SumUp/Apple domain verification, and availability of either wallet depends on the merchant account, browser, device, and configured wallet.
 
@@ -65,7 +68,7 @@ The extension sends this URL to SumUp as the checkout `return_url`. The HTTP req
 
 ## Refunds
 
-Full and partial refunds are available from CiviCRM's native payment refund workflow. The extension verifies the authoritative SumUp transaction, currency and remaining refundable balance before sending the request. CiviCRM records the associated negative Payment after SumUp accepts the refund.
+Full refunds are available from CiviCRM's native payment refund workflow. The extension verifies the authoritative SumUp transaction, currency and remaining refundable balance before sending the request. Partial refunds are deliberately rejected by the current integration. CiviCRM records the associated negative Payment after SumUp accepts the refund.
 
 The SumUp credential must include the `refunds.write` or `payments` scope. SumUp does not return the original processing fees when a payment is refunded.
 
@@ -86,6 +89,17 @@ cv api4 SumupRecurringCard.run recurId=9 dryRun=1
 
 The action processes at most 25 due schedules by default, refuses occurrences overdue by more than seven days, and uses deterministic contribution and checkout references to prevent a retry from creating another charge. Schedule this command only after validating it with the merchant sandbox and the site's normal cron runner.
 
+CiviCRM's native recurring-payment pages let an authorised contact or
+administrator replace the saved card, change the amount of future occurrences,
+or stop future payments. The frequency is not editable. A Pending occurrence
+which has already been created keeps its original amount.
+
+The **SumUp recurring contribution** entity is available under CiviCRM
+Scheduled Reminders. Administrators can configure email or SMS reminders from
+the next scheduled payment date or from the date on which customer action
+became necessary. The extension does not create or enable reminder schedules
+automatically.
+
 ## Development
 
 The design contract for each feature lives in [`docs/intents`](docs/intents). Run the maintained-code checks with:
@@ -95,9 +109,12 @@ composer install
 composer check
 ```
 
+The current trust boundaries, administrator and self-service threats, PCI DSS
+considerations, and the planned CMS-aware step-up policy are documented in
+[`docs/security-risk-model.md`](docs/security-risk-model.md).
+
 ## Known Issues
 
-- Recurring-card setup and scheduled charges are implemented; card replacement and member self-service are not yet available.
 - Automated tests will be added from the intent document after the first sandbox integration pass.
 
 This is an [extension for CiviCRM](https://docs.civicrm.org/sysadmin/en/latest/customize/extensions/), licensed under [AGPL-3.0](LICENSE.txt).

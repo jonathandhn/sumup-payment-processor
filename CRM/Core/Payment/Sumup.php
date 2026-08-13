@@ -121,6 +121,140 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             && class_exists(\SumUp\SumUp::class);
     }
 
+    /**
+     * CiviCRM owns the SumUp recurring schedule and can stop future charges.
+     */
+    protected function supportsCancelRecurring(): bool
+    {
+        return true;
+    }
+
+    /**
+     * A SumUp plan cannot remain active remotely when it is cancelled locally.
+     */
+    protected function supportsCancelRecurringNotifyOptional(): bool
+    {
+        return false;
+    }
+
+    /**
+     * The saved card is managed by the extension rather than by SumUp's site.
+     */
+    protected function supportsUpdateSubscriptionBillingInfo(): bool
+    {
+        return true;
+    }
+
+    /**
+     * Route CiviCRM's native billing-details action to the SumUp card page.
+     *
+     * @param int|null $entityID
+     * @param string|null $entity
+     * @param string $action
+     */
+    public function subscriptionURL($entityID = null, $entity = null, $action = 'cancel'): ?string
+    {
+        if ($action !== 'billing' || $entity !== 'recur' || !$entityID) {
+            return parent::subscriptionURL($entityID, $entity, $action);
+        }
+
+        $contactId = (int) CRM_Core_DAO::getFieldValue(
+            'CRM_Contribute_DAO_ContributionRecur',
+            (int) $entityID,
+            'contact_id'
+        );
+        if ($contactId <= 0) {
+            return null;
+        }
+
+        $query = [
+            'recur_id' => (int) $entityID,
+            'cid' => $contactId,
+        ];
+        if ((int) CRM_Core_Session::singleton()->get('userID') !== $contactId) {
+            $query['cs'] = CRM_Contact_BAO_Contact_Utils::generateChecksum($contactId, null, 'inf');
+        }
+
+        return CRM_Utils_System::url(
+            'civicrm/sumup/payment-method/replace',
+            $query,
+            true,
+            null,
+            false,
+            true
+        );
+    }
+
+    /**
+     * Validate a native CiviCRM cancellation before core updates the schedule.
+     *
+     * SumUp stores a reusable payment instrument, not a remote subscription,
+     * so there is no provider cancellation request to send.
+     *
+     * @return array{message: string}
+     */
+    public function doCancelRecurring(PropertyBag $propertyBag): array
+    {
+        if (!$propertyBag->has('contributionRecurID')) {
+            throw new PaymentProcessorException(E::ts('The SumUp recurring contribution ID is missing.'));
+        }
+
+        $recurId = (int) $propertyBag->getContributionRecurID();
+        $lock = new CRM_Core_Lock('civicrm.job.SumupRecurringCard');
+        if (!$lock->acquire()) {
+            throw new PaymentProcessorException(
+                E::ts('A SumUp recurring payment is currently being processed. Please retry the cancellation shortly.')
+            );
+        }
+
+        try {
+            $this->getOwnedActiveRecurringSchedule($recurId);
+        } finally {
+            $lock->release();
+        }
+
+        return [
+            'message' => E::ts(
+                'Future SumUp charges were stopped in CiviCRM. Payments already collected were not refunded.'
+            ),
+        ];
+    }
+
+    /** @return list<string> */
+    public function getEditableRecurringScheduleFields(): array
+    {
+        return ['amount'];
+    }
+
+    /**
+     * Validate an amount change before CiviCRM updates the recurring schedule.
+     *
+     * @param string $message
+     * @param array<string, mixed> $params
+     */
+    public function changeSubscriptionAmount(&$message = '', $params = []): bool
+    {
+        $recurId = (int) ($params['contributionRecurID'] ?? $params['id'] ?? 0);
+        $schedule = $this->getOwnedActiveRecurringSchedule($recurId);
+        $amount = (float) ($params['amount'] ?? 0);
+        $currency = (string) $schedule['currency'];
+        $precision = CRM_Utils_Money::getCurrencyPrecision($currency);
+        $roundedAmount = round($amount, $precision);
+        if ($amount <= 0 || abs($amount - $roundedAmount) > 0.0000001) {
+            throw new PaymentProcessorException(
+                E::ts('The new recurring amount is invalid for currency %1.', [1 => $currency])
+            );
+        }
+        if (round((float) $schedule['amount'], $precision) === $roundedAmount) {
+            throw new PaymentProcessorException(E::ts('The recurring amount is unchanged.'));
+        }
+
+        $message = E::ts(
+            'The SumUp schedule is managed by CiviCRM. The new amount applies to the next payment not yet created.'
+        );
+        return true;
+    }
+
     public function supportsBackOffice(): bool
     {
         return true;
@@ -134,6 +268,33 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
     public function buildForm(&$form): bool
     {
         if (empty($form->isBackOffice)) {
+            CRM_Core_Region::instance('billing-block')->add([
+                'scriptUrl' => CRM_Core_Resources::singleton()->getUrl(
+                    E::LONG_NAME,
+                    'js/civicrmSumUp.js'
+                ),
+                'weight' => 90,
+            ]);
+            if (
+                !CRM_SumupPaymentProcessor_CheckoutMode::usesHosted(
+                    CRM_SumupPaymentProcessor_CheckoutMode::getConfiguredMode()
+                )
+            ) {
+                CRM_Core_Region::instance('billing-block')->add([
+                    'styleUrl' => CRM_Core_Resources::singleton()->getUrl(
+                        E::LONG_NAME,
+                        'ang/afSumUp/sumUp.css'
+                    ),
+                    'weight' => -10,
+                ]);
+                CRM_Core_Region::instance('billing-block')->add([
+                    'scriptUrl' => CRM_Core_Resources::singleton()->getUrl(
+                        E::LONG_NAME,
+                        'js/checkout.js'
+                    ),
+                    'weight' => 80,
+                ]);
+            }
             return false;
         }
 
@@ -376,6 +537,14 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             $cancelUrl,
             $description
         );
+
+        if (self::isDrupalWebformAjaxRequest()) {
+            CRM_Core_Page_AJAX::returnJsonResponse([[
+                'command' => 'sumupMountCheckout',
+                'checkout' => $checkoutData,
+                'fallback_url' => $checkoutData['browser_return_url'],
+            ]]);
+        }
 
         if (self::isQuickFormEmbeddedRequest()) {
             CRM_Core_Page_AJAX::returnJsonResponse([
@@ -745,14 +914,14 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
 
     private function redirectToCheckout(string $paymentUrl): void
     {
-        if (
-            self::isDrupalWebformAjaxRequest()
-            && class_exists('\\Drupal\\webform\\Ajax\\WebformRefreshCommand')
-        ) {
-            $command = new \Drupal\webform\Ajax\WebformRefreshCommand($paymentUrl);
-            CRM_Core_Page_AJAX::returnJsonResponse([$command->render()]);
-        }
         if (self::isDrupalAjaxRequest()) {
+            if (class_exists('\\Drupal\\webform\\Ajax\\WebformRefreshCommand')) {
+                $command = (new \Drupal\webform\Ajax\WebformRefreshCommand($paymentUrl))->render();
+                $command['paymentRedirect'] = true;
+                $command['paymentProvider'] = 'sumup';
+                CRM_Core_Page_AJAX::returnJsonResponse([$command]);
+            }
+
             CRM_Utils_JSON::output([[
                 'command' => 'sumupRedirect',
                 'url' => $paymentUrl,
@@ -1588,6 +1757,23 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
     /** @return array<string, mixed> */
     private function getOwnedRecurringSchedule(int $contributionRecurId, int $contactId): array
     {
+        $schedule = $this->getOwnedActiveRecurringSchedule($contributionRecurId);
+        if (
+            (int) $schedule['contact_id'] !== $contactId
+            || (int) $schedule['payment_token_id'] <= 0
+        ) {
+            throw new PaymentProcessorException(E::ts('This SumUp recurring contribution cannot be managed.'));
+        }
+        return $schedule;
+    }
+
+    /** @return array<string, mixed> */
+    private function getOwnedActiveRecurringSchedule(int $contributionRecurId): array
+    {
+        if ($contributionRecurId <= 0) {
+            throw new PaymentProcessorException(E::ts('The SumUp recurring contribution ID is invalid.'));
+        }
+
         $schedule = ContributionRecur::get(false)
             ->addSelect(
                 'id',
@@ -1602,9 +1788,7 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             ->execute()
             ->single();
         if (
-            (int) $schedule['contact_id'] !== $contactId
-            || (int) $schedule['payment_processor_id'] !== $this->getProcessorId()
-            || (int) $schedule['payment_token_id'] <= 0
+            (int) $schedule['payment_processor_id'] !== $this->getProcessorId()
             || (string) $schedule['contribution_status_id:name'] !== 'In Progress'
         ) {
             throw new PaymentProcessorException(E::ts('This SumUp recurring contribution cannot be managed.'));

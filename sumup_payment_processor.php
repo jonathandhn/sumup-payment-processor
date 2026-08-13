@@ -27,6 +27,84 @@ function sumup_payment_processor_civicrm_config(\CRM_Core_Config $config): void
             'civi.checkout.options',
             'sumup_payment_processor_register_afform_checkout_options'
         );
+        \Civi::dispatcher()->addListener(
+            'hook_civicrm_tabset',
+            'sumup_payment_processor_decorate_contact_tab',
+            -100
+        );
+    }
+}
+
+/**
+ * Add a local item count to the SumUp contact tab.
+ *
+ * The tab itself is added by Afform. This listener runs afterwards and avoids
+ * a remote SumUp request while the contact summary is loading.
+ */
+function sumup_payment_processor_decorate_contact_tab(\Civi\Core\Event\GenericHookEvent $event): void
+{
+    if ($event->tabsetName !== 'civicrm/contact/view') {
+        return;
+    }
+
+    $contactId = (int) ($event->context['contact_id'] ?? 0);
+    if ($contactId <= 0) {
+        return;
+    }
+
+    foreach ($event->tabs as &$tab) {
+        if (($tab['id'] ?? null) !== 'sumup_payment_methods') {
+            continue;
+        }
+
+        $tab['title'] = E::ts('SumUp');
+        $tab['count'] = sumup_payment_processor_get_contact_tab_count($contactId);
+        break;
+    }
+    unset($tab);
+}
+
+/**
+ * Count locally-known SumUp cards and active recurring schedules.
+ */
+function sumup_payment_processor_get_contact_tab_count(int $contactId): int
+{
+    try {
+        $processors = \Civi\Api4\PaymentProcessor::get(false)
+            ->addSelect('id')
+            ->addWhere('class_name', '=', 'Payment_Sumup')
+            ->addWhere('is_active', '=', true)
+            ->addWhere('is_test', 'IN', [true, false])
+            ->execute();
+        $processorIds = [];
+        foreach ($processors as $processor) {
+            $processorIds[] = (int) $processor['id'];
+        }
+        if ($processorIds === []) {
+            return 0;
+        }
+
+        $cards = \Civi\Api4\PaymentToken::get(false)
+            ->addSelect('id')
+            ->addWhere('contact_id', '=', $contactId)
+            ->addWhere('payment_processor_id', 'IN', $processorIds)
+            ->execute();
+        $schedules = \Civi\Api4\ContributionRecur::get(false)
+            ->addSelect('id')
+            ->addWhere('contact_id', '=', $contactId)
+            ->addWhere('payment_processor_id', 'IN', $processorIds)
+            ->addWhere('contribution_status_id:name', '=', 'In Progress')
+            ->addWhere('is_test', 'IN', [true, false])
+            ->execute();
+
+        return $cards->count() + $schedules->count();
+    } catch (\Throwable $exception) {
+        \Civi::log()->warning(sprintf(
+            'Unable to count SumUp payment methods for contact %d: %s',
+            $contactId,
+            $exception->getMessage()
+        ));
+        return 0;
     }
 }
 
@@ -129,6 +207,7 @@ function sumup_payment_processor_civicrm_buildForm(string $formName, mixed &$for
         return;
     }
 
+    \Civi::resources()->addStyleFile(E::LONG_NAME, 'ang/afSumUp/sumUp.css');
     \Civi::resources()->addScriptFile(E::LONG_NAME, 'js/civicrmSumUp.js');
     if (
         !CRM_SumupPaymentProcessor_CheckoutMode::usesHosted(

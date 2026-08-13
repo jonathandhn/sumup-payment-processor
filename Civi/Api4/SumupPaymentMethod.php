@@ -9,6 +9,7 @@ use Civi\Api4\Action\SumupPaymentMethod\Get;
 use Civi\Api4\Action\SumupPaymentMethod\PayContribution;
 use Civi\Api4\Action\SumupPaymentMethod\ListCards;
 use Civi\Api4\Action\SumupPaymentMethod\StartReplacement;
+use Civi\Api4\Action\SumupPaymentMethod\SendManagementLink;
 use Civi\Api4\Generic\AbstractEntity;
 use Civi\Api4\Generic\BasicGetFieldsAction;
 
@@ -28,6 +29,7 @@ final class SumupPaymentMethod extends AbstractEntity
             'startReplacement' => ['make online contributions'],
             'continueReplacement' => ['make online contributions'],
             'payContribution' => ['make online contributions'],
+            'sendManagementLink' => ['access CiviContribute'],
             'meta' => ['make online contributions'],
         ];
     }
@@ -59,6 +61,12 @@ final class SumupPaymentMethod extends AbstractEntity
     public static function payContribution(bool $checkPermissions = true): PayContribution
     {
         return (new PayContribution(static::getEntityName(), __FUNCTION__))
+            ->setCheckPermissions($checkPermissions);
+    }
+
+    public static function sendManagementLink(bool $checkPermissions = true): SendManagementLink
+    {
+        return (new SendManagementLink(static::getEntityName(), __FUNCTION__))
             ->setCheckPermissions($checkPermissions);
     }
 

@@ -49,6 +49,15 @@ abstract class ActionBase extends \Civi\Api4\Generic\AbstractAction
         return $contactId;
     }
 
+    protected function isAdministrativeRequest(): bool
+    {
+        return $this->contactId !== null
+            && $this->contactId > 0
+            && $this->checksum === ''
+            && \CRM_Core_Permission::check('access CiviContribute')
+            && \CRM_Core_Permission::check('edit contributions');
+    }
+
     /** @return array<string, int|string> */
     protected function checksumQuery(): array
     {

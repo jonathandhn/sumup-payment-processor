@@ -1,6 +1,9 @@
 <?php
 
 return [
+    'css' => [
+        'ang/afSumUp/sumUp.css',
+    ],
     'js' => [
         'js/checkout.js',
         'ang/afSumUp.js',

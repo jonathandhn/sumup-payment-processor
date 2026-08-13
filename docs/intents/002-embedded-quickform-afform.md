@@ -1,4 +1,4 @@
-# Intent 002: Embedded QuickForm and Afform checkout
+# Intent 002: Embedded QuickForm, Webform and Afform checkout
 
 ## Outcome
 
@@ -7,6 +7,7 @@ The selected SumUp Card Widget and wallet buttons appear directly on the CiviCRM
 ## Contract
 
 - QuickForm submits its validated CiviCRM form once and receives public checkout presentation data as JSON.
+- Drupal Webform follows the same two-phase contract through a native Drupal AJAX command: the validated form creates the Pending contribution and checkout, then the command mounts the SumUp UI in the current Webform page.
 - Afform uses a native CiviCRM CheckoutOption and receives the same presentation data in its CheckoutSession response.
 - The contribution and SumUp checkout are created server-side before any SumUp UI is mounted.
 - Secret API credentials never reach the browser. Only checkout ID, amount, currency, mode, public wallet key and signed return/cancel URLs are exposed.
@@ -15,7 +16,7 @@ The selected SumUp Card Widget and wallet buttons appear directly on the CiviCRM
 - The relay page remains usable as a safe fallback when JavaScript embedding is unavailable.
 - Legacy return parameters accept both CiviCRM's `returnURL` / `cancelURL` names and the `return_url` / `cancel_url` names used by newer integrations.
 - QuickForm context such as `qfKey` and `participantID` is retained whether CiviCRM supplies an array or a `PropertyBag`.
-- Hosted Checkout and the local Widget/Wallet relay redirect through Drupal Webform's native AJAX command when available, otherwise through the portable SumUp redirect command.
+- Hosted Checkout uses Webform's native `WebformRefreshCommand` when available. The response is marked as a SumUp payment redirect so an optional Drupal module can add a waiting state and user-activated fallback link without making the payment extension depend on that module. The bundled SumUp redirect command remains a legacy fallback.
 
 ## Compatibility
 
@@ -27,6 +28,7 @@ The selected SumUp Card Widget and wallet buttons appear directly on the CiviCRM
 ## Acceptance
 
 - A QuickForm payment replaces the validated form with the selected SumUp UI without an intermediate page.
+- A Webform Widget or Wallet payment replaces the validated Webform with the same SumUp UI without navigating through the local relay page.
 - An invalid QuickForm remains editable and displays CiviCRM validation errors.
 - Contribution, event and Webform returns preserve the exact CiviCRM controller URL supplied to the processor.
 - Afform exposes one SumUp embedded checkout option per live/test processor pair.

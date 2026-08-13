@@ -40,6 +40,9 @@ is exposed to the browser or placed in a URL.
 
 - The managed payment-method Afform is also placed on the CiviCRM contact
   summary and lists cards independently from recurring schedules.
+- Its contact tab is labelled `SumUp`, remains visible when empty, and shows a
+  local count of saved cards plus active recurring schedules. Building the
+  contact page must not make a remote SumUp API request.
 - Embedded QuickForm and Afform checkouts show active saved cards before the
   existing SumUp Widget. The payer may choose one card or continue with a new
   card.
