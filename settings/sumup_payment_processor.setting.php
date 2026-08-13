@@ -14,7 +14,8 @@ return [
         'is_contact' => 0,
         'title' => E::ts('Checkout mode'),
         'description' => E::ts(
-            'Choose the SumUp Card Widget, Apple Pay and Google Pay wallets, both, or a redirect to SumUp Hosted Checkout.'
+            'Choose the SumUp Card Widget, Apple Pay and Google Pay wallets, both, '
+            . 'or a redirect to SumUp Hosted Checkout.'
         ),
         'pseudoconstant' => [
             'callback' => 'CRM_SumupPaymentProcessor_CheckoutMode::getOptions',
@@ -33,16 +34,60 @@ return [
             'maxlength' => 2,
             'size' => 2,
         ],
-        'default' => 'FR',
+        'default' => '',
         'is_domain' => 1,
         'is_contact' => 0,
         'title' => E::ts('Merchant country code'),
         'description' => E::ts(
-            'Two-letter ISO code for the merchant principal place of business, required by Apple Pay and Google Pay.'
+            'Optional two-letter ISO override for Apple Pay and Google Pay. When empty, use the country of the '
+            . 'CiviCRM domain organisation primary address.'
         ),
         'settings_pages' => [
             'sumup' => [
                 'weight' => 20,
+            ],
+        ],
+    ],
+    'sumup_affiliate_app_id' => [
+        'name' => 'sumup_affiliate_app_id',
+        'type' => 'String',
+        'html_type' => 'text',
+        'html_attributes' => [
+            'maxlength' => 100,
+            'size' => 40,
+        ],
+        'default' => '',
+        'is_domain' => 1,
+        'is_contact' => 0,
+        'title' => E::ts('SumUp Affiliate application ID'),
+        'description' => E::ts(
+            'Application identifier registered with the SumUp Affiliate Key for Solo Cloud API payments.'
+        ),
+        'settings_pages' => [
+            'sumup' => [
+                'weight' => 30,
+            ],
+        ],
+    ],
+    'sumup_affiliate_key' => [
+        'name' => 'sumup_affiliate_key',
+        'type' => 'String',
+        'html_type' => 'text',
+        'html_attributes' => [
+            'maxlength' => 255,
+            'size' => 60,
+            'autocomplete' => 'off',
+        ],
+        'default' => '',
+        'is_domain' => 1,
+        'is_contact' => 0,
+        'title' => E::ts('SumUp Affiliate Key'),
+        'description' => E::ts(
+            'Required by SumUp for card-present Solo Cloud API checkout requests. It is not an authorization credential.'
+        ),
+        'settings_pages' => [
+            'sumup' => [
+                'weight' => 40,
             ],
         ],
     ],

@@ -26,7 +26,7 @@ return [
                 'url_site_test_default' => 'https://api.sumup.com',
                 'billing_mode' => 4,
                 'payment_type' => 1,
-                'is_recur' => false,
+                'is_recur' => true,
             ],
             'match' => ['name'],
         ],

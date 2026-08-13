@@ -4,6 +4,7 @@ namespace {
     class CRM_Core_Config {
         public CRM_Core_Config_UserSystem $userSystem;
         public static function singleton(): self { return new self(); }
+        public static function domainID(): int { return 1; }
     }
     class CRM_Core_Payment {
         protected array $_paymentProcessor;
@@ -11,6 +12,27 @@ namespace {
         protected function setStatusPaymentPending(array $params): array { return []; }
         protected function getReturnSuccessUrl(?string $qfKey = null): string { return ''; }
         protected function getCancelUrl(?string $qfKey = null, ?int $participantId = null): string { return ''; }
+        public function getPaymentInstrumentID(): int { return 0; }
+        public function isBackOffice(): bool { return false; }
+        public function setBackOffice(bool $isBackOffice): void {}
+    }
+    class CRM_Core_Form {
+        public bool $isBackOffice;
+        public function elementExists(string $name): bool { return false; }
+        public function freeze(array $elementNames): void {}
+        public function getElement(string $name): mixed { return null; }
+        public function add(
+            string $type,
+            string $name,
+            string $label,
+            array $options = [],
+            bool $required = false,
+            array $attributes = []
+        ): mixed { return null; }
+    }
+    class CRM_Core_Region {
+        public static function instance(string $name): self { return new self(); }
+        public function add(array $content): void {}
     }
     class CRM_Core_Page {
         public function assign(string $name, mixed $value): void {}
@@ -23,6 +45,7 @@ namespace {
         public static function singleton(): self { return new self(); }
         public function addScriptUrl(string $url, int $weight = 0): self { return $this; }
         public function addScriptFile(string $extension, string $file, int $weight = 0): self { return $this; }
+        public function addScript(string $script, int $weight = 0, string $region = 'html-header'): self { return $this; }
         public function addVars(string $name, array $values): self { return $this; }
     }
     class CRM_Core_Config_UserSystem {
@@ -51,6 +74,13 @@ namespace {
         ): string { return ''; }
     }
     class CRM_Utils_Request {
+        public static function retrieveValue(
+            string $name,
+            string $type,
+            mixed $defaultValue = null,
+            bool $abort = false,
+            mixed $method = null
+        ): mixed { return null; }
         public static function retrieve(
             string $name,
             string $type,
@@ -71,6 +101,7 @@ namespace {
     class CRM_Core_Exception extends \Exception {}
     class CRM_Core_DAO {
         public static function executeQuery(string $query, array $params = []): self { return new self(); }
+        public static function singleValueQuery(string $query, array $params = []): mixed { return null; }
         public function fetch(): bool { return false; }
     }
     abstract class CRM_Core_DAO_Base extends CRM_Core_DAO {}
@@ -88,13 +119,27 @@ namespace {
     }
     class CRM_Core_Session {
         public static function setStatus(string $text, string $title = '', string $type = 'success'): void {}
+        public static function getLoggedInContactID(): ?int { return null; }
+    }
+    class CRM_Contact_BAO_Contact_Utils {
+        public static function validChecksum(int $contactId, string $checksum): bool { return false; }
+    }
+    class CRM_Utils_Money {
+        public static function format(float $amount, ?string $currency = null): string { return ''; }
     }
     class CRM_Core_I18n {
         public static function getLocale(): string { return 'en_US'; }
     }
+    class CRM_Core_PseudoConstant {
+        public static function getKey(string $daoName, string $fieldName, mixed $value): int|false|null { return null; }
+    }
+    class CRM_Core_Permission {
+        public static function check(string|array $permissions, ?int $contactId = null): bool { return false; }
+    }
     class CRM_SumupPaymentProcessor_ExtensionUtil {
         public const LONG_NAME = 'sumup-payment-processor';
         public static function ts(string $text, array $params = []): string { return $text; }
+        public static function path(string $file = ''): string { return $file; }
     }
     function _sumup_payment_processor_civix_civicrm_config(CRM_Core_Config $config): void {}
     function _sumup_payment_processor_civix_civicrm_install(): void {}
@@ -133,6 +178,7 @@ namespace Civi\Payment {
         public static function singleton(): self { return new self(); }
         public function getById(int $id): ?\CRM_Core_Payment { return null; }
         public function getByName(string $name, bool $isTest = false): ?\CRM_Core_Payment { return null; }
+        public function getByProcessor(array $paymentProcessor): ?\CRM_Core_Payment { return null; }
     }
 }
 
@@ -160,6 +206,7 @@ namespace Civi\Checkout {
         public function setCheckoutParam(string $key, mixed $value): self { return $this; }
         public function getCheckoutParam(string $key): mixed { return null; }
         public function getLandingUrl(): string { return ''; }
+        public function tokenise(): string { return ''; }
         public function setResponseItem(string $key, mixed $value): self { return $this; }
         public function success(): self { return $this; }
         public function fail(): self { return $this; }
@@ -201,6 +248,16 @@ namespace Civi\Api4 {
     }
     class Contribution extends Query {
         public static function get(bool $checkPermissions = true): self { return new self(); }
+        public static function create(bool $checkPermissions = true): self { return new self(); }
+        public static function update(bool $checkPermissions = true): self { return new self(); }
+    }
+    class ContributionRecur extends Query {
+        public static function get(bool $checkPermissions = true): self { return new self(); }
+        public static function update(bool $checkPermissions = true): self { return new self(); }
+    }
+    class PaymentToken extends Query {
+        public static function get(bool $checkPermissions = true): self { return new self(); }
+        public static function create(bool $checkPermissions = true): self { return new self(); }
         public static function update(bool $checkPermissions = true): self { return new self(); }
     }
     class Payment extends Query {
@@ -218,10 +275,20 @@ namespace Civi\Api4 {
     class OptionValue extends Query {
         public static function get(bool $checkPermissions = true): self { return new self(); }
     }
+    class Navigation extends Query {
+        public static function delete(bool $checkPermissions = true): self { return new self(); }
+    }
 }
 
 namespace Civi\Api4\Generic {
     class Result extends \ArrayObject {}
+    abstract class AbstractEntity {
+        public static function getEntityName(): string { return ''; }
+    }
+    class BasicGetFieldsAction {
+        public function __construct(string $entityName, string $actionName, callable $callback) {}
+        public function setCheckPermissions(bool $checkPermissions): static { return $this; }
+    }
     abstract class AbstractAction {
         public function __construct(string $entityName, string $actionName) {}
         public function setCheckPermissions(bool $checkPermissions): static { return $this; }

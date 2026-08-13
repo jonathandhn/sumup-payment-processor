@@ -46,6 +46,9 @@ The checkout modes implemented by this lot are `widget`, `widget_wallet`, and `w
 
 Creation sends a unique `checkout_reference`, amount, ISO-4217 currency, merchant code, description, MJWShared callback URL, and signed browser return URL. Verification must match:
 
+The completed CiviCRM Payment stores a concrete SQL transaction timestamp; API
+date aliases such as `now` must not produce a zero accounting date.
+
 - checkout ID;
 - checkout reference and encoded contribution ID;
 - configured merchant code;

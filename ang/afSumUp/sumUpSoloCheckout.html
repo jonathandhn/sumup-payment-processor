@@ -1,0 +1,7 @@
+<div class="crm-sumup-solo-checkout__status" ng-if="$ctrl.message">
+  <span class="crm-loading-spinner" ng-if="$ctrl.waiting"></span>
+  {{$ctrl.message}}
+</div>
+<div class="crm-sumup-solo-checkout__error messages error" ng-if="$ctrl.error">
+  {{$ctrl.error}}
+</div>

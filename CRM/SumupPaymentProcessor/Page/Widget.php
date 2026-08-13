@@ -76,6 +76,14 @@ class CRM_SumupPaymentProcessor_Page_Widget extends CRM_Core_Page
                 CRM_SumupPaymentProcessor_CheckoutMode::getMerchantCountryCode()
             );
 
+            CRM_Core_Resources::singleton()->addVars(
+                'sumupSavedPayment',
+                ['checkout_id' => $checkoutId] + $processor->getSavedCardCheckoutConfig(
+                    $checkoutId,
+                    $params['contribution_id']
+                )
+            );
+
             CRM_Core_Resources::singleton()->addScriptFile(E::LONG_NAME, 'js/checkout.js', 110);
         } catch (Throwable $exception) {
             Civi::log()->warning('Unable to render SumUp checkout: ' . $exception->getMessage());

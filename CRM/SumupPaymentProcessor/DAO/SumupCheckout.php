@@ -19,6 +19,11 @@ declare(strict_types=1);
  * @property string $currency
  * @property string $checkout_mode
  * @property string|null $transaction_id
+ * @property string|null $reader_id
+ * @property string $purpose
+ * @property string|null $customer_id
+ * @property int|string|null $payment_token_id
+ * @property string|null $setup_checkout_id
  * @property string $created_date
  * @property string|null $modified_date
  * @property string|null $verified_date

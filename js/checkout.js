@@ -26,6 +26,10 @@
   function normaliseConfig(container, config) {
     config = config || {};
     var dataset = container.dataset || {};
+    var savedConfig = CRM.vars.sumupSavedPayment || {};
+    if (savedConfig.checkout_id !== (config.checkout_id || dataset.checkoutId)) {
+      savedConfig = {};
+    }
     return {
       checkoutId: config.checkout_id || dataset.checkoutId,
       amount: config.amount || dataset.amount,
@@ -36,6 +40,9 @@
       countryCode: config.country_code || dataset.countryCode || '',
       browserReturnUrl: config.browser_return_url || dataset.browserReturnUrl || window.location.href,
       cancelUrl: config.cancel_url || dataset.cancelUrl || '',
+      onSuccess: typeof config.onSuccess === 'function' ? config.onSuccess : null,
+      savedPaymentMethods: config.saved_payment_methods || savedConfig.saved_payment_methods || [],
+      savedPaymentAction: config.saved_payment_action || savedConfig.saved_payment_action || null,
     };
   }
 
@@ -58,13 +65,105 @@
     }
 
     function verifyOnServer() {
+      if (config.onSuccess) {
+        config.onSuccess();
+        return;
+      }
       window.location.assign(config.browserReturnUrl);
+    }
+
+    function followNextStep(nextStep) {
+      if (!nextStep || !nextStep.url) {
+        throw new Error('Missing SumUp authentication step');
+      }
+      var method = String(nextStep.method || 'GET').toUpperCase();
+      var payload = nextStep.payload || {};
+      if (method === 'GET') {
+        var url = new URL(nextStep.url);
+        Object.keys(payload).forEach(function (name) {
+          if (payload[name] !== null) {
+            url.searchParams.set(name, String(payload[name]));
+          }
+        });
+        window.location.assign(url.toString());
+        return;
+      }
+      if (method !== 'POST') {
+        throw new Error('Unsupported SumUp authentication method');
+      }
+      var form = document.createElement('form');
+      form.method = 'POST';
+      form.action = nextStep.url;
+      Object.keys(payload).forEach(function (name) {
+        if (payload[name] === null) {
+          return;
+        }
+        var input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = name;
+        input.value = String(payload[name]);
+        form.appendChild(input);
+      });
+      document.body.appendChild(form);
+      form.submit();
+    }
+
+    function payWithSavedCard(paymentTokenId, button) {
+      if (!config.savedPaymentAction) {
+        return;
+      }
+      button.disabled = true;
+      showMessage(ts('Confirming payment with your saved card…'));
+      CRM.api4('SumupPaymentMethod', 'payContribution', Object.assign(
+        {},
+        config.savedPaymentAction,
+        {paymentTokenId: paymentTokenId}
+      )).then(function (results) {
+        var result = results[0] || {};
+        if (result.status === 'PAID') {
+          verifyOnServer();
+          return;
+        }
+        if (result.status === 'CUSTOMER_ACTION_REQUIRED') {
+          followNextStep(result.next_step);
+          return;
+        }
+        showMessage(ts('The saved-card payment is still pending. Its status will be checked again.'));
+        window.setTimeout(verifyOnServer, 1500);
+      }).catch(function () {
+        button.disabled = false;
+        showMessage(ts('This saved card could not be used. You can choose another card below.'));
+      });
     }
 
     container.replaceChildren();
     container.appendChild(message);
 
     var tasks = [];
+    if (config.savedPaymentMethods.length) {
+      var savedCards = document.createElement('section');
+      savedCards.className = 'crm-sumup-saved-cards';
+      var savedTitle = document.createElement('h3');
+      savedTitle.textContent = ts('Pay with a saved card');
+      savedCards.appendChild(savedTitle);
+      config.savedPaymentMethods.forEach(function (method) {
+        var button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'button crm-button btn btn-secondary';
+        button.textContent = method.masked_account_number || ts('Saved card');
+        button.addEventListener('click', function () {
+          payWithSavedCard(method.payment_token_id, button);
+        });
+        var paragraph = document.createElement('p');
+        paragraph.appendChild(button);
+        savedCards.appendChild(paragraph);
+      });
+      container.insertBefore(savedCards, message);
+      var savedSeparator = document.createElement('p');
+      savedSeparator.className = 'crm-sumup-payment-separator';
+      savedSeparator.textContent = ts('Or use another payment method');
+      container.insertBefore(savedSeparator, message);
+    }
     if (usesWallet) {
       var wallet = document.createElement('div');
       wallet.id = 'sumup-wallet-' + id;

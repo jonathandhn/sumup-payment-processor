@@ -32,8 +32,8 @@ start an in-person payment on a SumUp Solo or Virtual Solo.
 
 - Pairing, listing, status, checkout and termination use the maintained SumUp
   PHP SDK Readers service.
-- API credentials remain server-side. Cloud API additionally requires an
-  Affiliate Key and Application ID for checkout creation.
+- API credentials remain server-side. Every Reader Checkout includes the
+  Affiliate Key and matching Application ID required by SumUp Cloud API.
 - Amount, currency and description come from the saved CiviCRM contribution.
 - Each attempt has a unique affiliate `foreign_transaction_id`.
 - SumUp's HTTPS result URL is queued through MJWShared. CiviCRM completes a
@@ -42,11 +42,25 @@ start an in-person payment on a SumUp Solo or Virtual Solo.
 ## First sandbox slice
 
 - Pair one Virtual Solo through an API4 action.
+- Adopt an already paired physical Solo only through an explicit API4 action
+  naming its remote reader ID and CiviCRM site code.
 - Persist and rename it deterministically for site `PAR` or `MRS`.
 - Synchronise its pairing and device status.
 - Render it in a separate Afform Solo checkout option.
-- Starting the terminal payment and completing the contribution are the next
-  vertical slice after the pairing and rendering contract is validated.
+- Start the same Reader Checkout from Afform and the native back-office form.
+- Store the exact client transaction ID in the signed CheckoutSession so the
+  landing page never resolves an attempt by contribution alone.
+- Keep the Afform contribution Pending while the terminal is waiting for the
+  cardholder, then verify the transaction through SumUp before success.
+- Map SumUp `PENDING` to a local pending attempt; only explicit `FAILED` or
+  `CANCELLED` terminal states may fail the CiviCRM contribution.
+- Replace the raw card fields with the paired-reader selector when an operator
+  opens CiviCRM's native back-office contribution form. Do not add a dedicated
+  test-collection shortcut to the global Contributions menu.
+- Create the contribution as Pending, send its amount to the selected Solo and
+  persist the returned client transaction ID together with the reader ID.
+- Queue `solo.transaction.updated` through MJWShared, read the authoritative
+  transaction from SumUp, then complete or fail the contribution idempotently.
 
 ## Acceptance
 
@@ -55,4 +69,9 @@ start an in-person payment on a SumUp Solo or Virtual Solo.
 - The rendered label includes the site and deterministic terminal name.
 - An Afform using the Solo option never lists readers belonging to another
   processor environment.
+- An Afform Solo payment replaces the submitted form with a dedicated terminal
+  waiting state, remains pending while no authoritative transaction exists, and completes only after
+  the SumUp transaction matches merchant, amount, currency and contribution.
+- CiviCRM's native test contribution form can send a payment to Virtual Solo
+  without exposing or collecting card details in CiviCRM.
 - PHPCS and PHPStan level 8 remain green.

@@ -1,0 +1,16 @@
+<div class="crm-block crm-sumup-replace-card">
+  <div class="crm-loading-spinner" ng-if="$ctrl.loading || $ctrl.confirming"></div>
+  <div class="messages error" ng-if="$ctrl.error">{{$ctrl.error}}</div>
+  <div class="messages status no-popup" ng-if="$ctrl.complete">
+    {{:: ts('Your new card has been saved. Your recurring payments can continue.') }}
+  </div>
+  <div
+    class="crm-sumup-replacement-widget"
+    ng-show="!$ctrl.loading && !$ctrl.complete"
+  ></div>
+  <p>
+    <a class="button btn btn-secondary" ng-href="{{$ctrl.paymentMethodsUrl}}">
+      {{:: ts('Back to my recurring payments') }}
+    </a>
+  </p>
+</div>

@@ -32,6 +32,10 @@ return [
                 'state' => true,
             ],
         ],
+        'unique_sumup_setup_charge' => [
+            'fields' => ['setup_checkout_id' => true],
+            'unique' => true,
+        ],
     ],
     'getFields' => fn() => [
         'id' => [
@@ -103,6 +107,38 @@ return [
         ],
         'transaction_id' => [
             'title' => E::ts('SumUp transaction ID'),
+            'sql_type' => 'varchar(100)',
+            'input_type' => 'Text',
+        ],
+        'reader_id' => [
+            'title' => E::ts('SumUp reader ID'),
+            'sql_type' => 'varchar(100)',
+            'input_type' => 'Text',
+        ],
+        'purpose' => [
+            'title' => E::ts('Checkout purpose'),
+            'sql_type' => 'varchar(32)',
+            'input_type' => 'Text',
+            'required' => true,
+            'default' => 'PAYMENT',
+        ],
+        'customer_id' => [
+            'title' => E::ts('SumUp customer ID'),
+            'sql_type' => 'varchar(100)',
+            'input_type' => 'Text',
+        ],
+        'payment_token_id' => [
+            'title' => E::ts('CiviCRM payment token ID'),
+            'sql_type' => 'int unsigned',
+            'input_type' => 'EntityRef',
+            'entity_reference' => [
+                'entity' => 'PaymentToken',
+                'key' => 'id',
+                'on_delete' => 'SET NULL',
+            ],
+        ],
+        'setup_checkout_id' => [
+            'title' => E::ts('Originating setup checkout ID'),
             'sql_type' => 'varchar(100)',
             'input_type' => 'Text',
         ],

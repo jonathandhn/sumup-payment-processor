@@ -5,11 +5,18 @@ declare(strict_types=1);
 use Civi\Payment\Exception\PaymentProcessorException;
 use CRM_SumupPaymentProcessor_ExtensionUtil as E;
 use SumUp\HttpClient\RequestOptions;
+use SumUp\ResponseDecoder;
 use SumUp\SumUp;
 use SumUp\Types\Checkout;
+use SumUp\Types\CheckoutAccepted;
 use SumUp\Types\CheckoutCreateRequest;
 use SumUp\Types\CheckoutSuccess;
+use SumUp\Types\CheckoutCreateRequestPurpose;
 use SumUp\Types\HostedCheckout;
+use SumUp\Types\Customer;
+use SumUp\Types\PaymentInstrumentResponse;
+use SumUp\Types\ProcessCheckout;
+use SumUp\Services\CheckoutsListParams;
 use SumUp\Services\TransactionsGetParams;
 use SumUp\Types\TransactionFull;
 
@@ -42,14 +49,20 @@ final class CRM_SumupPaymentProcessor_CheckoutService
         string $currency,
         string $description,
         string $webhookUrl,
-        string $browserReturnUrl,
-        bool $hosted = false
+        ?string $browserReturnUrl,
+        bool $hosted = false,
+        ?string $customerId = null,
+        ?string $purpose = null,
+        ?string $checkoutReference = null
     ): Checkout {
         if ($contributionId <= 0 || $amount <= 0.0) {
             throw new PaymentProcessorException(E::ts('Unable to create a SumUp checkout for this contribution.'));
         }
 
-        $reference = sprintf('CIVI-%d-%s', $contributionId, bin2hex(random_bytes(8)));
+        $reference = $checkoutReference ?? sprintf('CIVI-%d-%s', $contributionId, bin2hex(random_bytes(8)));
+        if (self::getContributionIdFromReference($reference) !== $contributionId) {
+            throw new PaymentProcessorException(E::ts('Invalid SumUp checkout reference.'));
+        }
         $hostedCheckout = null;
         if ($hosted) {
             $hostedCheckout = new HostedCheckout();
@@ -62,11 +75,118 @@ final class CRM_SumupPaymentProcessor_CheckoutService
             merchantCode: $this->merchantCode,
             description: mb_substr($description, 0, 255),
             returnUrl: $webhookUrl,
+            customerId: $customerId,
+            purpose: $purpose,
             redirectUrl: $browserReturnUrl,
             hostedCheckout: $hostedCheckout
         );
 
         return $this->client->checkouts()->create($request, $this->requestOptions());
+    }
+
+    public function ensureCustomer(string $customerId): Customer
+    {
+        if (!preg_match('/^[A-Za-z0-9_-]{4,100}$/', $customerId)) {
+            throw new PaymentProcessorException(E::ts('Invalid SumUp customer identifier.'));
+        }
+        try {
+            return $this->client->customers()->get($customerId, $this->requestOptions());
+        } catch (\SumUp\Exception\SDKException $exception) {
+            if ($exception->getStatusCode() !== 404) {
+                throw $exception;
+            }
+        }
+
+        try {
+            return $this->client->customers()->create(
+                new Customer(customerId: $customerId),
+                $this->requestOptions()
+            );
+        } catch (\SumUp\Exception\SDKException $exception) {
+            if ($exception->getStatusCode() !== 409) {
+                throw $exception;
+            }
+            return $this->client->customers()->get($customerId, $this->requestOptions());
+        }
+    }
+
+    public function getPaymentInstrument(string $customerId, string $token): PaymentInstrumentResponse
+    {
+        $instruments = $this->listPaymentInstruments($customerId);
+        foreach ($instruments as $instrument) {
+            if ($instrument->token === $token && $instrument->active === true) {
+                return $instrument;
+            }
+        }
+        throw new PaymentProcessorException(E::ts('SumUp did not return an active reusable card.'));
+    }
+
+    /** @return list<PaymentInstrumentResponse> */
+    public function listPaymentInstruments(string $customerId): array
+    {
+        if (!preg_match('/^[A-Za-z0-9_-]{4,100}$/', $customerId)) {
+            throw new PaymentProcessorException(E::ts('Invalid SumUp customer identifier.'));
+        }
+        $instruments = $this->client->customers()->listPaymentInstruments(
+            $customerId,
+            $this->requestOptions()
+        );
+        return array_values(array_filter(
+            $instruments,
+            static fn(PaymentInstrumentResponse $instrument): bool => $instrument->active === true
+        ));
+    }
+
+    public function processWithToken(
+        string $checkoutId,
+        string $customerId,
+        string $token
+    ): CheckoutSuccess|CheckoutAccepted {
+        if (!self::isValidCheckoutId($checkoutId) || $customerId === '' || $token === '') {
+            throw new PaymentProcessorException(E::ts('Invalid SumUp recurring payment identifiers.'));
+        }
+        try {
+            return $this->client->checkouts()->process(
+                $checkoutId,
+                new ProcessCheckout(paymentType: 'card', token: $token, customerId: $customerId),
+                $this->requestOptions()
+            );
+        } catch (\SumUp\Exception\SDKException $exception) {
+            if ($exception->getStatusCode() !== 409) {
+                throw $exception;
+            }
+            // An interrupted local request may have reached SumUp. A 409 is
+            // safe only if the authoritative checkout still exists.
+            return $this->get($checkoutId);
+        }
+    }
+
+    public function deactivatePaymentInstrument(string $customerId, string $token): void
+    {
+        if ($customerId === '' || $token === '') {
+            throw new PaymentProcessorException(E::ts('Invalid SumUp payment instrument identifiers.'));
+        }
+        $this->client->customers()->deactivatePaymentInstrument(
+            $customerId,
+            $token,
+            $this->requestOptions()
+        );
+    }
+
+    public function findByReference(string $reference): ?CheckoutSuccess
+    {
+        $params = new CheckoutsListParams();
+        $params->checkoutReference = $reference;
+        $matches = $this->client->checkouts()->list($params, $this->requestOptions());
+        if (count($matches) > 1) {
+            throw new PaymentProcessorException(E::ts('SumUp returned several checkouts for one reference.'));
+        }
+        return $matches[0] ?? null;
+    }
+
+    public static function recurringChargeReference(int $contributionId, string $setupCheckoutId): string
+    {
+        return sprintf('CIVI-%d-%s', $contributionId, substr(hash('sha256', $setupCheckoutId), 0, 16));
     }
 
     public function get(string $checkoutId): CheckoutSuccess
@@ -94,18 +214,47 @@ final class CRM_SumupPaymentProcessor_CheckoutService
         return $this->client->transactions()->get($this->merchantCode, $params, $this->requestOptions());
     }
 
+    public function getTransactionByClientTransactionId(string $clientTransactionId): TransactionFull
+    {
+        if (!preg_match('/^[A-Za-z0-9_-]{8,100}$/', $clientTransactionId)) {
+            throw new PaymentProcessorException(E::ts('Invalid SumUp client transaction identifier.'));
+        }
+
+        $params = new TransactionsGetParams();
+        $params->clientTransactionId = $clientTransactionId;
+
+        return $this->client->transactions()->get($this->merchantCode, $params, $this->requestOptions());
+    }
+
     public function refundTransaction(string $transactionId, ?float $amount): void
     {
         if (!preg_match('/^[A-Za-z0-9_-]{4,100}$/', $transactionId)) {
             throw new PaymentProcessorException(E::ts('Invalid SumUp transaction identifier.'));
         }
 
-        $body = $amount === null ? null : ['amount' => $amount];
-        $this->client->transactions()->refund(
-            $this->merchantCode,
-            $transactionId,
-            $body,
-            $this->requestOptions()
+        $path = sprintf(
+            '/v1.0/merchants/%s/payments/%s/refunds',
+            rawurlencode($this->merchantCode),
+            rawurlencode($transactionId)
+        );
+        $body = $amount === null ? [] : ['amount' => $amount];
+        $response = $this->client->request('POST', $path, $body, $this->requestOptions());
+
+        // SumUp currently documents an empty JSON object for a successful
+        // refund, while sumup-php 0.1.4 only accepts a 204 response. Decode
+        // both observed and documented successful variants without weakening
+        // non-2xx error handling.
+        ResponseDecoder::decodeOrThrow(
+            $response,
+            [
+                '200' => ['type' => 'void'],
+                '201' => ['type' => 'void'],
+                '202' => ['type' => 'void'],
+                '204' => ['type' => 'void'],
+            ],
+            null,
+            'POST',
+            $path
         );
     }
 
