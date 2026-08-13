@@ -83,6 +83,12 @@ date aliases such as `now` must not produce a zero accounting date.
 - A changed checkout ID, contribution ID, amount, currency, merchant, reference, or signature is rejected.
 - Card authentication can return to the signed Widget URL and complete after server verification.
 - Wallet-only mode reports when no compatible wallet is available; combined mode leaves the Card Widget available as fallback.
+- Wallet eligibility is decided by the server for each checkout. Apple Pay and
+  Google Pay are available only for ordinary one-off payments, never for a
+  recurring-card setup or card replacement.
+- An unavailable wallet leaves no mounted button, separator or clickable blank
+  container in the document. A wallet submission is single-flight until it
+  succeeds, is cancelled or fails.
 - Test and live processor instances use their own configured SumUp credentials without cross-environment fallback.
 - MJWShared is a required dependency and there is no direct webhook fallback.
 

@@ -38,6 +38,9 @@
       mode: config.mode || dataset.mode || 'widget',
       publicKey: config.public_key || dataset.publicKey || '',
       countryCode: config.country_code || dataset.countryCode || '',
+      walletsAllowed: config.wallets_allowed === true
+        || config.wallets_allowed === 1
+        || dataset.walletsAllowed === '1',
       browserReturnUrl: config.browser_return_url || dataset.browserReturnUrl || window.location.href,
       cancelUrl: config.cancel_url || dataset.cancelUrl || '',
       onSuccess: typeof config.onSuccess === 'function' ? config.onSuccess : null,
@@ -53,7 +56,8 @@
 
     var config = normaliseConfig(container, suppliedConfig);
     var usesWidget = config.mode === 'widget' || config.mode === 'widget_wallet';
-    var usesWallet = config.mode === 'wallet' || config.mode === 'widget_wallet';
+    var usesWallet = config.walletsAllowed
+      && (config.mode === 'wallet' || config.mode === 'widget_wallet');
     var id = ++instance;
     var message = document.createElement('p');
     message.className = 'messages status no-popup';
@@ -169,6 +173,8 @@
     if (usesWallet) {
       var wallet = document.createElement('div');
       wallet.id = 'sumup-wallet-' + id;
+      wallet.hidden = true;
+      wallet.style.display = 'none';
       container.insertBefore(wallet, message);
       tasks.push(loadScript(
         'https://js.sumup.com/swift-checkout/v1/sdk.js',
@@ -183,36 +189,61 @@
             amount: {currency: config.currency, value: config.amount},
           },
         });
-        var buttons = client.elements({label: 'pay'});
-        buttons.onSubmit(function (event) {
-          request.show(event)
-            .then(function (response) {
-              return client.processCheckout(config.checkoutId, response);
-            })
-            .then(verifyOnServer)
-            .catch(function (error) {
-              var errors = window.SumUp.SwiftCheckout.Errors;
-              if (errors && error instanceof errors.PaymentRequestCancelledError) {
-                return;
-              }
-              showMessage(ts('The wallet payment could not be confirmed. You can try again or cancel.'));
-            });
-        });
         return request.canMakePayment().then(function (available) {
           return available ? request.availablePaymentMethods() : [];
         }).then(function (methods) {
           if (methods.length) {
+            var walletBusy = false;
+            var buttons = client.elements({label: 'pay'});
+            buttons.onSubmit(function (event) {
+              if (walletBusy) {
+                return;
+              }
+              walletBusy = true;
+              wallet.setAttribute('aria-busy', 'true');
+              wallet.style.pointerEvents = 'none';
+              request.show(event)
+                .then(function (response) {
+                  return client.processCheckout(config.checkoutId, response);
+                })
+                .then(verifyOnServer)
+                .catch(function (error) {
+                  var errors = window.SumUp.SwiftCheckout.Errors;
+                  if (!(errors && error instanceof errors.PaymentRequestCancelledError)) {
+                    showMessage(ts('The wallet payment could not be confirmed. You can try again or cancel.'));
+                  }
+                })
+                .finally(function () {
+                  walletBusy = false;
+                  wallet.removeAttribute('aria-busy');
+                  wallet.style.removeProperty('pointer-events');
+                });
+            });
+            wallet.hidden = false;
+            wallet.style.removeProperty('display');
             buttons.mount({paymentMethods: methods, container: wallet});
             if (walletCardSeparator) {
               walletCardSeparator.hidden = false;
               walletCardSeparator.style.removeProperty('display');
             }
           }
-          else if (!usesWidget) {
-            showMessage(ts('No compatible wallet is available in this browser.'));
+          else {
+            wallet.remove();
+            if (walletCardSeparator) {
+              walletCardSeparator.remove();
+              walletCardSeparator = null;
+            }
+            if (!usesWidget) {
+              showMessage(ts('No compatible wallet is available in this browser.'));
+            }
           }
         });
       }).catch(function () {
+        wallet.remove();
+        if (walletCardSeparator) {
+          walletCardSeparator.remove();
+          walletCardSeparator = null;
+        }
         if (!usesWidget) {
           showMessage(ts('The wallet payment form could not be loaded.'));
         }

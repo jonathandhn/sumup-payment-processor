@@ -29,6 +29,36 @@
     return null;
   }
 
+  function keepParentFrameSizedTo(element) {
+    if (
+      !element ||
+      !window.parentIFrame ||
+      typeof window.parentIFrame.size !== 'function'
+    ) {
+      return;
+    }
+
+    var resize = function () {
+      window.requestAnimationFrame(function () {
+        if (!element.isConnected) {
+          return;
+        }
+        var bottom = window.scrollY + element.getBoundingClientRect().bottom;
+        var bodyStyle = window.getComputedStyle(document.body);
+        var bottomPadding = parseFloat(bodyStyle.paddingBottom) || 0;
+        window.parentIFrame.size(Math.ceil(bottom + bottomPadding));
+      });
+    };
+
+    resize();
+    window.setTimeout(resize, 250);
+    window.setTimeout(resize, 1000);
+    if (typeof window.ResizeObserver === 'function') {
+      var observer = new window.ResizeObserver(resize);
+      observer.observe(element);
+    }
+  }
+
   function showRedirectFallback(rawUrl, providerName, ajax) {
     var url = normaliseHttpUrl(rawUrl);
     if (!url) {
@@ -121,6 +151,7 @@
 
       if (form) {
         form.hidden = true;
+        form.style.display = 'none';
         form.setAttribute('aria-hidden', 'true');
         form.insertAdjacentElement('afterend', section);
       }
@@ -129,12 +160,14 @@
       }
 
       clearUnloadWarnings();
+      keepParentFrameSizedTo(section);
       window.CiviSumUpCheckout.mount(container, checkout).then(function () {
         section.setAttribute('aria-busy', 'false');
       }).catch(function () {
         section.remove();
         if (form) {
           form.hidden = false;
+          form.style.removeProperty('display');
           form.removeAttribute('aria-hidden');
         }
         showRedirectFallback(fallbackUrl, 'SumUp', ajax);

@@ -731,6 +731,7 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
      *   mode: string,
      *   public_key: string,
      *   country_code: string,
+     *   wallets_allowed: bool,
      *   browser_return_url: string,
      *   cancel_url: string
      * }
@@ -759,6 +760,7 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
      *   mode: string,
      *   public_key: string,
      *   country_code: string,
+     *   wallets_allowed: bool,
      *   browser_return_url: string,
      *   cancel_url: string,
      *   hosted_checkout_url: string|null,
@@ -876,6 +878,7 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             'mode' => $checkoutMode,
             'public_key' => $this->getPublicMerchantKey(),
             'country_code' => CRM_SumupPaymentProcessor_CheckoutMode::getMerchantCountryCode(),
+            'wallets_allowed' => $contributionRecurId === 0,
             'browser_return_url' => $browserReturnUrl,
             'cancel_url' => $cancelUrl,
             'hosted_checkout_url' => $checkout->hostedCheckoutUrl,
@@ -1561,7 +1564,7 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
     /**
      * Start a customer-present replacement of a recurring card.
      *
-     * @return array<string, int|string|null>
+     * @return array<string, bool|int|string|null>
      */
     public function startPaymentMethodReplacement(int $contributionRecurId, int $contactId): array
     {
@@ -1798,7 +1801,7 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
 
     /**
      * @param array<string, mixed> $schedule
-     * @return array<string, int|string|null>
+     * @return array<string, bool|int|string|null>
      */
     private function replacementCheckoutConfig(
         \SumUp\Types\Checkout|CheckoutSuccess $checkout,
@@ -1813,6 +1816,7 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             'mode' => CRM_SumupPaymentProcessor_CheckoutMode::WIDGET,
             'public_key' => '',
             'country_code' => CRM_SumupPaymentProcessor_CheckoutMode::getMerchantCountryCode(),
+            'wallets_allowed' => false,
             'browser_return_url' => '',
             'cancel_url' => '',
         ];
