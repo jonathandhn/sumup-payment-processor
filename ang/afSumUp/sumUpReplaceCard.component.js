@@ -14,6 +14,7 @@
       var attempts = 0;
 
       this.paymentMethodsUrl = CRM.url('civicrm/sumup/payment-methods', publicAccess);
+      this.primaryRecurId = recurId;
 
       this.$onInit = () => {
         if (!Number.isInteger(recurId) || recurId <= 0) {
@@ -21,7 +22,36 @@
           return;
         }
         this.loading = true;
-        CRM.api4('SumupPaymentMethod', 'startReplacement', Object.assign({recurId: recurId}, access))
+        CRM.api4('SumupPaymentMethod', 'get', access)
+          .then((methods) => {
+            var primary = methods.find((method) => Number(method.recur_id) === recurId);
+            if (!primary) {
+              throw new Error('Missing recurring contribution');
+            }
+            this.methods = methods.filter((method) =>
+              Number(method.payment_processor_id) === Number(primary.payment_processor_id)
+            );
+            this.selected = {};
+            this.selected[recurId] = true;
+          })
+          .catch(() => {
+            this.error = ts('Unable to retrieve the recurring payments available for card replacement.');
+          })
+          .finally(() => {
+            this.loading = false;
+            $scope.$applyAsync();
+          });
+      };
+
+      this.prepareReplacement = () => {
+        var recurIds = this.methods
+          .filter((method) => this.selected[method.recur_id])
+          .map((method) => Number(method.recur_id));
+        this.loading = true;
+        CRM.api4('SumupPaymentMethod', 'startReplacement', Object.assign({
+          recurId: recurId,
+          recurIds: recurIds,
+        }, access))
           .then((response) => {
             var checkout = response && response[0];
             if (!checkout) {
@@ -32,6 +62,7 @@
               return;
             }
             this.checkoutId = checkout.checkout_id;
+            this.started = true;
             if (!window.CiviSumUpCheckout) {
               throw new Error('SumUp checkout bridge unavailable');
             }

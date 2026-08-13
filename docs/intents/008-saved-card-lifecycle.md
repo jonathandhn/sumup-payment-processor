@@ -41,10 +41,11 @@ is safe to do so.
 
 ## Replacement boundary
 
-The existing replacement flow changes one recurring payment at a time. A
-future bulk replacement may let the payer select several schedules, but must
-update each schedule only after the new token has been verified and must
-deactivate each old token only after it has no remaining active references.
+The replacement flow selects its current recurring payment by default and may
+also update other active schedules explicitly selected by the payer. The
+server persists that selection before mounting the Widget, updates every
+selected schedule only after the new token has been verified, and deactivates
+each old token only after it has no remaining active references.
 
 ## Failure handling
 

@@ -81,8 +81,10 @@ checkout processed with the saved token is authoritatively `PAID`.
   positive CiviCRM Payment. A failed occurrence is retried after three days and
   the schedule is stopped after three explicit provider failures. Transport or
   local errors leave the same attempt recoverable and do not consume a failure.
-- The API defaults to a seven-day stale guard and remains inactive until an
-  operator schedules the API4 command after sandbox validation.
+- The API defaults to a seven-day stale guard. An active daily CiviCRM
+  scheduled-job adapter is installed by default and invokes this API4 action;
+  administrators may still use the API4 action directly for dry runs and
+  targeted recovery.
 
 ## Self-service contract
 

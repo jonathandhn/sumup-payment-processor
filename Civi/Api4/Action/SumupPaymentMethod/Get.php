@@ -82,6 +82,7 @@ final class Get extends ActionBase
                 'end_date' => (string) ($schedule['end_date'] ?? ''),
                 'installments' => (int) ($schedule['installments'] ?? 0),
                 'next_sched_contribution_date' => $nextPayment,
+                'payment_processor_id' => (int) $schedule['payment_processor_id'],
                 'is_test' => (bool) $schedule['is_test'],
                 'masked_account_number' => (string) ($paymentToken['masked_account_number'] ?? ''),
                 'is_operational' => $isOperational,

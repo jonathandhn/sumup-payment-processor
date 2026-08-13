@@ -87,7 +87,18 @@ cv api4 SumupRecurringCard.run dryRun=1
 cv api4 SumupRecurringCard.run recurId=9 dryRun=1
 ```
 
-The action processes at most 25 due schedules by default, refuses occurrences overdue by more than seven days, and uses deterministic contribution and checkout references to prevent a retry from creating another charge. Schedule this command only after validating it with the merchant sandbox and the site's normal cron runner.
+The extension installs an active daily scheduled job which invokes this API4
+engine. It processes at most 25 due schedules by default, refuses occurrences
+overdue by more than seven days, and uses deterministic contribution and
+checkout references to prevent a retry from creating another charge. The API4
+commands above remain available for dry runs, support and targeted recovery.
+
+Recurring Widget checkouts offer active saved SumUp cards as well as a new-card
+authorisation. The card-replacement page updates the selected schedule by
+default and can apply the verified replacement card to other schedules selected
+by the payer. Under **Contributions > SumUp settings**, the optional strict
+single-plan policy can prevent a contact from creating a second active SumUp
+plan in the same test or live environment.
 
 CiviCRM's native recurring-payment pages let an authorised contact or
 administrator replace the saved card, change the amount of future occurrences,

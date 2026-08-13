@@ -21,14 +21,14 @@
           <small ng-if="card.authorisations.length === 1">
             {{:: ts('1 saved authorisation') }} ·
             {{card.recurring_payment_count === 1
-              ? ts('1 active recurring payment')
-              : ts('%1 active recurring payments', {1: card.recurring_payment_count})}}
+              ? ts('used by 1 active recurring payment')
+              : ts('used by %1 active recurring payments', {1: card.recurring_payment_count})}}
           </small>
           <small ng-if="card.authorisations.length > 1">
             {{:: ts('%1 saved authorisations', {1: card.authorisations.length}) }} ·
             {{card.recurring_payment_count === 1
-              ? ts('1 active recurring payment')
-              : ts('%1 active recurring payments', {1: card.recurring_payment_count})}}
+              ? ts('used by 1 active recurring payment')
+              : ts('used by %1 active recurring payments', {1: card.recurring_payment_count})}}
           </small>
         </span>
         <span class="crm-sumup-badge crm-sumup-badge--test" ng-if="card.is_test">{{:: ts('Test / Sandbox') }}</span>

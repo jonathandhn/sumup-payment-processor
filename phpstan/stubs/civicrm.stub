@@ -115,6 +115,10 @@ namespace {
         public function acquire(): bool { return false; }
         public function release(): void {}
     }
+    class CRM_Core_Transaction {
+        public function commit(): void {}
+        public function rollback(): void {}
+    }
     class CRM_Core_Exception extends \Exception {}
     class CRM_Core_DAO {
         public static function executeQuery(string $query, array $params = []): self { return new self(); }
