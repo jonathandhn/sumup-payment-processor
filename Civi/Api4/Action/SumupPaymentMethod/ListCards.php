@@ -64,7 +64,7 @@ final class ListCards extends ActionBase
             ->addWhere('contact_id', '=', $contactId)
             ->addWhere('payment_processor_id', '=', $processorId)
             ->addWhere('contribution_status_id:name', '=', 'In Progress')
-            ->addWhere('payment_token_id', 'IS NOT NULL', null)
+            ->addWhere('payment_token_id', 'IS NOT NULL')
             ->execute();
         $byToken = [];
         foreach ($schedules as $schedule) {

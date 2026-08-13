@@ -344,7 +344,7 @@ namespace Civi\Api4 {
     }
     class Query {
         public function addSelect(string ...$fields): static { return $this; }
-        public function addWhere(string $field, string $op, mixed $value): static { return $this; }
+        public function addWhere(string $field, string $op, mixed $value = null): static { return $this; }
         public function addOrderBy(string $field, string $direction): static { return $this; }
         public function addValue(string $field, mixed $value): static { return $this; }
         public function setValues(array $values): static { return $this; }
