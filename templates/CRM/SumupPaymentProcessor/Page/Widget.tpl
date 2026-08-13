@@ -1,8 +1,4 @@
-<div class="crm-block crm-form-block crm-sumup-checkout-block">
-  <header class="crm-sumup-checkout-header">
-    <p class="crm-sumup-eyebrow">SumUp</p>
-    <h2>{ts domain="sumup-payment-processor"}Secure payment{/ts}</h2>
-  </header>
+<div class="crm-block crm-sumup-checkout-block">
   {if $sumupCheckoutId}
     <div
       id="sumup-checkout"

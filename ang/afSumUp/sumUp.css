@@ -36,6 +36,12 @@
   padding: clamp(1rem, 3vw, 1.5rem);
 }
 
+/* Keep the relay consistent when a CMS theme also styles .crm-block. */
+.crm-block.crm-sumup-checkout-block {
+  border-radius: 1rem;
+  overflow: hidden;
+}
+
 .crm-sumup-payment-methods {
   display: grid;
   gap: 1rem;
@@ -252,8 +258,10 @@
   padding: 1rem;
 }
 
-.crm-sumup-saved-cards h3 {
+.crm-sumup-checkout-block .crm-sumup-saved-cards h3,
+.crm-sumup-embedded-checkout .crm-sumup-saved-cards h3 {
   background: none;
+  border: 0;
   color: var(--sumup-text, #101010);
   margin: 0 0 0.75rem;
   padding: 0;
@@ -262,6 +270,11 @@
 .crm-sumup-saved-card-action {
   display: inline-block;
   margin: 0 0.5rem 0.5rem 0;
+}
+
+.crm-sumup-checkout-block .crm-sumup-saved-card-action .button,
+.crm-sumup-embedded-checkout .crm-sumup-saved-card-action .button {
+  border-radius: 999px;
 }
 
 .crm-sumup-payment-separator {
@@ -289,8 +302,85 @@
 }
 
 .crm-sumup-checkout__cancel a {
-  color: var(--sumup-text-muted, #5f6368);
+  color: #3f454b;
   font-weight: 600;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+.crm-sumup-checkout__cancel a:hover {
+  color: var(--sumup-text, #101010);
+  text-decoration-thickness: 2px;
+}
+
+.crm-sumup-checkout-block [data-sumup-id='submit_button'],
+.crm-sumup-embedded-checkout [data-sumup-id='submit_button'],
+.crm-sumup-replacement-widget [data-sumup-id='submit_button'] {
+  align-items: center;
+  background: #101010;
+  border: 2px solid #101010;
+  border-radius: 0.75rem;
+  color: #fff !important;
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  font-weight: 700;
+  justify-content: center;
+  margin: 1rem auto 0;
+  min-height: 3rem;
+  padding: 0.75rem 1rem;
+  width: auto;
+}
+
+.crm-sumup-checkout-block [id^='sumup-wallet-'],
+.crm-sumup-embedded-checkout [id^='sumup-wallet-'] {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
+  width: 100%;
+}
+
+.crm-sumup-checkout-block [id^='sumup-wallet-'] > *,
+.crm-sumup-embedded-checkout [id^='sumup-wallet-'] > * {
+  margin-inline: auto;
+}
+
+.crm-sumup-checkout-block [data-sumup-id='submit_button'] span,
+.crm-sumup-embedded-checkout [data-sumup-id='submit_button'] span,
+.crm-sumup-replacement-widget [data-sumup-id='submit_button'] span {
+  color: inherit !important;
+}
+
+.crm-sumup-checkout-block [data-sumup-id='submit_button']:hover:not(:disabled),
+.crm-sumup-embedded-checkout [data-sumup-id='submit_button']:hover:not(:disabled),
+.crm-sumup-replacement-widget [data-sumup-id='submit_button']:hover:not(:disabled) {
+  background: #2b2b2b;
+  border-color: #2b2b2b;
+  color: #fff !important;
+}
+
+.crm-sumup-checkout-block [data-sumup-id='submit_button']:focus-visible,
+.crm-sumup-embedded-checkout [data-sumup-id='submit_button']:focus-visible,
+.crm-sumup-replacement-widget [data-sumup-id='submit_button']:focus-visible {
+  color: #fff !important;
+  outline: 3px solid color-mix(in srgb, var(--sumup-accent, #006f69) 45%, transparent);
+  outline-offset: 3px;
+}
+
+.crm-sumup-checkout-block [data-sumup-id='submit_button']:active:not(:disabled),
+.crm-sumup-embedded-checkout [data-sumup-id='submit_button']:active:not(:disabled),
+.crm-sumup-replacement-widget [data-sumup-id='submit_button']:active:not(:disabled) {
+  color: #fff !important;
+}
+
+.crm-sumup-checkout-block [data-sumup-id='submit_button']:disabled,
+.crm-sumup-embedded-checkout [data-sumup-id='submit_button']:disabled,
+.crm-sumup-replacement-widget [data-sumup-id='submit_button']:disabled {
+  cursor: wait;
+  opacity: 0.65;
 }
 
 .crm-sumup-replacement-widget,

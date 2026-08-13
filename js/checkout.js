@@ -140,6 +140,7 @@
     container.appendChild(message);
 
     var tasks = [];
+    var walletCardSeparator = null;
     if (config.savedPaymentMethods.length) {
       var savedCards = document.createElement('section');
       savedCards.className = 'crm-sumup-saved-cards';
@@ -202,6 +203,10 @@
         }).then(function (methods) {
           if (methods.length) {
             buttons.mount({paymentMethods: methods, container: wallet});
+            if (walletCardSeparator) {
+              walletCardSeparator.hidden = false;
+              walletCardSeparator.style.removeProperty('display');
+            }
           }
           else if (!usesWidget) {
             showMessage(ts('No compatible wallet is available in this browser.'));
@@ -216,10 +221,12 @@
 
     if (usesWidget) {
       if (usesWallet) {
-        var separator = document.createElement('p');
-        separator.className = 'crm-sumup-payment-separator';
-        separator.textContent = ts('Or pay by card');
-        container.insertBefore(separator, message);
+        walletCardSeparator = document.createElement('p');
+        walletCardSeparator.className = 'crm-sumup-payment-separator';
+        walletCardSeparator.textContent = ts('Or pay by card');
+        walletCardSeparator.hidden = true;
+        walletCardSeparator.style.display = 'none';
+        container.insertBefore(walletCardSeparator, message);
       }
       var card = document.createElement('div');
       card.id = 'sumup-card-' + id;

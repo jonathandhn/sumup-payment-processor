@@ -114,11 +114,9 @@
       section.id = 'sumup-webform-checkout';
       section.className = 'crm-block crm-sumup-checkout-block';
       section.setAttribute('aria-busy', 'true');
-      var title = document.createElement('h2');
-      title.textContent = ts('Secure payment');
+      section.setAttribute('aria-label', ts('Payment'));
       var container = document.createElement('div');
       container.className = 'crm-sumup-embedded-checkout';
-      section.appendChild(title);
       section.appendChild(container);
 
       if (form) {
