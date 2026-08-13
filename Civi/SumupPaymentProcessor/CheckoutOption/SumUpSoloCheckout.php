@@ -104,6 +104,7 @@ if (
 
             return [
                 'description' => E::ts('The payment will be sent to the selected in-person SumUp terminal.'),
+                'template' => '~/afSumUp/sumup_solo_checkout.html',
                 'fields' => [[
                     'name' => 'sumup_reader_id',
                     'title' => E::ts('Payment terminal'),
@@ -114,9 +115,9 @@ if (
             ];
         }
 
-        public function getAfformModule(): ?string
+        public function getAfformModule(): string
         {
-            return null;
+            return 'afSumUp';
         }
 
         public function startCheckout(CheckoutSession $session): void
@@ -134,15 +135,91 @@ if (
             if (!$reader) {
                 throw new \CRM_Core_Exception(E::ts('The selected SumUp terminal is unavailable.'));
             }
-
-            throw new \CRM_Core_Exception(E::ts(
-                'The SumUp terminal selector is ready; starting the terminal payment is the next implementation slice.'
-            ));
+            $processor = $this->getProcessor($session);
+            $clientTransactionId = $processor->startSoloCheckoutForContribution(
+                $session->getContributionId(),
+                $readerId
+            );
+            $session->setCheckoutParam('sumup_reader_checkout_id', $clientTransactionId);
+            $session->setResponseItem(
+                'sumup_solo_checkout',
+                [
+                    'token' => $session->tokenise(),
+                    'message' => E::ts('Payment sent to the SumUp terminal. Complete it on the terminal.'),
+                ]
+            );
+            $session->setResponseItem('redirect', false);
+            $session->setResponseItem('message', false);
         }
 
         public function continueCheckout(CheckoutSession $session): void
         {
-            // Terminal completion will be implemented with Reader Checkout verification.
+            try {
+                $contribution = \Civi\Api4\Contribution::get(false)
+                    ->addSelect('contribution_status_id:name')
+                    ->addWhere('id', '=', $session->getContributionId())
+                    ->execute()
+                    ->single();
+                $status = (string) ($contribution['contribution_status_id:name'] ?? '');
+                if ($status === 'Completed') {
+                    $session->success();
+                    return;
+                }
+                if ($status === 'Cancelled') {
+                    $session->cancel();
+                    return;
+                }
+                if ($status === 'Failed') {
+                    $session->fail();
+                    return;
+                }
+
+                $clientTransactionId = (string) $session->getCheckoutParam('sumup_reader_checkout_id');
+                if (!\CRM_SumupPaymentProcessor_CheckoutService::isValidCheckoutId($clientTransactionId)) {
+                    throw new \CRM_Core_Exception(E::ts('The SumUp terminal transaction identifier is missing.'));
+                }
+                $result = $this->getProcessor($session)->verifyAndApplyReaderCheckout($clientTransactionId);
+            } catch (\SumUp\Exception\ApiException $exception) {
+                if (
+                    $exception->getCode() !== 404
+                    && !$session->getCheckoutParam('sumup_reader_status_error_logged')
+                ) {
+                    \Civi::log()->warning(
+                        'Unable to retrieve the SumUp terminal payment status: ' . $exception->getMessage()
+                    );
+                    $session->setCheckoutParam('sumup_reader_status_error_logged', true);
+                }
+                return;
+            } catch (\Throwable $exception) {
+                if (!$session->getCheckoutParam('sumup_reader_status_error_logged')) {
+                    \Civi::log()->warning(
+                        'Unable to retrieve the SumUp terminal payment status: ' . $exception->getMessage()
+                    );
+                    $session->setCheckoutParam('sumup_reader_status_error_logged', true);
+                }
+                return;
+            }
+
+            if ($result['status'] === 'PAID') {
+                $session->success();
+                return;
+            }
+            if ($result['status'] === 'FAILED') {
+                $session->fail();
+            }
+        }
+
+        private function getProcessor(CheckoutSession $session): \CRM_Core_Payment_Sumup
+        {
+            $connection = $this->getConnectionDetails($session->isTestMode());
+            $processor = \Civi\Payment\System::singleton()->getByName(
+                (string) $connection['name'],
+                $session->isTestMode()
+            );
+            if (!$processor instanceof \CRM_Core_Payment_Sumup) {
+                throw new \CRM_Core_Exception(E::ts('Unable to load the SumUp payment processor.'));
+            }
+            return $processor;
         }
 
         /** @return array<string, mixed> */

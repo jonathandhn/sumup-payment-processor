@@ -10,6 +10,7 @@ use SumUp\Services\ReadersCreateRequest;
 use SumUp\Services\ReadersListResponse;
 use SumUp\Services\ReadersUpdateRequest;
 use SumUp\SumUp;
+use SumUp\Types\CreateReaderCheckoutResponse;
 use SumUp\Types\Reader;
 use SumUp\Types\StatusResponse;
 
@@ -95,6 +96,62 @@ final class CRM_SumupPaymentProcessor_ReaderService
         return $this->client->readers()->getStatus(
             $this->merchantCode,
             $readerId,
+            $this->requestOptions()
+        );
+    }
+
+    public function get(string $readerId): Reader
+    {
+        if (!preg_match('/^rdr_[A-Za-z0-9]{20,}$/', $readerId)) {
+            throw new PaymentProcessorException(E::ts('Invalid SumUp reader identifier.'));
+        }
+        return $this->client->readers()->get(
+            $this->merchantCode,
+            $readerId,
+            $this->requestOptions()
+        );
+    }
+
+    public function createCheckout(
+        string $readerId,
+        int $amountMinor,
+        string $currency,
+        string $description,
+        string $returnUrl,
+        string $foreignTransactionId
+    ): CreateReaderCheckoutResponse {
+        $affiliateAppId = trim((string) Civi::settings()->get('sumup_affiliate_app_id'));
+        $affiliateKey = trim((string) Civi::settings()->get('sumup_affiliate_key'));
+        if (
+            !preg_match('/^rdr_[A-Za-z0-9]{20,}$/', $readerId)
+            || $amountMinor <= 0
+            || !preg_match('/^[A-Z]{3}$/', $currency)
+            || !str_starts_with($returnUrl, 'https://')
+            || !preg_match('/^[A-Za-z0-9._-]{3,100}$/', $affiliateAppId)
+            || $affiliateKey === ''
+            || strlen($affiliateKey) > 255
+            || !preg_match('/^CIVI-[1-9][0-9]*-[a-f0-9]{16}$/', $foreignTransactionId)
+        ) {
+            throw new PaymentProcessorException(E::ts('Invalid SumUp terminal checkout request.'));
+        }
+
+        return $this->client->readers()->createCheckout(
+            $this->merchantCode,
+            $readerId,
+            [
+                'total_amount' => [
+                    'currency' => $currency,
+                    'minor_unit' => 2,
+                    'value' => $amountMinor,
+                ],
+                'affiliate' => [
+                    'app_id' => $affiliateAppId,
+                    'key' => $affiliateKey,
+                    'foreign_transaction_id' => $foreignTransactionId,
+                ],
+                'description' => mb_substr($description, 0, 255),
+                'return_url' => $returnUrl,
+            ],
             $this->requestOptions()
         );
     }

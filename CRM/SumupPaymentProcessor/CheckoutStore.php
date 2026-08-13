@@ -17,10 +17,14 @@ final class CRM_SumupPaymentProcessor_CheckoutStore
         int $paymentProcessorId,
         float $amount,
         string $currency,
-        string $checkoutMode
+        string $checkoutMode,
+        ?string $readerId = null,
+        string $purpose = 'PAYMENT',
+        ?string $customerId = null,
+        ?string $setupCheckoutId = null
     ): void {
         self::assertIdentifiers($checkoutId, $checkoutReference, $contributionId, $paymentProcessorId);
-        if (!array_key_exists($checkoutMode, CRM_SumupPaymentProcessor_CheckoutMode::getOptions())) {
+        if (!CRM_SumupPaymentProcessor_CheckoutMode::isValidAttemptMode($checkoutMode)) {
             throw new PaymentProcessorException(E::ts('Invalid SumUp checkout mode.'));
         }
 
@@ -34,6 +38,10 @@ final class CRM_SumupPaymentProcessor_CheckoutStore
                 'amount' => round($amount, 2),
                 'currency' => strtoupper($currency),
                 'checkout_mode' => $checkoutMode,
+                'reader_id' => $readerId,
+                'purpose' => $purpose,
+                'customer_id' => $customerId,
+                'setup_checkout_id' => $setupCheckoutId,
                 'modified_date' => date('Y-m-d H:i:s'),
             ])
             ->execute();
@@ -50,7 +58,12 @@ final class CRM_SumupPaymentProcessor_CheckoutStore
      *   amount: float,
      *   currency: string,
      *   checkout_mode: string,
-     *   transaction_id: string|null
+     *   transaction_id: string|null,
+     *   reader_id: string|null,
+     *   purpose: string,
+     *   customer_id: string|null,
+     *   payment_token_id: int|null,
+     *   setup_checkout_id: string|null
      * }
      */
     public static function getByCheckoutId(string $checkoutId): array
@@ -70,7 +83,12 @@ final class CRM_SumupPaymentProcessor_CheckoutStore
                 'amount',
                 'currency',
                 'checkout_mode',
-                'transaction_id'
+                'transaction_id',
+                'reader_id',
+                'purpose',
+                'customer_id',
+                'payment_token_id',
+                'setup_checkout_id'
             )
             ->addWhere('checkout_id', '=', $checkoutId)
             ->execute()
@@ -93,7 +111,12 @@ final class CRM_SumupPaymentProcessor_CheckoutStore
      *   amount: float,
      *   currency: string,
      *   checkout_mode: string,
-     *   transaction_id: string|null
+     *   transaction_id: string|null,
+     *   reader_id: string|null,
+     *   purpose: string,
+     *   customer_id: string|null,
+     *   payment_token_id: int|null,
+     *   setup_checkout_id: string|null
      * }
      */
     public static function getLatestByContributionId(int $contributionId, int $paymentProcessorId): array
@@ -112,7 +135,12 @@ final class CRM_SumupPaymentProcessor_CheckoutStore
                 'amount',
                 'currency',
                 'checkout_mode',
-                'transaction_id'
+                'transaction_id',
+                'reader_id',
+                'purpose',
+                'customer_id',
+                'payment_token_id',
+                'setup_checkout_id'
             )
             ->addWhere('contribution_id', '=', $contributionId)
             ->addWhere('payment_processor_id', '=', $paymentProcessorId)
@@ -136,7 +164,12 @@ final class CRM_SumupPaymentProcessor_CheckoutStore
      *   amount: float,
      *   currency: string,
      *   checkout_mode: string,
-     *   transaction_id: string|null
+     *   transaction_id: string|null,
+     *   reader_id: string|null,
+     *   purpose: string,
+     *   customer_id: string|null,
+     *   payment_token_id: int|null,
+     *   setup_checkout_id: string|null
      * }
      */
     private static function normaliseRecord(array $record): array
@@ -154,7 +187,61 @@ final class CRM_SumupPaymentProcessor_CheckoutStore
             'transaction_id' => isset($record['transaction_id'])
                 ? (string) $record['transaction_id']
                 : null,
+            'reader_id' => isset($record['reader_id']) && $record['reader_id'] !== ''
+                ? (string) $record['reader_id']
+                : null,
+            'purpose' => (string) ($record['purpose'] ?? 'PAYMENT'),
+            'customer_id' => isset($record['customer_id']) && $record['customer_id'] !== ''
+                ? (string) $record['customer_id']
+                : null,
+            'payment_token_id' => !empty($record['payment_token_id']) ? (int) $record['payment_token_id'] : null,
+            'setup_checkout_id' => isset($record['setup_checkout_id']) && $record['setup_checkout_id'] !== ''
+                ? (string) $record['setup_checkout_id']
+                : null,
         ];
+    }
+
+    /**
+     * @return array<string, int|float|string|null>|null
+     */
+    public static function getBySetupCheckoutId(string $setupCheckoutId): ?array
+    {
+        $record = SumupCheckout::get(false)
+            ->addSelect('*')
+            ->addWhere('setup_checkout_id', '=', $setupCheckoutId)
+            ->setLimit(1)
+            ->execute()
+            ->first();
+        return $record ? self::normaliseRecord($record) : null;
+    }
+
+    /**
+     * @return array<string, int|float|string|null>|null
+     */
+    public static function getByCheckoutReference(string $checkoutReference): ?array
+    {
+        if (!preg_match('/^CIVI-[1-9][0-9]*-[a-f0-9]{16}$/', $checkoutReference)) {
+            throw new PaymentProcessorException(E::ts('Invalid SumUp checkout reference.'));
+        }
+        $record = SumupCheckout::get(false)
+            ->addSelect('*')
+            ->addWhere('checkout_reference', '=', $checkoutReference)
+            ->setLimit(1)
+            ->execute()
+            ->first();
+
+        return $record ? self::normaliseRecord($record) : null;
+    }
+
+    public static function attachPaymentToken(string $checkoutId, int $paymentTokenId): void
+    {
+        SumupCheckout::update(false)
+            ->addWhere('checkout_id', '=', $checkoutId)
+            ->setValues([
+                'payment_token_id' => $paymentTokenId,
+                'modified_date' => date('Y-m-d H:i:s'),
+            ])
+            ->execute();
     }
 
     public static function recordVerifiedState(

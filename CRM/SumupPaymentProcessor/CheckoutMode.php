@@ -12,6 +12,7 @@ final class CRM_SumupPaymentProcessor_CheckoutMode
     public const WIDGET_WALLET = 'widget_wallet';
     public const WALLET = 'wallet';
     public const HOSTED = 'hosted';
+    public const SOLO = 'solo';
 
     /**
      * @return array<string, string>
@@ -48,9 +49,32 @@ final class CRM_SumupPaymentProcessor_CheckoutMode
         return $mode === self::HOSTED;
     }
 
+    public static function isValidAttemptMode(string $mode): bool
+    {
+        return $mode === self::SOLO || array_key_exists($mode, self::getOptions());
+    }
+
     public static function getMerchantCountryCode(): string
     {
-        return strtoupper((string) Civi::settings()->get('sumup_merchant_country_code'));
+        $override = strtoupper(trim((string) Civi::settings()->get('sumup_merchant_country_code')));
+        if ($override !== '') {
+            return $override;
+        }
+
+        $countryCode = CRM_Core_DAO::singleValueQuery(
+            'SELECT country.iso_code
+               FROM civicrm_domain domain_record
+               INNER JOIN civicrm_address address_record
+                       ON address_record.contact_id = domain_record.contact_id
+                      AND address_record.is_primary = 1
+               INNER JOIN civicrm_country country ON country.id = address_record.country_id
+              WHERE domain_record.id = %1
+              ORDER BY address_record.id ASC
+              LIMIT 1',
+            [1 => [(int) CRM_Core_Config::domainID(), 'Integer']]
+        );
+
+        return strtoupper(trim(is_string($countryCode) ? $countryCode : ''));
     }
 
     public static function getLocale(): string
