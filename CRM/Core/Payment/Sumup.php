@@ -817,9 +817,6 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             $this->service()->ensureCustomer($customerId);
         } elseif (!$hosted) {
             $savedCards = $this->getSavedCardsForContact((int) $contribution['contact_id']);
-            if ($savedCards !== []) {
-                $customerId = $this->recurringCustomerId((int) $contribution['contact_id']);
-            }
         }
         $providerDescription = trim((string) $description);
         if ($providerDescription === '') {
@@ -1147,8 +1144,8 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             if ($contributionRecurId <= 0 || $contactId <= 0 || $customerId === '') {
                 throw new PaymentProcessorException(E::ts('The SumUp recurring setup is not linked to CiviCRM.'));
             }
-            if (!hash_equals($this->recurringCustomerId($contactId), $customerId)) {
-                throw new PaymentProcessorException(E::ts('The SumUp customer does not match the contribution.'));
+            if (!CRM_SumupPaymentProcessor_TokenCustomerStore::isValidCustomerId($customerId)) {
+                throw new PaymentProcessorException(E::ts('The SumUp customer is invalid.'));
             }
 
             $token = trim((string) ($setupCheckout->paymentInstrument->token ?? ''));
@@ -1156,7 +1153,7 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
                 throw new PaymentProcessorException(E::ts('SumUp did not return a reusable payment token.'));
             }
             $instrument = $this->service()->getPaymentInstrument($customerId, $token);
-            $paymentTokenId = $this->persistPaymentToken($token, $instrument, $contactId);
+            $paymentTokenId = $this->persistPaymentToken($token, $instrument, $contactId, $customerId);
             CRM_SumupPaymentProcessor_CheckoutStore::attachPaymentToken($setupCheckoutId, $paymentTokenId);
             ContributionRecur::update(false)
                 ->addWhere('id', '=', $contributionRecurId)
@@ -1246,7 +1243,8 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
     private function persistPaymentToken(
         string $token,
         \SumUp\Types\PaymentInstrumentResponse $instrument,
-        int $contactId
+        int $contactId,
+        string $customerId
     ): int {
         $maskedAccountNumber = $this->maskedAccountNumber($instrument);
         $existing = PaymentToken::get(false)
@@ -1258,15 +1256,17 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             ->execute()
             ->first();
         if ($existing) {
+            $paymentTokenId = (int) $existing['id'];
             if ($maskedAccountNumber !== null) {
                 PaymentToken::update(false)
-                    ->addWhere('id', '=', (int) $existing['id'])
+                    ->addWhere('id', '=', $paymentTokenId)
                     ->setValues([
                         'masked_account_number' => $maskedAccountNumber,
                     ])
                     ->execute();
             }
-            return (int) $existing['id'];
+            CRM_SumupPaymentProcessor_TokenCustomerStore::remember($paymentTokenId, $customerId);
+            return $paymentTokenId;
         }
         $result = PaymentToken::create(false)
             ->setValues([
@@ -1277,7 +1277,9 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             ])
             ->execute()
             ->single();
-        return (int) $result['id'];
+        $paymentTokenId = (int) $result['id'];
+        CRM_SumupPaymentProcessor_TokenCustomerStore::remember($paymentTokenId, $customerId);
+        return $paymentTokenId;
     }
 
     private function maskedAccountNumber(\SumUp\Types\PaymentInstrumentResponse $instrument): ?string
@@ -1310,35 +1312,59 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             return [];
         }
 
-        try {
-            $instruments = $this->service()->listPaymentInstruments($this->recurringCustomerId($contactId));
-        } catch (Throwable $exception) {
-            Civi::log()->warning(sprintf(
-                'Unable to list SumUp saved cards for contact %d and processor %d: %s',
-                $contactId,
-                $this->getProcessorId(),
-                $exception->getMessage()
-            ));
-            return [];
-        }
-
-        $remoteByToken = [];
-        foreach ($instruments as $instrument) {
-            if ($instrument->active === false) {
+        $tokensByCustomer = [];
+        foreach ($localTokens as $localToken) {
+            $paymentTokenId = (int) $localToken['id'];
+            $customerId = CRM_SumupPaymentProcessor_TokenCustomerStore::get($paymentTokenId);
+            if ($customerId === null) {
+                Civi::log()->warning(sprintf(
+                    'SumUp saved card %d has no durable remote customer mapping.',
+                    $paymentTokenId
+                ));
                 continue;
             }
-            $token = trim((string) $instrument->token);
-            if ($token !== '') {
-                $remoteByToken[$token] = $instrument;
+            $tokensByCustomer[$customerId][] = $localToken;
+        }
+
+        $remoteByPaymentTokenId = [];
+        foreach ($tokensByCustomer as $customerId => $customerTokens) {
+            try {
+                $instruments = $this->service()->listPaymentInstruments($customerId);
+            } catch (Throwable $exception) {
+                Civi::log()->warning(sprintf(
+                    'Unable to list SumUp saved cards for contact %d, customer %s and processor %d: %s',
+                    $contactId,
+                    $customerId,
+                    $this->getProcessorId(),
+                    $exception->getMessage()
+                ));
+                continue;
+            }
+            $remoteByToken = [];
+            foreach ($instruments as $instrument) {
+                if ($instrument->active === false) {
+                    continue;
+                }
+                $token = trim((string) $instrument->token);
+                if ($token !== '') {
+                    $remoteByToken[$token] = $instrument;
+                }
+            }
+            foreach ($customerTokens as $customerToken) {
+                $providerToken = trim((string) ($customerToken['token'] ?? ''));
+                if ($providerToken !== '' && isset($remoteByToken[$providerToken])) {
+                    $remoteByPaymentTokenId[(int) $customerToken['id']] = $remoteByToken[$providerToken];
+                }
             }
         }
         $cards = [];
         foreach ($localTokens as $localToken) {
+            $paymentTokenId = (int) $localToken['id'];
             $token = trim((string) ($localToken['token'] ?? ''));
-            if ($token === '' || !isset($remoteByToken[$token])) {
+            if ($token === '' || !isset($remoteByPaymentTokenId[$paymentTokenId])) {
                 continue;
             }
-            $maskedAccountNumber = $this->maskedAccountNumber($remoteByToken[$token]);
+            $maskedAccountNumber = $this->maskedAccountNumber($remoteByPaymentTokenId[$paymentTokenId]);
             if ($maskedAccountNumber === null) {
                 $maskedAccountNumber = trim((string) ($localToken['masked_account_number'] ?? ''));
             }
@@ -1352,7 +1378,7 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
                     ->execute();
             }
             $cards[] = [
-                'payment_token_id' => (int) $localToken['id'],
+                'payment_token_id' => $paymentTokenId,
                 'masked_account_number' => $maskedAccountNumber,
             ];
         }
@@ -1398,7 +1424,7 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
         if ($providerToken === '') {
             throw new PaymentProcessorException(E::ts('This saved SumUp card has no provider token.'));
         }
-        $customerId = $this->recurringCustomerId($contactId);
+        $customerId = $this->customerIdForPaymentToken($paymentTokenId);
         $remoteInstrument = null;
         foreach ($this->service()->listPaymentInstruments($customerId) as $instrument) {
             if (hash_equals($providerToken, trim((string) $instrument->token))) {
@@ -1432,6 +1458,17 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             (int) $this->_paymentProcessor['id'],
             $contactId
         );
+    }
+
+    private function customerIdForPaymentToken(int $paymentTokenId): string
+    {
+        $customerId = CRM_SumupPaymentProcessor_TokenCustomerStore::get($paymentTokenId);
+        if ($customerId === null) {
+            throw new PaymentProcessorException(E::ts(
+                'The saved SumUp card is missing its remote customer association.'
+            ));
+        }
+        return $customerId;
     }
 
     /**
@@ -1490,7 +1527,7 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             throw new PaymentProcessorException(E::ts('The recurring contribution has no valid SumUp card token.'));
         }
 
-        $customerId = $this->recurringCustomerId($contactId);
+        $customerId = $this->customerIdForPaymentToken($paymentTokenId);
         $reference = sprintf(
             'CIVI-%d-%s',
             $contributionId,
@@ -1736,11 +1773,11 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             throw new PaymentProcessorException(E::ts('The SumUp replacement session is invalid.'));
         }
         $registry = CRM_SumupPaymentProcessor_CheckoutStore::getByCheckoutId($checkoutId);
-        $customerId = $this->recurringCustomerId($contactId);
+        $customerId = trim((string) ($registry['customer_id'] ?? ''));
         if (
             $registry['purpose'] !== 'CARD_REPLACEMENT'
             || $registry['payment_processor_id'] !== $this->getProcessorId()
-            || !hash_equals((string) $registry['customer_id'], $customerId)
+            || !CRM_SumupPaymentProcessor_TokenCustomerStore::isValidCustomerId($customerId)
         ) {
             throw new PaymentProcessorException(E::ts('The SumUp replacement checkout is inconsistent.'));
         }
@@ -1774,7 +1811,7 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             throw new PaymentProcessorException(E::ts('SumUp did not return a reusable replacement card.'));
         }
         $instrument = $this->service()->getPaymentInstrument($customerId, $token);
-        $newPaymentTokenId = $this->persistPaymentToken($token, $instrument, $contactId);
+        $newPaymentTokenId = $this->persistPaymentToken($token, $instrument, $contactId, $customerId);
         $oldPaymentTokenId = (int) $schedule['payment_token_id'];
         $switchLock = CRM_Core_Lock::createScopedLock('data.sumup.remediation.switch.' . $contributionRecurId);
         if (!$switchLock->acquire()) {
@@ -1811,7 +1848,7 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
         }
 
         if ($oldPaymentTokenId !== $newPaymentTokenId) {
-            $this->deactivateUnusedPaymentToken($oldPaymentTokenId, $customerId);
+            $this->deactivateUnusedPaymentToken($oldPaymentTokenId);
         }
         $last4 = trim((string) ($instrument->card->last4Digits ?? ''));
         return [
@@ -1887,7 +1924,7 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
         ];
     }
 
-    private function deactivateUnusedPaymentToken(int $paymentTokenId, string $customerId): void
+    private function deactivateUnusedPaymentToken(int $paymentTokenId): void
     {
         $inUse = ContributionRecur::get(false)
             ->addSelect('id')
@@ -1909,6 +1946,7 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             return;
         }
         try {
+            $customerId = $this->customerIdForPaymentToken($paymentTokenId);
             $this->service()->deactivatePaymentInstrument($customerId, (string) $paymentToken['token']);
         } catch (Throwable $exception) {
             Civi::log()->warning(sprintf(
@@ -2135,11 +2173,12 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             ->single();
         $contactId = (int) $contribution['contact_id'];
         $providerToken = trim((string) $paymentToken['token']);
-        $customerId = $this->recurringCustomerId($contactId);
+        $customerId = $this->customerIdForPaymentToken($paymentTokenId);
+        $registryCustomerId = trim((string) ($registry['customer_id'] ?? ''));
         if (
             (int) $paymentToken['contact_id'] !== $contactId
             || (int) $paymentToken['payment_processor_id'] !== $this->getProcessorId()
-            || !hash_equals((string) ($registry['customer_id'] ?? ''), $customerId)
+            || ($registryCustomerId !== '' && !hash_equals($registryCustomerId, $customerId))
             || !preg_match('/^[A-Za-z0-9_-]{8,255}$/', $providerToken)
         ) {
             throw new PaymentProcessorException(E::ts('The selected SumUp card does not belong to this contribution.'));

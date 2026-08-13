@@ -127,6 +127,7 @@ namespace {
             bool $force = false
         ): mixed { return null; }
         public function fetch(): bool { return false; }
+        public function fetchValue(): mixed { return null; }
     }
     class CRM_Core_DAO_ActionSchedule extends CRM_Core_DAO {
         public mixed $entity_value;
