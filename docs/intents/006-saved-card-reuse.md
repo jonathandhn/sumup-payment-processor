@@ -19,6 +19,12 @@ is exposed to the browser or placed in a URL.
   CiviCRM contribution, SumUp checkout, processor and expiry. The selected
   local `PaymentToken` is then checked against the contribution contact and
   processor on the server.
+- A Pending contribution does not necessarily expose a
+  `Contribution.payment_processor_id` before its first `Payment` exists. The
+  signed `SumupCheckout` registry is the primary processor association at this
+  stage. An explicit, non-zero contribution processor may be checked for a
+  conflict, but an absent value must not reject an otherwise consistent saved
+  card payment.
 - Browser data contains only the local token ID, card brand and last four
   digits. Provider tokens and API credentials remain server-side.
 
@@ -56,6 +62,9 @@ is exposed to the browser or placed in a URL.
 ## Failure and recovery
 
 - Missing, inactive or mismatched instruments are rejected before processing.
+- An absent processor value on a not-yet-paid contribution is not treated as a
+  mismatch when the signed checkout registry, contact, customer and token all
+  identify the same SumUp processor.
 - Repeated calls reuse the registered checkout and are idempotent at CiviCRM's
   payment layer.
 - A transport failure leaves the contribution and checkout Pending for webhook

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Civi\Api4;
 
 use Civi\Api4\Action\SumupPaymentMethod\ContinueReplacement;
+use Civi\Api4\Action\SumupPaymentMethod\DeactivateCard;
 use Civi\Api4\Action\SumupPaymentMethod\Get;
 use Civi\Api4\Action\SumupPaymentMethod\PayContribution;
 use Civi\Api4\Action\SumupPaymentMethod\ListCards;
@@ -28,6 +29,7 @@ final class SumupPaymentMethod extends AbstractEntity
             'listCards' => ['make online contributions'],
             'startReplacement' => ['make online contributions'],
             'continueReplacement' => ['make online contributions'],
+            'deactivateCard' => ['make online contributions'],
             'payContribution' => ['make online contributions'],
             'sendManagementLink' => ['access CiviContribute'],
             'meta' => ['make online contributions'],
@@ -55,6 +57,12 @@ final class SumupPaymentMethod extends AbstractEntity
     public static function continueReplacement(bool $checkPermissions = true): ContinueReplacement
     {
         return (new ContinueReplacement(static::getEntityName(), __FUNCTION__))
+            ->setCheckPermissions($checkPermissions);
+    }
+
+    public static function deactivateCard(bool $checkPermissions = true): DeactivateCard
+    {
+        return (new DeactivateCard(static::getEntityName(), __FUNCTION__))
             ->setCheckPermissions($checkPermissions);
     }
 

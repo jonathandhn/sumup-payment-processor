@@ -65,6 +65,8 @@ final class Get extends ActionBase
             $remediation = \CRM_SumupPaymentProcessor_RemediationStore::getOpen((int) $schedule['id']);
             $reason = (string) ($remediation['reason'] ?? '');
             $requiresCustomerAction = in_array($reason, ['sca_required', 'payment_method_failed'], true);
+            $nextPayment = trim((string) ($schedule['next_sched_contribution_date'] ?? ''));
+            $isOperational = !empty($paymentToken['id']) && $nextPayment !== '';
             $result[] = [
                 'recur_id' => (int) $schedule['id'],
                 'amount' => (float) $schedule['amount'],
@@ -79,9 +81,13 @@ final class Get extends ActionBase
                 'start_date' => (string) ($schedule['start_date'] ?? ''),
                 'end_date' => (string) ($schedule['end_date'] ?? ''),
                 'installments' => (int) ($schedule['installments'] ?? 0),
-                'next_sched_contribution_date' => (string) $schedule['next_sched_contribution_date'],
+                'next_sched_contribution_date' => $nextPayment,
                 'is_test' => (bool) $schedule['is_test'],
                 'masked_account_number' => (string) ($paymentToken['masked_account_number'] ?? ''),
+                'is_operational' => $isOperational,
+                'configuration_message' => $isOperational
+                    ? ''
+                    : E::ts('This recurring payment is not ready: no saved card or next payment is configured.'),
                 'requires_customer_action' => $requiresCustomerAction,
                 'remediation_reason' => $reason,
                 'remediation_message' => self::remediationMessage($reason),

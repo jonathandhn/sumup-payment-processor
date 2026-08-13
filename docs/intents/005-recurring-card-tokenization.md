@@ -37,6 +37,13 @@ checkout processed with the saved token is authoritatively `PAID`.
   remains empty because the SumUp payment-instrument response does not expose
   an expiry date.
 - `ContributionRecur.payment_token_id` points to the verified active token.
+- A schedule is operational only when it is in progress, has a verified
+  `payment_token_id` and has a next scheduled contribution date. The member
+  interface must not label an incomplete schedule as active or claim that it
+  continues until cancellation.
+- `installments = 1` is a finite schedule containing only the initial payment;
+  it is correctly completed after that payment. An open-ended recurring plan
+  uses `installments = 0` and must receive a next scheduled contribution date.
 - The SumUp customer ID is deterministic and merchant-scoped; it contains no
   name, email, telephone number or other personal data.
 - Every setup and charge checkout remains registered in `SumupCheckout`, with
@@ -50,6 +57,9 @@ checkout processed with the saved token is authoritatively `PAID`.
   charge path is implemented.
 - Offer recurrence through the Card Widget only. Hosted Checkout, wallets and
   Solo do not silently substitute for the documented tokenization UI.
+- The server marks recurring setup and card-replacement checkout
+  configurations as wallet-ineligible. The browser must not mount Swift
+  Checkout for them even when the processor's general mode includes wallets.
 - On a recurring form, the Widget checkout creates the reusable card contract
   before charging the initial contribution.
 - A one-off checkout stays unchanged and does not create a customer or token

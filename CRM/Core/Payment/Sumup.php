@@ -1324,6 +1324,9 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
 
         $remoteByToken = [];
         foreach ($instruments as $instrument) {
+            if ($instrument->active === false) {
+                continue;
+            }
             $token = trim((string) $instrument->token);
             if ($token !== '') {
                 $remoteByToken[$token] = $instrument;
@@ -1354,6 +1357,68 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             ];
         }
         return $cards;
+    }
+
+    /**
+     * Deactivate a reusable SumUp card which is not used by an active schedule.
+     *
+     * @return array{payment_token_id: int, masked_account_number: string, deactivated: bool}
+     */
+    public function deactivateSavedCard(int $paymentTokenId, int $contactId): array
+    {
+        if ($paymentTokenId <= 0 || $contactId <= 0) {
+            throw new PaymentProcessorException(E::ts('Invalid saved card identifier.'));
+        }
+        $paymentToken = PaymentToken::get(false)
+            ->addSelect('id', 'token', 'masked_account_number')
+            ->addWhere('id', '=', $paymentTokenId)
+            ->addWhere('contact_id', '=', $contactId)
+            ->addWhere('payment_processor_id', '=', $this->getProcessorId())
+            ->execute()
+            ->first();
+        if (!$paymentToken) {
+            throw new PaymentProcessorException(E::ts('This saved SumUp card does not exist.'));
+        }
+
+        $activeSchedule = ContributionRecur::get(false)
+            ->addSelect('id')
+            ->addWhere('payment_token_id', '=', $paymentTokenId)
+            ->addWhere('contribution_status_id:name', '=', 'In Progress')
+            ->setLimit(1)
+            ->execute()
+            ->first();
+        if ($activeSchedule) {
+            throw new PaymentProcessorException(E::ts(
+                'This card is used by an active recurring payment. '
+                . 'Replace the card or stop the recurring payment first.'
+            ));
+        }
+
+        $providerToken = trim((string) $paymentToken['token']);
+        if ($providerToken === '') {
+            throw new PaymentProcessorException(E::ts('This saved SumUp card has no provider token.'));
+        }
+        $customerId = $this->recurringCustomerId($contactId);
+        $remoteInstrument = null;
+        foreach ($this->service()->listPaymentInstruments($customerId) as $instrument) {
+            if (hash_equals($providerToken, trim((string) $instrument->token))) {
+                $remoteInstrument = $instrument;
+                break;
+            }
+        }
+        if ($remoteInstrument !== null && $remoteInstrument->active !== false) {
+            $this->service()->deactivatePaymentInstrument($customerId, $providerToken);
+        }
+
+        PaymentToken::delete(false)
+            ->addWhere('id', '=', $paymentTokenId)
+            ->execute();
+
+        return [
+            'payment_token_id' => $paymentTokenId,
+            'masked_account_number' => (string) ($paymentToken['masked_account_number'] ?? ''),
+            'deactivated' => true,
+        ];
     }
 
     private function recurringCustomerId(int $contactId): string
@@ -2059,7 +2124,8 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             ->addWhere('is_test', 'IN', [true, false])
             ->execute()
             ->single();
-        if ((int) ($contribution['payment_processor_id'] ?? 0) !== $this->getProcessorId()) {
+        $configuredProcessorId = (int) ($contribution['payment_processor_id'] ?? 0);
+        if ($configuredProcessorId > 0 && $configuredProcessorId !== $this->getProcessorId()) {
             throw new PaymentProcessorException(E::ts('The contribution uses another payment processor.'));
         }
         $paymentToken = PaymentToken::get(false)

@@ -11,19 +11,26 @@
         var query = new URL(window.location.href).searchParams;
         var contactId = Number(this.contactId || query.get('cid') || query.get('cid1'));
         var checksum = query.get('cs') || '';
-        var access = contactId > 0 ? {contactId: contactId} : {};
+        this.access = contactId > 0 ? {contactId: contactId} : {};
         if (checksum) {
-          access.checksum = checksum;
+          this.access.checksum = checksum;
         }
+        this.load();
+      };
+
+      this.load = () => {
         this.loading = true;
+        this.error = '';
         Promise.all([
-          CRM.api4('SumupPaymentMethod', 'listCards', access),
-          CRM.api4('SumupPaymentMethod', 'get', access),
+          CRM.api4('SumupPaymentMethod', 'listCards', this.access),
+          CRM.api4('SumupPaymentMethod', 'get', this.access),
         ]).then((responses) => {
-            this.cards = responses[0];
+            this.cards = this.groupCards(responses[0]);
             var methods = responses[1];
             methods.forEach((method) => {
-              method.next_payment_display = CRM.utils.formatDate(method.next_sched_contribution_date);
+              method.next_payment_display = method.next_sched_contribution_date
+                ? CRM.utils.formatDate(method.next_sched_contribution_date)
+                : '';
               method.start_date_display = method.start_date ? CRM.utils.formatDate(method.start_date) : '';
               method.end_date_display = method.end_date ? CRM.utils.formatDate(method.end_date) : '';
             });
@@ -34,6 +41,54 @@
           })
           .finally(() => {
             this.loading = false;
+            $scope.$applyAsync();
+          });
+      };
+
+      this.groupCards = (cards) => {
+        var groups = new Map();
+        cards.forEach((card) => {
+          var key = [
+            card.payment_processor_id,
+            card.is_test ? 'test' : 'live',
+            card.masked_account_number,
+          ].join('|');
+          if (!groups.has(key)) {
+            groups.set(key, {
+              masked_account_number: card.masked_account_number,
+              payment_processor_title: card.payment_processor_title,
+              is_test: card.is_test,
+              authorisations: [],
+              recurring_payment_count: 0,
+            });
+          }
+          var group = groups.get(key);
+          group.authorisations.push(card);
+          group.recurring_payment_count += card.recurring_payment_count;
+        });
+        return Array.from(groups.values());
+      };
+
+      this.deactivateCard = (authorisation) => {
+        if (!authorisation.can_deactivate || authorisation.deactivating) {
+          return;
+        }
+        if (!window.confirm(ts(
+          'Remove this saved card authorisation? It will no longer be available for future SumUp payments.'
+        ))) {
+          return;
+        }
+        authorisation.deactivating = true;
+        var request = Object.assign({}, this.access, {
+          paymentTokenId: authorisation.payment_token_id,
+        });
+        CRM.api4('SumupPaymentMethod', 'deactivateCard', request)
+          .then(() => this.load())
+          .catch((failure) => {
+            authorisation.deactivate_error = failure.error_message || ts('Unable to remove the saved card.');
+          })
+          .finally(() => {
+            authorisation.deactivating = false;
             $scope.$applyAsync();
           });
       };

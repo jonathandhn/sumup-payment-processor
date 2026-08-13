@@ -13,13 +13,51 @@
       {{:: ts('No active SumUp card is saved for this contact.') }}
     </div>
     <ul class="crm-sumup-card-list" ng-if="$ctrl.cards.length">
-      <li ng-repeat="card in $ctrl.cards track by card.payment_token_id">
+      <li ng-repeat="card in $ctrl.cards track by $index">
         <i class="crm-i fa-credit-card crm-sumup-card-icon" aria-hidden="true"></i>
         <span class="crm-sumup-card-list__details">
           <strong>{{card.masked_account_number}}</strong>
           <small>{{card.payment_processor_title}}</small>
+          <small ng-if="card.authorisations.length === 1">
+            {{:: ts('1 saved authorisation') }} ·
+            {{card.recurring_payment_count === 1
+              ? ts('1 active recurring payment')
+              : ts('%1 active recurring payments', {1: card.recurring_payment_count})}}
+          </small>
+          <small ng-if="card.authorisations.length > 1">
+            {{:: ts('%1 saved authorisations', {1: card.authorisations.length}) }} ·
+            {{card.recurring_payment_count === 1
+              ? ts('1 active recurring payment')
+              : ts('%1 active recurring payments', {1: card.recurring_payment_count})}}
+          </small>
         </span>
         <span class="crm-sumup-badge crm-sumup-badge--test" ng-if="card.is_test">{{:: ts('Test / Sandbox') }}</span>
+        <details class="crm-sumup-card-authorisations">
+          <summary>{{:: ts('Authorisation details') }}</summary>
+          <div class="crm-sumup-card-authorisation"
+               ng-repeat="authorisation in card.authorisations track by authorisation.payment_token_id">
+            <div>
+              <strong>{{:: ts('Saved authorisation #%1', {1: authorisation.payment_token_id}) }}</strong>
+              <span ng-if="!authorisation.recurring_payments.length">
+                {{:: ts('Not used by an active recurring payment.') }}
+              </span>
+              <span ng-repeat="payment in authorisation.recurring_payments track by payment.recur_id">
+                {{:: ts('Recurring payment #%1', {1: payment.recur_id}) }} —
+                {{payment.amount_display}} /
+                {{payment.frequency_interval}} {{payment.frequency_unit_label}}
+              </span>
+            </div>
+            <button class="button btn btn-danger" type="button"
+                    ng-if="authorisation.can_deactivate"
+                    ng-disabled="authorisation.deactivating"
+                    ng-click="$ctrl.deactivateCard(authorisation)">
+              {{authorisation.deactivating ? ts('Removing…') : ts('Remove saved card') }}
+            </button>
+            <div class="messages error" ng-if="authorisation.deactivate_error">
+              {{authorisation.deactivate_error}}
+            </div>
+          </div>
+        </details>
       </li>
     </ul>
   </section>
@@ -42,14 +80,19 @@
         <h2>{{method.amount_display}} <span>/ {{method.frequency_interval}} {{method.frequency_unit_label}}</span></h2>
       </div>
       <div class="crm-sumup-badges">
-        <span class="crm-sumup-badge crm-sumup-badge--active">{{:: ts('Active') }}</span>
+        <span class="crm-sumup-badge crm-sumup-badge--active" ng-if="method.is_operational">
+          {{:: ts('Active') }}
+        </span>
+        <span class="crm-sumup-badge crm-sumup-badge--warning" ng-if="!method.is_operational">
+          {{:: ts('Incomplete configuration') }}
+        </span>
         <span class="crm-sumup-badge crm-sumup-badge--test" ng-if="method.is_test">{{:: ts('Test / Sandbox') }}</span>
       </div>
     </header>
     <dl class="crm-sumup-summary">
       <div>
         <dt>{{:: ts('Payment card') }}</dt>
-        <dd>{{method.masked_account_number || ts('Saved card') }}</dd>
+        <dd>{{method.masked_account_number || ts('No saved card') }}</dd>
       </div>
       <div>
         <dt>{{:: ts('Start date') }}</dt>
@@ -57,7 +100,7 @@
       </div>
       <div>
         <dt>{{:: ts('Next payment') }}</dt>
-        <dd>{{method.next_payment_display}}</dd>
+        <dd>{{method.next_payment_display || ts('Not scheduled')}}</dd>
       </div>
       <div ng-if="method.end_date_display">
         <dt>{{:: ts('End date') }}</dt>
@@ -67,11 +110,14 @@
         <dt>{{:: ts('Number of installments') }}</dt>
         <dd>{{method.installments}}</dd>
       </div>
-      <div ng-if="!method.end_date_display && !method.installments">
+      <div ng-if="method.is_operational && !method.end_date_display && !method.installments">
         <dt>{{:: ts('Duration') }}</dt>
         <dd>{{:: ts('Continues until cancelled') }}</dd>
       </div>
     </dl>
+    <div class="messages warning" ng-if="!method.is_operational">
+      {{method.configuration_message}}
+    </div>
     <div class="messages warning" ng-if="method.requires_customer_action && method.remediation_message">
       {{method.remediation_message}}
     </div>

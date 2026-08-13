@@ -364,6 +364,7 @@ namespace Civi\Api4 {
         public static function get(bool $checkPermissions = true): self { return new self(); }
         public static function create(bool $checkPermissions = true): self { return new self(); }
         public static function update(bool $checkPermissions = true): self { return new self(); }
+        public static function delete(bool $checkPermissions = true): self { return new self(); }
     }
     class Payment extends Query {
         public static function get(bool $checkPermissions = true): self { return new self(); }
