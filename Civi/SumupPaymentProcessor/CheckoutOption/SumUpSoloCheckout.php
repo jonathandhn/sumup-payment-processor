@@ -77,7 +77,7 @@ if (
          */
         public function getAfformSettings(bool $testMode): array
         {
-            $connection = $this->getConnectionDetails($testMode);
+            $connection = $this->getDisplayConnection();
             $readers = SumupReader::get(false)
                 ->addSelect('id', 'canonical_name', 'site_code', 'device_status', 'device_state')
                 ->addWhere('payment_processor_id', '=', (int) $connection['id'])
