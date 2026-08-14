@@ -31,7 +31,7 @@
       var pollStartedAt = 0;
       var pollTimer = null;
       var countdownTimer = null;
-      var maxWaitTimeMs = 180000; // 3 minutes
+      var maxWaitTimeMs = 60000; // 60 seconds (hardware Solo POS timeout)
 
       this.active = false;
       this.waiting = false;

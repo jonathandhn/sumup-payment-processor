@@ -142,17 +142,23 @@ if (
             );
             $session->setCheckoutParam('sumup_reader_checkout_id', $clientTransactionId);
 
-            $qrUrl = \CRM_Utils_System::url(
-                'civicrm/sumup/widget',
-                [
-                    'contribution_id' => $session->getContributionId(),
-                    'token' => $session->tokenise(),
-                ],
-                true,
-                null,
-                false,
-                true
-            );
+            $returnUrl = $session->getLandingUrl();
+            $cancelUrl = $session->getLandingUrl();
+
+            try {
+                $processor->startEmbeddedCheckoutForContribution(
+                    $session->getContributionId(),
+                    $returnUrl,
+                    $cancelUrl
+                );
+                $qrUrl = $processor->buildSignedWidgetUrl(
+                    $session->getContributionId(),
+                    $returnUrl,
+                    $cancelUrl
+                );
+            } catch (\Throwable) {
+                $qrUrl = '';
+            }
 
             $session->setResponseItem(
                 'sumup_solo_checkout',
