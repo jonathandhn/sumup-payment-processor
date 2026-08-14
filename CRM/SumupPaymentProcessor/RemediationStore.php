@@ -85,6 +85,25 @@ final class CRM_SumupPaymentProcessor_RemediationStore
         return $record;
     }
 
+    /** @return list<array<string, mixed>> */
+    public static function getByReplacementCheckoutId(string $checkoutId): array
+    {
+        if (!CRM_SumupPaymentProcessor_CheckoutService::isValidCheckoutId($checkoutId)) {
+            throw new PaymentProcessorException(E::ts('Invalid SumUp replacement checkout identifier.'));
+        }
+        $records = SumupRemediation::get(false)
+            ->addSelect('*')
+            ->addWhere('replacement_checkout_id', '=', $checkoutId)
+            ->addWhere('state', '=', 'replacement_started')
+            ->addOrderBy('contribution_recur_id', 'ASC')
+            ->execute();
+        $result = [];
+        foreach ($records as $record) {
+            $result[] = $record;
+        }
+        return $result;
+    }
+
     public static function attachReplacementCheckout(int $remediationId, string $checkoutId): void
     {
         SumupRemediation::update(false)

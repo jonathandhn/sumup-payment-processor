@@ -30,14 +30,13 @@ if (
 
         public function getLabel(): string
         {
-            return E::ts('%1 (Solo terminal)', [1 => $this->getConnectionLabel()]);
+            return E::ts('%1 (Solo terminal / Kiosk)', [1 => $this->getConnectionLabel()]);
         }
 
         public function getFrontendLabel(): string
         {
-            $connection = $this->getDisplayConnection();
-            return E::ts('%1 - payment on terminal', [
-                1 => (string) ($connection['frontend_title'] ?? $connection['title'] ?? 'SumUp'),
+            return E::ts('%1 (Payment on Solo terminal)', [
+                1 => $this->getConnectionLabel(),
             ]);
         }
 
@@ -63,6 +62,11 @@ if (
             return !empty($connection['id']) ? (int) $connection['id'] : null;
         }
 
+        public function supportsRecurring(): bool
+        {
+            return false;
+        }
+
         public function validate(AfformValidateEvent $event): void
         {
             // The selected reader is revalidated after the contribution exists.
@@ -73,45 +77,9 @@ if (
          */
         public function getAfformSettings(bool $testMode): array
         {
-            $connection = $this->getConnectionDetails($testMode);
-            $readers = SumupReader::get(false)
-                ->addSelect('id', 'canonical_name', 'site_code', 'device_status', 'device_state')
-                ->addWhere('payment_processor_id', '=', (int) $connection['id'])
-                ->addWhere('pairing_status', '=', 'paired')
-                ->addWhere('is_active', '=', true)
-                ->addOrderBy('site_code', 'ASC')
-                ->addOrderBy('canonical_name', 'ASC')
-                ->execute();
-            $options = [];
-            foreach ($readers as $reader) {
-                $state = trim((string) ($reader['device_state'] ?? $reader['device_status'] ?? ''));
-                $options[] = [
-                    'id' => (string) $reader['id'],
-                    'label' => sprintf(
-                        '%s - %s%s',
-                        (string) $reader['site_code'],
-                        (string) $reader['canonical_name'],
-                        $state !== '' ? ' (' . $state . ')' : ''
-                    ),
-                ];
-            }
-
-            if ($options === []) {
-                return [
-                    'description' => E::ts('No paired SumUp Solo terminal is available for this processor.'),
-                ];
-            }
-
             return [
-                'description' => E::ts('The payment will be sent to the selected in-person SumUp terminal.'),
+                'description' => E::ts('In-person payment via SumUp Solo terminal (one-time only).'),
                 'template' => '~/afSumUp/sumup_solo_checkout.html',
-                'fields' => [[
-                    'name' => 'sumup_reader_id',
-                    'title' => E::ts('Payment terminal'),
-                    'htmlType' => 'select',
-                    'is_required' => true,
-                    'options' => $options,
-                ]],
             ];
         }
 
@@ -124,8 +92,27 @@ if (
         {
             $readerId = (int) $session->getCheckoutParam('sumup_reader_id');
             $connection = $this->getConnectionDetails($session->isTestMode());
+
+            if ($readerId <= 0) {
+                $defaultReader = SumupReader::get(false)
+                    ->addSelect('id')
+                    ->addWhere('payment_processor_id', '=', (int) $connection['id'])
+                    ->addWhere('pairing_status', '=', 'paired')
+                    ->addWhere('is_active', '=', true)
+                    ->addOrderBy('site_code', 'ASC')
+                    ->addOrderBy('canonical_name', 'ASC')
+                    ->execute()
+                    ->first();
+                $readerId = !empty($defaultReader['id']) ? (int) $defaultReader['id'] : 0;
+            }
+
+            if ($readerId <= 0) {
+                throw new \CRM_Core_Exception(E::ts('No paired SumUp Solo terminal is available.'));
+            }
+            $session->setCheckoutParam('sumup_reader_id', $readerId);
+
             $reader = SumupReader::get(false)
-                ->addSelect('id', 'canonical_name')
+                ->addSelect('id', 'canonical_name', 'site_code')
                 ->addWhere('id', '=', $readerId)
                 ->addWhere('payment_processor_id', '=', (int) $connection['id'])
                 ->addWhere('pairing_status', '=', 'paired')
@@ -135,17 +122,74 @@ if (
             if (!$reader) {
                 throw new \CRM_Core_Exception(E::ts('The selected SumUp terminal is unavailable.'));
             }
+
+            $contribution = \Civi\Api4\Contribution::get(false)
+                ->addSelect('id', 'total_amount', 'currency', 'contribution_recur_id')
+                ->addWhere('id', '=', $session->getContributionId())
+                ->execute()
+                ->single();
+
+            if (!empty($contribution['contribution_recur_id'])) {
+                throw new \CRM_Core_Exception(E::ts(
+                    'SumUp Solo terminals only support one-time payments.'
+                    . ' Recurring contributions require online card checkout.'
+                ));
+            }
+
             $processor = $this->getProcessor($session);
             $clientTransactionId = $processor->startSoloCheckoutForContribution(
                 $session->getContributionId(),
                 $readerId
             );
             $session->setCheckoutParam('sumup_reader_checkout_id', $clientTransactionId);
+
+            $returnUrl = $session->getLandingUrl();
+            $cancelUrl = $session->getLandingUrl();
+
+            try {
+                $processor->startEmbeddedCheckoutForContribution(
+                    $session->getContributionId(),
+                    $returnUrl,
+                    $cancelUrl
+                );
+            } catch (\Throwable $e) {
+                \Civi::log()->warning('Unable to pre-create online checkout for QR: ' . $e->getMessage());
+            }
+
+            $contributionId = $session->getContributionId();
+            $processorId = (int) $processor->getProcessorId();
+            $key = \CRM_Core_Payment_Sumup::getBrowserReturnSigningKey();
+            $sig = substr(hash_hmac('sha256', $contributionId . ':' . $processorId, $key), 0, 12);
+            $qrUrl = \CRM_Utils_System::url(
+                'civicrm/sumup/widget',
+                ['c' => $contributionId, 'p' => $processorId, 's' => $sig],
+                true,
+                null,
+                false,
+                true
+            );
+
             $session->setResponseItem(
                 'sumup_solo_checkout',
                 [
                     'token' => $session->tokenise(),
-                    'message' => E::ts('Payment sent to the SumUp terminal. Complete it on the terminal.'),
+                    'reader_id' => $readerId,
+                    'reader_name' => (string) ($reader['canonical_name'] ?? 'Solo'),
+                    'site_code' => (string) ($reader['site_code'] ?? ''),
+                    'solo_image_url' => E::url('images/sumup-solo.png'),
+                    'amount' => number_format((float) $contribution['total_amount'], 2, '.', ''),
+                    'currency' => (string) $contribution['currency'],
+                    'qr_url' => $qrUrl,
+                    'qr_svg' => $this->generateQrSvg($qrUrl),
+                    'client_transaction_id' => $clientTransactionId,
+                    'message' => E::ts(
+                        'Payment of %1 %2 sent to terminal %3.',
+                        [
+                            1 => number_format((float) $contribution['total_amount'], 2, '.', ''),
+                            2 => (string) $contribution['currency'],
+                            3 => (string) ($reader['canonical_name'] ?? 'Solo'),
+                        ]
+                    ),
                 ]
             );
             $session->setResponseItem('redirect', false);
@@ -204,8 +248,11 @@ if (
                 $session->success();
                 return;
             }
-            if ($result['status'] === 'FAILED') {
-                $session->fail();
+            if (in_array($result['status'], ['FAILED', 'CANCELLED', 'EXPIRED'], true)) {
+                // A reader attempt may expire while the contribution and QR fallback remain payable.
+                // Keep the CheckoutSession pending so the operator can start a fresh Solo attempt.
+                $session->setCheckoutParam('sumup_reader_attempt_status', $result['status']);
+                return;
             }
         }
 
@@ -245,6 +292,45 @@ if (
         private function getConnectionLabel(): string
         {
             return (string) ($this->getDisplayConnection()['title'] ?? 'SumUp');
+        }
+
+        private function generateQrSvg(string $url): string
+        {
+            if (!class_exists('QRcode')) {
+                throw new \CRM_Core_Exception(E::ts('The local QR code encoder is unavailable.'));
+            }
+
+            $matrix = (new \QRcode($url, 'M'))->getBarcodeArray();
+            $rows = (int) ($matrix['num_rows'] ?? 0);
+            $columns = (int) ($matrix['num_cols'] ?? 0);
+            $modules = $matrix['bcode'] ?? null;
+            if ($rows <= 0 || $columns <= 0 || !is_array($modules)) {
+                throw new \CRM_Core_Exception(E::ts('Unable to generate the local QR code.'));
+            }
+
+            $quietZone = 4;
+            $size = max($rows, $columns) + (2 * $quietZone);
+            $path = [];
+            foreach ($modules as $rowIndex => $row) {
+                if (!is_array($row)) {
+                    continue;
+                }
+                foreach ($row as $columnIndex => $module) {
+                    if ((int) $module === 1) {
+                        $x = (int) $columnIndex + $quietZone;
+                        $y = (int) $rowIndex + $quietZone;
+                        $path[] = sprintf('M%d %dh1v1h-1z', $x, $y);
+                    }
+                }
+            }
+
+            return sprintf(
+                '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 %1$d %1$d" role="img" '
+                . 'aria-label="QR code"><rect width="100%%" height="100%%" fill="#fff"/>'
+                . '<path d="%2$s" fill="#000"/></svg>',
+                $size,
+                implode('', $path)
+            );
         }
     }
 }

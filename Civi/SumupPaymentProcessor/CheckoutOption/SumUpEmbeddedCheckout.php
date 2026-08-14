@@ -33,15 +33,16 @@ if (
                     \CRM_SumupPaymentProcessor_CheckoutMode::getConfiguredMode()
                 )
             ) {
-                return E::ts('%1 (SumUp Hosted Checkout)', [1 => $this->getConnectionLabel()]);
+                return E::ts('%1 (Hosted Checkout)', [1 => $this->getConnectionLabel()]);
             }
-            return E::ts('%1 (embedded SumUp checkout)', [1 => $this->getConnectionLabel()]);
+            return E::ts('%1 (Online card / Wallets)', [1 => $this->getConnectionLabel()]);
         }
 
         public function getFrontendLabel(): string
         {
-            $connection = $this->getDisplayConnection();
-            return (string) ($connection['frontend_title'] ?? $connection['title'] ?? 'SumUp');
+            return E::ts('%1 (secure payment on this page)', [
+                1 => $this->getConnectionLabel(),
+            ]);
         }
 
         public function getPaymentMethod(): ?string
@@ -64,6 +65,11 @@ if (
         {
             $connection = $this->liveConnection ?: $this->testConnection;
             return !empty($connection['id']) ? (int) $connection['id'] : null;
+        }
+
+        public function supportsRecurring(): bool
+        {
+            return true;
         }
 
         public function validate(AfformValidateEvent $event): void

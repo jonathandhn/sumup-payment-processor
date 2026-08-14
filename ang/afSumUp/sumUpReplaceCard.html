@@ -8,11 +8,29 @@
   <div class="crm-loading-spinner" ng-if="$ctrl.loading || $ctrl.confirming"></div>
   <div class="messages error" ng-if="$ctrl.error">{{$ctrl.error}}</div>
   <div class="messages status no-popup" ng-if="$ctrl.complete">
-    {{:: ts('Your new card has been saved. Your recurring payments can continue.') }}
+    {{:: ts('Your new card has been saved for the selected recurring payments.') }}
   </div>
+  <form ng-if="!$ctrl.loading && !$ctrl.complete && !$ctrl.started" ng-submit="$ctrl.prepareReplacement()">
+    <p>{{:: ts('Choose the recurring payments which should use the new card. The current payment is selected by default.') }}</p>
+    <div class="crm-sumup-replacement-selection" ng-repeat="method in $ctrl.methods track by method.recur_id">
+      <label>
+        <input type="checkbox"
+               ng-model="$ctrl.selected[method.recur_id]"
+               ng-disabled="method.recur_id === $ctrl.primaryRecurId">
+        <strong>{{method.amount_display}}</strong> /
+        {{method.frequency_interval}} {{method.frequency_unit_label}}
+        <span ng-if="method.recur_id === $ctrl.primaryRecurId">— {{:: ts('Current recurring payment') }}</span>
+      </label>
+    </div>
+    <p class="crm-sumup-actions">
+      <button class="button crm-button btn btn-primary" type="submit">
+        {{:: ts('Continue to secure card replacement') }}
+      </button>
+    </p>
+  </form>
   <div
     class="crm-sumup-replacement-widget"
-    ng-show="!$ctrl.loading && !$ctrl.complete"
+    ng-show="!$ctrl.loading && !$ctrl.complete && $ctrl.started"
   ></div>
   <p class="crm-sumup-actions">
     <a class="button btn btn-secondary" ng-href="{{$ctrl.paymentMethodsUrl}}">

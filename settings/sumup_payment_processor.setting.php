@@ -26,28 +26,6 @@ return [
             ],
         ],
     ],
-    'sumup_merchant_country_code' => [
-        'name' => 'sumup_merchant_country_code',
-        'type' => 'String',
-        'html_type' => 'text',
-        'html_attributes' => [
-            'maxlength' => 2,
-            'size' => 2,
-        ],
-        'default' => '',
-        'is_domain' => 1,
-        'is_contact' => 0,
-        'title' => E::ts('Merchant country code'),
-        'description' => E::ts(
-            'Optional two-letter ISO override for Apple Pay and Google Pay. When empty, use the country of the '
-            . 'CiviCRM domain organisation primary address.'
-        ),
-        'settings_pages' => [
-            'sumup' => [
-                'weight' => 20,
-            ],
-        ],
-    ],
     'sumup_affiliate_app_id' => [
         'name' => 'sumup_affiliate_app_id',
         'type' => 'String',
@@ -83,11 +61,30 @@ return [
         'is_contact' => 0,
         'title' => E::ts('SumUp Affiliate Key'),
         'description' => E::ts(
-            'Required by SumUp for card-present Solo Cloud API checkout requests. It is not an authorization credential.'
+            'Required by SumUp for card-present Solo Cloud API checkout requests. '
+            . 'It is not an authorization credential.'
         ),
         'settings_pages' => [
             'sumup' => [
                 'weight' => 40,
+            ],
+        ],
+    ],
+    'sumup_single_active_recurring_plan' => [
+        'name' => 'sumup_single_active_recurring_plan',
+        'type' => 'Boolean',
+        'html_type' => 'checkbox',
+        'default' => false,
+        'is_domain' => 1,
+        'is_contact' => 0,
+        'title' => E::ts('Allow only one active recurring plan per contact'),
+        'description' => E::ts(
+            'When enabled, a contact who already has an active SumUp recurring contribution in the same '
+            . 'test or live environment is directed to manage that plan instead of creating another one.'
+        ),
+        'settings_pages' => [
+            'sumup' => [
+                'weight' => 50,
             ],
         ],
     ],

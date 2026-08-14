@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Civi\Payment\Exception\PaymentProcessorException;
 use CRM_SumupPaymentProcessor_ExtensionUtil as E;
+use SumUp\Hydrator;
 use SumUp\HttpClient\RequestOptions;
 use SumUp\ResponseDecoder;
 use SumUp\SumUp;
@@ -204,14 +205,14 @@ final class CRM_SumupPaymentProcessor_CheckoutService
             throw new PaymentProcessorException(E::ts('Invalid SumUp transaction reference.'));
         }
 
-        $params = new TransactionsGetParams();
+        $params = [];
         if (preg_match('/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i', $transactionReference)) {
-            $params->id = $transactionReference;
+            $params['id'] = $transactionReference;
         } else {
-            $params->transactionCode = $transactionReference;
+            $params['transaction_code'] = $transactionReference;
         }
 
-        return $this->client->transactions()->get($this->merchantCode, $params, $this->requestOptions());
+        return $this->fetchTransactionFull($params);
     }
 
     public function getTransactionByClientTransactionId(string $clientTransactionId): TransactionFull
@@ -220,10 +221,60 @@ final class CRM_SumupPaymentProcessor_CheckoutService
             throw new PaymentProcessorException(E::ts('Invalid SumUp client transaction identifier.'));
         }
 
-        $params = new TransactionsGetParams();
-        $params->clientTransactionId = $clientTransactionId;
+        return $this->fetchTransactionFull(['client_transaction_id' => $clientTransactionId]);
+    }
 
-        return $this->client->transactions()->get($this->merchantCode, $params, $this->requestOptions());
+    /**
+     * @param array<string, string> $queryParams
+     */
+    private function fetchTransactionFull(array $queryParams): TransactionFull
+    {
+        $path = sprintf('/v2.1/merchants/%s/transactions', rawurlencode($this->merchantCode));
+        if (!empty($queryParams)) {
+            $path .= '?' . http_build_query($queryParams);
+        }
+
+        $response = $this->client->request('GET', $path, [], $this->requestOptions());
+        $body = $response->getBody();
+
+        // Sanitize unknown event statuses in payload to prevent SDK Enum deserialization crashes
+        if (is_array($body)) {
+            $knownStatuses = [
+                'FAILED',
+                'PAID_OUT',
+                'PENDING',
+                'RECONCILED',
+                'REFUNDED',
+                'SCHEDULED',
+                'SUCCESSFUL',
+            ];
+            if (isset($body['events']) && is_array($body['events'])) {
+                foreach ($body['events'] as &$event) {
+                    if (is_array($event) && isset($event['status'])) {
+                        if (!in_array($event['status'], $knownStatuses, true)) {
+                            $event['status'] = 'FAILED';
+                        }
+                    }
+                }
+                unset($event);
+            }
+            if (isset($body['transaction_events']) && is_array($body['transaction_events'])) {
+                foreach ($body['transaction_events'] as &$event) {
+                    if (is_array($event) && isset($event['status'])) {
+                        if (!in_array($event['status'], $knownStatuses, true)) {
+                            $event['status'] = 'FAILED';
+                        }
+                    }
+                }
+                unset($event);
+            }
+        }
+
+        $decoded = Hydrator::hydrate($body, TransactionFull::class);
+        if (!$decoded instanceof TransactionFull) {
+            throw new PaymentProcessorException(E::ts('Unable to deserialize SumUp transaction details.'));
+        }
+        return $decoded;
     }
 
     public function refundTransaction(string $transactionId, ?float $amount): void
@@ -300,6 +351,110 @@ final class CRM_SumupPaymentProcessor_CheckoutService
     public static function isValidCheckoutId(string $checkoutId): bool
     {
         return (bool) preg_match('/^[A-Za-z0-9_-]{8,100}$/', $checkoutId);
+    }
+
+    /**
+     * Retrieve the merchant's profile, commercial name (Doing Business As), and currency.
+     *
+     * @return array{
+     *   merchant_code: string,
+     *   business_name: string,
+     *   company_name: string,
+     *   country: string,
+     *   currency: string
+     * }
+     */
+    public function getMerchantProfile(?int $processorId = null): array
+    {
+        $cacheKey = $processorId !== null && $processorId > 0
+            ? 'sumup.merchant_profile.' . $processorId
+            : 'sumup.merchant_profile.' . md5($this->apiKey . ':' . $this->merchantCode);
+
+        try {
+            $cached = Civi::cache('long')->get($cacheKey);
+            if (is_array($cached)) {
+                return $this->validateMerchantProfile($cached);
+            }
+        } catch (\Throwable) {
+            // Invalid old cache entries and cache lookup failures trigger a fresh provider read.
+        }
+
+        $merchant = $this->client->merchants()->get(
+            $this->merchantCode,
+            null,
+            $this->requestOptions()
+        );
+        $businessName = $merchant->businessProfile !== null
+            ? trim((string) $merchant->businessProfile->name)
+            : '';
+        $companyName = $merchant->company !== null
+            ? trim((string) $merchant->company->name)
+            : '';
+        if ($businessName === '') {
+            $businessName = $companyName !== '' ? $companyName : (string) $merchant->merchantCode;
+        }
+
+        $profile = $this->validateMerchantProfile([
+            'merchant_code' => (string) $merchant->merchantCode,
+            'business_name' => $businessName,
+            'company_name' => $companyName !== '' ? $companyName : $businessName,
+            'country' => (string) $merchant->country,
+            'currency' => (string) $merchant->defaultCurrency,
+        ]);
+
+        try {
+            Civi::cache('long')->set($cacheKey, $profile, 86400);
+        } catch (\Throwable) {
+            // A cache failure must not invalidate an otherwise verified provider response.
+        }
+
+        return $profile;
+    }
+
+    /**
+     * @param array<string, mixed> $profile
+     * @return array{
+     *   merchant_code: string,
+     *   business_name: string,
+     *   company_name: string,
+     *   country: string,
+     *   currency: string
+     * }
+     */
+    private function validateMerchantProfile(array $profile): array
+    {
+        $configuredCode = strtoupper(trim($this->merchantCode));
+        $merchantCode = strtoupper(trim((string) ($profile['merchant_code'] ?? '')));
+        if ($merchantCode === '' || !hash_equals($configuredCode, $merchantCode)) {
+            throw new PaymentProcessorException(E::ts(
+                'The authenticated SumUp merchant (%1) does not match the configured merchant code (%2).',
+                [1 => $merchantCode !== '' ? $merchantCode : E::ts('unknown'), 2 => $configuredCode]
+            ));
+        }
+
+        $country = strtoupper(trim((string) ($profile['country'] ?? '')));
+        if (!preg_match('/^[A-Z]{2}$/', $country)) {
+            throw new PaymentProcessorException(E::ts('SumUp did not return a valid merchant country code.'));
+        }
+
+        $currency = strtoupper(trim((string) ($profile['currency'] ?? '')));
+        if (!preg_match('/^[A-Z]{3}$/', $currency)) {
+            throw new PaymentProcessorException(E::ts('SumUp did not return a valid merchant currency.'));
+        }
+
+        $businessName = trim((string) ($profile['business_name'] ?? ''));
+        if ($businessName === '') {
+            $businessName = $merchantCode;
+        }
+        $companyName = trim((string) ($profile['company_name'] ?? ''));
+
+        return [
+            'merchant_code' => $merchantCode,
+            'business_name' => $businessName,
+            'company_name' => $companyName !== '' ? $companyName : $businessName,
+            'country' => $country,
+            'currency' => $currency,
+        ];
     }
 
     private static function toMinorUnits(float $amount): int

@@ -74,9 +74,6 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             if (!str_starts_with($this->getPublicMerchantKey(), 'sup_pk_')) {
                 return E::ts('A valid SumUp public merchant key is required for wallet checkout.');
             }
-            if (!preg_match('/^[A-Z]{2}$/', CRM_SumupPaymentProcessor_CheckoutMode::getMerchantCountryCode())) {
-                return E::ts('A valid two-letter merchant country code is required for wallet checkout.');
-            }
         }
 
         return null;
@@ -112,6 +109,22 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
     public function getProcessorId(): int
     {
         return (int) ($this->_paymentProcessor['id'] ?? 0);
+    }
+
+    /**
+     * Return the SumUp-authoritative profile for this processor's merchant account.
+     *
+     * @return array{
+     *   merchant_code: string,
+     *   business_name: string,
+     *   company_name: string,
+     *   country: string,
+     *   currency: string
+     * }
+     */
+    public function getVerifiedMerchantProfile(): array
+    {
+        return $this->service()->getMerchantProfile($this->getProcessorId());
     }
 
     public function supportsRefund(): bool
@@ -362,7 +375,6 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
                 E::ts('A SumUp refund requires a valid transaction reference and a positive two-decimal amount.')
             );
         }
-        $this->assertFullRefundAmount($transactionReference, $requestedAmount);
 
         $lock = CRM_Core_Lock::createScopedLock('data.sumup.refund.' . $transactionReference);
         if (!$lock->acquire()) {
@@ -460,11 +472,40 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             $providerDetail = is_array($responseBody)
                 ? (string) ($responseBody['detail'] ?? $responseBody['message'] ?? '')
                 : '';
+            $minRefundableAmount = null;
+            if (is_array($responseBody) && !empty($responseBody['errors']) && is_array($responseBody['errors'])) {
+                foreach ($responseBody['errors'] as $error) {
+                    if (
+                        is_array($error)
+                        && ($error['code'] ?? '') === 'min_amount'
+                        && isset($error['min_refundable_amount'])
+                    ) {
+                        $minRefundableAmount = (float) $error['min_refundable_amount'];
+                        break;
+                    }
+                }
+            }
+
             Civi::log()->error(sprintf(
                 'SumUp refund request failed: status=%d detail=%s',
                 $exception->getStatusCode(),
                 $providerDetail !== '' ? $providerDetail : $exception->getMessage()
             ));
+
+            if ($minRefundableAmount !== null) {
+                throw new PaymentProcessorException(E::ts(
+                    'SumUp does not allow a partial refund for this transaction (minimum required: %1 %2).',
+                    [
+                        1 => sprintf('%.2f', $minRefundableAmount),
+                        2 => $currency ?? 'EUR',
+                    ]
+                ));
+            }
+            if ($providerDetail !== '' && $providerDetail !== 'Refund failed.') {
+                throw new PaymentProcessorException(
+                    E::ts('SumUp refund failed: %1', [1 => $providerDetail])
+                );
+            }
             throw new PaymentProcessorException(
                 E::ts('The SumUp refund could not be processed. Please try again later.')
             );
@@ -730,7 +771,10 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
      *   locale: string,
      *   mode: string,
      *   public_key: string,
+     *   merchant_code: string,
+     *   business_name: string,
      *   country_code: string,
+     *   wallets_allowed: bool,
      *   browser_return_url: string,
      *   cancel_url: string
      * }
@@ -758,7 +802,10 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
      *   locale: string,
      *   mode: string,
      *   public_key: string,
+     *   merchant_code: string,
+     *   business_name: string,
      *   country_code: string,
+     *   wallets_allowed: bool,
      *   browser_return_url: string,
      *   cancel_url: string,
      *   hosted_checkout_url: string|null,
@@ -788,7 +835,8 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
                 'total_amount',
                 'currency',
                 'source',
-                'contribution_recur_id'
+                'contribution_recur_id',
+                'is_test'
             )
             ->addWhere('id', '=', $contributionId)
             ->addWhere('is_test', 'IN', [true, false])
@@ -796,6 +844,14 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             ->single();
         $amount = (float) $contribution['total_amount'];
         $currency = strtoupper((string) $contribution['currency']);
+        $merchantProfile = $this->getVerifiedMerchantProfile();
+        if ($merchantProfile['currency'] !== $currency) {
+            throw new PaymentProcessorException(E::ts(
+                'Currency %1 is not supported by this SumUp merchant account (%2).',
+                [1 => $currency, 2 => $merchantProfile['currency']]
+            ));
+        }
+
         $browserReturnUrl = $this->buildSignedWidgetUrl($contributionId, $returnUrl, $cancelUrl);
         $checkoutMode = CRM_SumupPaymentProcessor_CheckoutMode::getConfiguredMode();
         $contributionRecurId = (int) ($contribution['contribution_recur_id'] ?? 0);
@@ -804,6 +860,11 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
         $customerId = null;
         $savedCards = [];
         if ($contributionRecurId > 0) {
+            $this->assertRecurringPlanPolicy(
+                (int) $contribution['contact_id'],
+                $contributionRecurId,
+                (bool) $contribution['is_test']
+            );
             if ($hosted || $checkoutMode !== CRM_SumupPaymentProcessor_CheckoutMode::WIDGET) {
                 throw new PaymentProcessorException(E::ts(
                     'Recurring SumUp payments require the Card Widget checkout mode.'
@@ -813,11 +874,9 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             $registryPurpose = 'SETUP_RECURRING_PAYMENT';
             $customerId = $this->recurringCustomerId((int) $contribution['contact_id']);
             $this->service()->ensureCustomer($customerId);
+            $savedCards = $this->getSavedCardsForContact((int) $contribution['contact_id']);
         } elseif (!$hosted) {
             $savedCards = $this->getSavedCardsForContact((int) $contribution['contact_id']);
-            if ($savedCards !== []) {
-                $customerId = $this->recurringCustomerId((int) $contribution['contact_id']);
-            }
         }
         $providerDescription = trim((string) $description);
         if ($providerDescription === '') {
@@ -875,13 +934,64 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             'locale' => CRM_SumupPaymentProcessor_CheckoutMode::getLocale(),
             'mode' => $checkoutMode,
             'public_key' => $this->getPublicMerchantKey(),
-            'country_code' => CRM_SumupPaymentProcessor_CheckoutMode::getMerchantCountryCode(),
+            'merchant_code' => $this->getMerchantCode(),
+            'business_name' => $merchantProfile['business_name'],
+            'country_code' => CRM_SumupPaymentProcessor_CheckoutMode::getMerchantCountryCode(
+                $merchantProfile['country']
+            ),
+            'wallets_allowed' => $contributionRecurId === 0,
             'browser_return_url' => $browserReturnUrl,
             'cancel_url' => $cancelUrl,
             'hosted_checkout_url' => $checkout->hostedCheckoutUrl,
             'saved_payment_methods' => $savedCards,
             'saved_payment_action' => $savedPaymentAction,
         ];
+    }
+
+    private function assertRecurringPlanPolicy(int $contactId, int $currentRecurId, bool $isTest): void
+    {
+        if (!Civi::settings()->get('sumup_single_active_recurring_plan')) {
+            return;
+        }
+        $processorIds = [];
+        foreach (
+            PaymentProcessor::get(false)
+                ->addSelect('id')
+                ->addWhere('class_name', '=', 'Payment_Sumup')
+                ->addWhere('is_test', '=', $isTest)
+                ->execute() as $processor
+        ) {
+            $processorIds[] = (int) $processor['id'];
+        }
+        if ($processorIds === []) {
+            return;
+        }
+        $existing = ContributionRecur::get(false)
+            ->addSelect('id')
+            ->addWhere('contact_id', '=', $contactId)
+            ->addWhere('id', '!=', $currentRecurId)
+            ->addWhere('payment_processor_id', 'IN', $processorIds)
+            ->addWhere('contribution_status_id:name', '=', 'In Progress')
+            ->addWhere('is_test', '=', $isTest)
+            ->setLimit(1)
+            ->execute()
+            ->first();
+        if (!$existing) {
+            return;
+        }
+
+        $managementUrl = CRM_Utils_System::url(
+            'civicrm/sumup/payment-methods',
+            [],
+            true,
+            null,
+            false,
+            true
+        );
+        throw new PaymentProcessorException(E::ts(
+            'You already have an active recurring contribution. Sign in to view, update or stop it here: %1',
+            [1 => $managementUrl]
+        ));
     }
 
     /**
@@ -959,18 +1069,38 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
         $payload = json_decode($rawPayload, true);
         $eventType = is_array($payload) ? (string) ($payload['event_type'] ?? '') : '';
         $eventId = is_array($payload) ? (string) ($payload['id'] ?? '') : '';
-        $identifier = $eventType === 'solo.transaction.updated' && is_array($payload['payload'] ?? null)
-            ? (string) ($payload['payload']['client_transaction_id'] ?? '')
-            : $eventId;
+
+        $acceptedEvents = [
+            'CHECKOUT_STATUS_CHANGED',
+            'solo.transaction.updated',
+            'TRANSACTION_SUCCESSFUL',
+            'TRANSACTION_FAILED',
+            'TRANSACTION_REFUNDED',
+            'REFUND_SUCCESSFUL',
+            'REFUND',
+            'CHARGEBACK',
+            'DISPUTE',
+        ];
+
+        $identifier = $eventId;
+        if ($eventType === 'solo.transaction.updated' && is_array($payload['payload'] ?? null)) {
+            $identifier = (string) ($payload['payload']['client_transaction_id'] ?? $eventId);
+        } elseif (isset($payload['transaction_id'])) {
+            $identifier = (string) $payload['transaction_id'];
+        } elseif (isset($payload['payload']['transaction_id'])) {
+            $identifier = (string) $payload['payload']['transaction_id'];
+        }
+
         if (
             !is_array($payload)
             || !CRM_SumupPaymentProcessor_CheckoutService::isValidCheckoutId($eventId)
             || !CRM_SumupPaymentProcessor_CheckoutService::isValidCheckoutId($identifier)
+            || !in_array($eventType, $acceptedEvents, true)
         ) {
+            if (!is_array($payload) || !in_array($eventType, $acceptedEvents, true)) {
+                CRM_Utils_System::civiExit();
+            }
             http_response_code(400);
-            CRM_Utils_System::civiExit();
-        }
-        if (!in_array($eventType, ['CHECKOUT_STATUS_CHANGED', 'solo.transaction.updated'], true)) {
             CRM_Utils_System::civiExit();
         }
 
@@ -1018,12 +1148,28 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
                 $result = $this->verifyAndApplyReaderCheckout($clientTransactionId);
             } elseif ($eventType === 'CHECKOUT_STATUS_CHANGED') {
                 $result = $this->verifyAndApplyCheckout((string) ($payload['id'] ?? ''));
+            } elseif (in_array($eventType, ['TRANSACTION_REFUNDED', 'REFUND_SUCCESSFUL', 'REFUND'], true)) {
+                $txnRef = (string) (
+                    $payload['transaction_id']
+                    ?? $payload['id']
+                    ?? $payload['payload']['transaction_id']
+                    ?? ''
+                );
+                $result = $this->applyExternalRefund($txnRef, $payload);
+            } elseif (in_array($eventType, ['CHARGEBACK', 'DISPUTE'], true)) {
+                $txnRef = (string) (
+                    $payload['transaction_id']
+                    ?? $payload['id']
+                    ?? $payload['payload']['transaction_id']
+                    ?? ''
+                );
+                $result = $this->applyChargeback($txnRef, $payload);
             } else {
-                throw new PaymentProcessorException(E::ts('Invalid SumUp webhook payload in the queue.'));
+                throw new PaymentProcessorException(E::ts('Unsupported SumUp webhook event: %1.', [1 => $eventType]));
             }
             $this->finishWebhook($webhookId, 'success', E::ts(
-                'SumUp checkout status verified: %1.',
-                [1 => $result['status']]
+                'SumUp event %1 processed: %2.',
+                [1 => $eventType, 2 => $result['status']]
             ));
             return true;
         } catch (Throwable $exception) {
@@ -1107,6 +1253,8 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
                 throw new PaymentProcessorException(E::ts('Paid SumUp checkout has no transaction identifier.'));
             }
             $this->completeContribution($contribution, $transactionId);
+        } elseif ($status === 'CANCELLED') {
+            $this->cancelPendingContribution($contributionId, (string) $contribution['contribution_status_id:name']);
         } elseif (
             in_array($status, ['FAILED', 'EXPIRED'], true)
             && !in_array($registry['purpose'], ['RECURRING_PAYMENT', 'CARD_REPLACEMENT'], true)
@@ -1144,8 +1292,8 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             if ($contributionRecurId <= 0 || $contactId <= 0 || $customerId === '') {
                 throw new PaymentProcessorException(E::ts('The SumUp recurring setup is not linked to CiviCRM.'));
             }
-            if (!hash_equals($this->recurringCustomerId($contactId), $customerId)) {
-                throw new PaymentProcessorException(E::ts('The SumUp customer does not match the contribution.'));
+            if (!CRM_SumupPaymentProcessor_TokenCustomerStore::isValidCustomerId($customerId)) {
+                throw new PaymentProcessorException(E::ts('The SumUp customer is invalid.'));
             }
 
             $token = trim((string) ($setupCheckout->paymentInstrument->token ?? ''));
@@ -1153,7 +1301,7 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
                 throw new PaymentProcessorException(E::ts('SumUp did not return a reusable payment token.'));
             }
             $instrument = $this->service()->getPaymentInstrument($customerId, $token);
-            $paymentTokenId = $this->persistPaymentToken($token, $instrument, $contactId);
+            $paymentTokenId = $this->persistPaymentToken($token, $instrument, $contactId, $customerId);
             CRM_SumupPaymentProcessor_CheckoutStore::attachPaymentToken($setupCheckoutId, $paymentTokenId);
             ContributionRecur::update(false)
                 ->addWhere('id', '=', $contributionRecurId)
@@ -1243,7 +1391,8 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
     private function persistPaymentToken(
         string $token,
         \SumUp\Types\PaymentInstrumentResponse $instrument,
-        int $contactId
+        int $contactId,
+        string $customerId
     ): int {
         $maskedAccountNumber = $this->maskedAccountNumber($instrument);
         $existing = PaymentToken::get(false)
@@ -1255,15 +1404,17 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             ->execute()
             ->first();
         if ($existing) {
+            $paymentTokenId = (int) $existing['id'];
             if ($maskedAccountNumber !== null) {
                 PaymentToken::update(false)
-                    ->addWhere('id', '=', (int) $existing['id'])
+                    ->addWhere('id', '=', $paymentTokenId)
                     ->setValues([
                         'masked_account_number' => $maskedAccountNumber,
                     ])
                     ->execute();
             }
-            return (int) $existing['id'];
+            CRM_SumupPaymentProcessor_TokenCustomerStore::remember($paymentTokenId, $customerId);
+            return $paymentTokenId;
         }
         $result = PaymentToken::create(false)
             ->setValues([
@@ -1274,7 +1425,9 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             ])
             ->execute()
             ->single();
-        return (int) $result['id'];
+        $paymentTokenId = (int) $result['id'];
+        CRM_SumupPaymentProcessor_TokenCustomerStore::remember($paymentTokenId, $customerId);
+        return $paymentTokenId;
     }
 
     private function maskedAccountNumber(\SumUp\Types\PaymentInstrumentResponse $instrument): ?string
@@ -1307,32 +1460,59 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             return [];
         }
 
-        try {
-            $instruments = $this->service()->listPaymentInstruments($this->recurringCustomerId($contactId));
-        } catch (Throwable $exception) {
-            Civi::log()->warning(sprintf(
-                'Unable to list SumUp saved cards for contact %d and processor %d: %s',
-                $contactId,
-                $this->getProcessorId(),
-                $exception->getMessage()
-            ));
-            return [];
+        $tokensByCustomer = [];
+        foreach ($localTokens as $localToken) {
+            $paymentTokenId = (int) $localToken['id'];
+            $customerId = CRM_SumupPaymentProcessor_TokenCustomerStore::get($paymentTokenId);
+            if ($customerId === null) {
+                Civi::log()->warning(sprintf(
+                    'SumUp saved card %d has no durable remote customer mapping.',
+                    $paymentTokenId
+                ));
+                continue;
+            }
+            $tokensByCustomer[$customerId][] = $localToken;
         }
 
-        $remoteByToken = [];
-        foreach ($instruments as $instrument) {
-            $token = trim((string) $instrument->token);
-            if ($token !== '') {
-                $remoteByToken[$token] = $instrument;
+        $remoteByPaymentTokenId = [];
+        foreach ($tokensByCustomer as $customerId => $customerTokens) {
+            try {
+                $instruments = $this->service()->listPaymentInstruments($customerId);
+            } catch (Throwable $exception) {
+                Civi::log()->warning(sprintf(
+                    'Unable to list SumUp saved cards for contact %d, customer %s and processor %d: %s',
+                    $contactId,
+                    $customerId,
+                    $this->getProcessorId(),
+                    $exception->getMessage()
+                ));
+                continue;
+            }
+            $remoteByToken = [];
+            foreach ($instruments as $instrument) {
+                if ($instrument->active === false) {
+                    continue;
+                }
+                $token = trim((string) $instrument->token);
+                if ($token !== '') {
+                    $remoteByToken[$token] = $instrument;
+                }
+            }
+            foreach ($customerTokens as $customerToken) {
+                $providerToken = trim((string) ($customerToken['token'] ?? ''));
+                if ($providerToken !== '' && isset($remoteByToken[$providerToken])) {
+                    $remoteByPaymentTokenId[(int) $customerToken['id']] = $remoteByToken[$providerToken];
+                }
             }
         }
         $cards = [];
         foreach ($localTokens as $localToken) {
+            $paymentTokenId = (int) $localToken['id'];
             $token = trim((string) ($localToken['token'] ?? ''));
-            if ($token === '' || !isset($remoteByToken[$token])) {
+            if ($token === '' || !isset($remoteByPaymentTokenId[$paymentTokenId])) {
                 continue;
             }
-            $maskedAccountNumber = $this->maskedAccountNumber($remoteByToken[$token]);
+            $maskedAccountNumber = $this->maskedAccountNumber($remoteByPaymentTokenId[$paymentTokenId]);
             if ($maskedAccountNumber === null) {
                 $maskedAccountNumber = trim((string) ($localToken['masked_account_number'] ?? ''));
             }
@@ -1346,11 +1526,73 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
                     ->execute();
             }
             $cards[] = [
-                'payment_token_id' => (int) $localToken['id'],
+                'payment_token_id' => $paymentTokenId,
                 'masked_account_number' => $maskedAccountNumber,
             ];
         }
         return $cards;
+    }
+
+    /**
+     * Deactivate a reusable SumUp card which is not used by an active schedule.
+     *
+     * @return array{payment_token_id: int, masked_account_number: string, deactivated: bool}
+     */
+    public function deactivateSavedCard(int $paymentTokenId, int $contactId): array
+    {
+        if ($paymentTokenId <= 0 || $contactId <= 0) {
+            throw new PaymentProcessorException(E::ts('Invalid saved card identifier.'));
+        }
+        $paymentToken = PaymentToken::get(false)
+            ->addSelect('id', 'token', 'masked_account_number')
+            ->addWhere('id', '=', $paymentTokenId)
+            ->addWhere('contact_id', '=', $contactId)
+            ->addWhere('payment_processor_id', '=', $this->getProcessorId())
+            ->execute()
+            ->first();
+        if (!$paymentToken) {
+            throw new PaymentProcessorException(E::ts('This saved SumUp card does not exist.'));
+        }
+
+        $activeSchedule = ContributionRecur::get(false)
+            ->addSelect('id')
+            ->addWhere('payment_token_id', '=', $paymentTokenId)
+            ->addWhere('contribution_status_id:name', '=', 'In Progress')
+            ->setLimit(1)
+            ->execute()
+            ->first();
+        if ($activeSchedule) {
+            throw new PaymentProcessorException(E::ts(
+                'This card is used by an active recurring payment. '
+                . 'Replace the card or stop the recurring payment first.'
+            ));
+        }
+
+        $providerToken = trim((string) $paymentToken['token']);
+        if ($providerToken === '') {
+            throw new PaymentProcessorException(E::ts('This saved SumUp card has no provider token.'));
+        }
+        $customerId = $this->customerIdForPaymentToken($paymentTokenId);
+        $remoteInstrument = null;
+        foreach ($this->service()->listPaymentInstruments($customerId) as $instrument) {
+            if (hash_equals($providerToken, trim((string) $instrument->token))) {
+                $remoteInstrument = $instrument;
+                break;
+            }
+        }
+        if ($remoteInstrument !== null && $remoteInstrument->active !== false) {
+            $this->service()->deactivatePaymentInstrument($customerId, $providerToken);
+        }
+
+        PaymentToken::delete(false)
+            ->addWhere('id', '=', $paymentTokenId)
+            ->execute();
+
+        return [
+            'payment_token_id' => $paymentTokenId,
+            'masked_account_number' => (string) ($paymentToken['masked_account_number'] ?? ''),
+            'deactivated' => true,
+        ];
     }
 
     private function recurringCustomerId(int $contactId): string
@@ -1364,6 +1606,17 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             (int) $this->_paymentProcessor['id'],
             $contactId
         );
+    }
+
+    private function customerIdForPaymentToken(int $paymentTokenId): string
+    {
+        $customerId = CRM_SumupPaymentProcessor_TokenCustomerStore::get($paymentTokenId);
+        if ($customerId === null) {
+            throw new PaymentProcessorException(E::ts(
+                'The saved SumUp card is missing its remote customer association.'
+            ));
+        }
+        return $customerId;
     }
 
     /**
@@ -1422,7 +1675,7 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             throw new PaymentProcessorException(E::ts('The recurring contribution has no valid SumUp card token.'));
         }
 
-        $customerId = $this->recurringCustomerId($contactId);
+        $customerId = $this->customerIdForPaymentToken($paymentTokenId);
         $reference = sprintf(
             'CIVI-%d-%s',
             $contributionId,
@@ -1561,42 +1814,90 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
     /**
      * Start a customer-present replacement of a recurring card.
      *
-     * @return array<string, int|string|null>
+     * @param list<int> $additionalRecurIds
+     * @return array<string, mixed>
      */
-    public function startPaymentMethodReplacement(int $contributionRecurId, int $contactId): array
-    {
-        $lock = CRM_Core_Lock::createScopedLock('data.sumup.remediation.start.' . $contributionRecurId);
+    public function startPaymentMethodReplacement(
+        int $contributionRecurId,
+        int $contactId,
+        array $additionalRecurIds = []
+    ): array {
+        $recurIds = array_values(array_unique(array_map(
+            'intval',
+            array_merge([$contributionRecurId], $additionalRecurIds)
+        )));
+        sort($recurIds, SORT_NUMERIC);
+        $schedules = [];
+        foreach ($recurIds as $recurId) {
+            $schedules[$recurId] = $this->getOwnedRecurringSchedule($recurId, $contactId);
+        }
+        $primarySchedule = $schedules[$contributionRecurId];
+        $lock = CRM_Core_Lock::createScopedLock(
+            'data.sumup.remediation.start.' . hash('sha256', implode(',', $recurIds))
+        );
         if (!$lock->acquire()) {
             throw new PaymentProcessorException(E::ts('This SumUp card replacement is already being prepared.'));
         }
         try {
-            $schedule = $this->getOwnedRecurringSchedule($contributionRecurId, $contactId);
-            $contribution = Contribution::get(false)
-                ->addSelect('id', 'contribution_status_id:name')
-                ->addWhere('contribution_recur_id', '=', $contributionRecurId)
-                ->addWhere('is_test', 'IN', [true, false])
-                ->addOrderBy('id', 'DESC')
-                ->setLimit(1)
-                ->execute()
-                ->single();
-            $remediation = CRM_SumupPaymentProcessor_RemediationStore::getOpen($contributionRecurId);
-            if ($remediation === null) {
-                $remediation = CRM_SumupPaymentProcessor_RemediationStore::open(
-                    $contributionRecurId,
-                    (int) $contribution['id'],
-                    $this->getProcessorId(),
-                    null,
-                    (int) $schedule['payment_token_id'],
-                    'customer_requested'
-                );
+            $contribution = $this->latestRecurringContribution($contributionRecurId);
+            $remediations = [];
+            foreach ($recurIds as $recurId) {
+                $remediation = CRM_SumupPaymentProcessor_RemediationStore::getOpen($recurId);
+                if ($remediation === null) {
+                    $scheduleContribution = $this->latestRecurringContribution($recurId);
+                    $remediation = CRM_SumupPaymentProcessor_RemediationStore::open(
+                        $recurId,
+                        (int) $scheduleContribution['id'],
+                        $this->getProcessorId(),
+                        null,
+                        (int) $schedules[$recurId]['payment_token_id'],
+                        'customer_requested'
+                    );
+                }
+                $remediations[$recurId] = $remediation;
             }
 
-            $replacementCheckoutId = trim((string) ($remediation['replacement_checkout_id'] ?? ''));
+            $replacementCheckoutId = trim((string) (
+                $remediations[$contributionRecurId]['replacement_checkout_id'] ?? ''
+            ));
+            foreach ($remediations as $remediation) {
+                $otherCheckoutId = trim((string) ($remediation['replacement_checkout_id'] ?? ''));
+                if (
+                    $otherCheckoutId !== ''
+                    && ($replacementCheckoutId === '' || !hash_equals($replacementCheckoutId, $otherCheckoutId))
+                ) {
+                    throw new PaymentProcessorException(E::ts(
+                        'Another SumUp card replacement is already in progress for a selected recurring contribution.'
+                    ));
+                }
+            }
             if ($replacementCheckoutId !== '') {
+                $storedRemediations = CRM_SumupPaymentProcessor_RemediationStore::getByReplacementCheckoutId(
+                    $replacementCheckoutId
+                );
+                $storedIds = array_map(
+                    static fn(array $record): int => (int) $record['contribution_recur_id'],
+                    $storedRemediations
+                );
+                sort($storedIds, SORT_NUMERIC);
+                if ($storedIds !== $recurIds) {
+                    if ($recurIds !== [$contributionRecurId]) {
+                        throw new PaymentProcessorException(E::ts(
+                            'Another SumUp card replacement is already in progress for this recurring contribution.'
+                        ));
+                    }
+                    $recurIds = $storedIds;
+                    $remediations = [];
+                    foreach ($storedRemediations as $storedRemediation) {
+                        $storedRecurId = (int) $storedRemediation['contribution_recur_id'];
+                        $this->getOwnedRecurringSchedule($storedRecurId, $contactId);
+                        $remediations[$storedRecurId] = $storedRemediation;
+                    }
+                }
                 $existing = $this->service()->get($replacementCheckoutId);
                 $status = strtoupper((string) $existing->status);
                 if ($status === 'PENDING') {
-                    return $this->replacementCheckoutConfig($existing, $schedule);
+                    return $this->replacementCheckoutConfig($existing, $primarySchedule, $recurIds);
                 }
                 if ($status === 'PAID') {
                     return $this->completePaymentMethodReplacement(
@@ -1605,7 +1906,9 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
                         $replacementCheckoutId
                     );
                 }
-                CRM_SumupPaymentProcessor_RemediationStore::resetReplacement((int) $remediation['id']);
+                foreach ($remediations as $remediation) {
+                    CRM_SumupPaymentProcessor_RemediationStore::resetReplacement((int) $remediation['id']);
+                }
             }
 
             $customerId = $this->recurringCustomerId($contactId);
@@ -1617,9 +1920,9 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             );
             $checkout = $this->service()->create(
                 contributionId: (int) $contribution['id'],
-                amount: (float) $schedule['amount'],
-                currency: (string) $schedule['currency'],
-                description: E::ts('Replace the card for recurring contribution %1', [1 => $contributionRecurId]),
+                amount: (float) $primarySchedule['amount'],
+                currency: (string) $primarySchedule['currency'],
+                description: E::ts('Replace the card for %1 recurring contribution(s)', [1 => count($recurIds)]),
                 webhookUrl: CRM_Mjwshared_Webhook::getWebhookPath($this->getProcessorId()),
                 browserReturnUrl: null,
                 customerId: $customerId,
@@ -1631,19 +1934,21 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
                 $reference,
                 (int) $contribution['id'],
                 $this->getProcessorId(),
-                (float) $schedule['amount'],
-                (string) $schedule['currency'],
+                (float) $primarySchedule['amount'],
+                (string) $primarySchedule['currency'],
                 CRM_SumupPaymentProcessor_CheckoutMode::WIDGET,
                 null,
                 'CARD_REPLACEMENT',
                 $customerId
             );
-            CRM_SumupPaymentProcessor_RemediationStore::attachReplacementCheckout(
-                (int) $remediation['id'],
-                (string) $checkout->id
-            );
+            foreach ($remediations as $remediation) {
+                CRM_SumupPaymentProcessor_RemediationStore::attachReplacementCheckout(
+                    (int) $remediation['id'],
+                    (string) $checkout->id
+                );
+            }
 
-            return $this->replacementCheckoutConfig($checkout, $schedule);
+            return $this->replacementCheckoutConfig($checkout, $primarySchedule, $recurIds);
         } finally {
             $lock->release();
         }
@@ -1652,27 +1957,32 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
     /**
      * Verify a replacement setup and atomically switch the recurring schedule.
      *
-     * @return array<string, int|string|null>
+     * @return array<string, mixed>
      */
     public function completePaymentMethodReplacement(
         int $contributionRecurId,
         int $contactId,
         string $checkoutId
     ): array {
-        $schedule = $this->getOwnedRecurringSchedule($contributionRecurId, $contactId);
-        $remediation = CRM_SumupPaymentProcessor_RemediationStore::getOpen($contributionRecurId);
-        if (
-            $remediation === null
-            || !hash_equals((string) ($remediation['replacement_checkout_id'] ?? ''), $checkoutId)
-        ) {
+        $remediations = CRM_SumupPaymentProcessor_RemediationStore::getByReplacementCheckoutId($checkoutId);
+        if ($remediations === []) {
             throw new PaymentProcessorException(E::ts('The SumUp replacement session is invalid.'));
         }
+        $schedules = [];
+        foreach ($remediations as $remediation) {
+            $recurId = (int) $remediation['contribution_recur_id'];
+            $schedules[$recurId] = $this->getOwnedRecurringSchedule($recurId, $contactId);
+        }
+        if (!isset($schedules[$contributionRecurId])) {
+            throw new PaymentProcessorException(E::ts('The SumUp replacement session is invalid.'));
+        }
+        $schedule = $schedules[$contributionRecurId];
         $registry = CRM_SumupPaymentProcessor_CheckoutStore::getByCheckoutId($checkoutId);
-        $customerId = $this->recurringCustomerId($contactId);
+        $customerId = trim((string) ($registry['customer_id'] ?? ''));
         if (
             $registry['purpose'] !== 'CARD_REPLACEMENT'
             || $registry['payment_processor_id'] !== $this->getProcessorId()
-            || !hash_equals((string) $registry['customer_id'], $customerId)
+            || !CRM_SumupPaymentProcessor_TokenCustomerStore::isValidCustomerId($customerId)
         ) {
             throw new PaymentProcessorException(E::ts('The SumUp replacement checkout is inconsistent.'));
         }
@@ -1694,7 +2004,9 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             return ['status' => 'PENDING', 'checkout_id' => $checkoutId];
         }
         if (in_array($status, ['FAILED', 'EXPIRED'], true)) {
-            CRM_SumupPaymentProcessor_RemediationStore::resetReplacement((int) $remediation['id']);
+            foreach ($remediations as $remediation) {
+                CRM_SumupPaymentProcessor_RemediationStore::resetReplacement((int) $remediation['id']);
+            }
             return ['status' => $status, 'checkout_id' => $checkoutId];
         }
         if ($status !== 'PAID') {
@@ -1706,44 +2018,62 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             throw new PaymentProcessorException(E::ts('SumUp did not return a reusable replacement card.'));
         }
         $instrument = $this->service()->getPaymentInstrument($customerId, $token);
-        $newPaymentTokenId = $this->persistPaymentToken($token, $instrument, $contactId);
-        $oldPaymentTokenId = (int) $schedule['payment_token_id'];
-        $switchLock = CRM_Core_Lock::createScopedLock('data.sumup.remediation.switch.' . $contributionRecurId);
+        $newPaymentTokenId = $this->persistPaymentToken($token, $instrument, $contactId, $customerId);
+        $recurIds = array_keys($schedules);
+        sort($recurIds, SORT_NUMERIC);
+        $switchLock = CRM_Core_Lock::createScopedLock(
+            'data.sumup.remediation.switch.' . hash('sha256', implode(',', $recurIds))
+        );
         if (!$switchLock->acquire()) {
             throw new PaymentProcessorException(E::ts('This SumUp card replacement is already being completed.'));
         }
         try {
-            $updated = ContributionRecur::update(false)
-                ->addWhere('id', '=', $contributionRecurId)
-                ->addWhere('payment_token_id', '=', $oldPaymentTokenId)
-                ->setValues([
-                    'payment_token_id' => $newPaymentTokenId,
-                    'payment_processor_id' => $this->getProcessorId(),
-                    'contribution_status_id:name' => 'In Progress',
-                    'failure_count' => 0,
-                    'failure_retry_date' => null,
-                ])
-                ->execute();
-            if ($updated->count() !== 1) {
-                throw new PaymentProcessorException(E::ts(
-                    'The recurring contribution payment method changed during replacement.'
-                ));
+            $transaction = new CRM_Core_Transaction();
+            $oldPaymentTokenIds = [];
+            try {
+                foreach ($remediations as $remediation) {
+                    $recurId = (int) $remediation['contribution_recur_id'];
+                    $oldPaymentTokenId = (int) $schedules[$recurId]['payment_token_id'];
+                    $oldPaymentTokenIds[] = $oldPaymentTokenId;
+                    $updated = ContributionRecur::update(false)
+                        ->addWhere('id', '=', $recurId)
+                        ->addWhere('payment_token_id', '=', $oldPaymentTokenId)
+                        ->setValues([
+                            'payment_token_id' => $newPaymentTokenId,
+                            'payment_processor_id' => $this->getProcessorId(),
+                            'contribution_status_id:name' => 'In Progress',
+                            'failure_count' => 0,
+                            'failure_retry_date' => null,
+                        ])
+                        ->execute();
+                    if ($updated->count() !== 1) {
+                        throw new PaymentProcessorException(E::ts(
+                            'A recurring contribution payment method changed during replacement.'
+                        ));
+                    }
+                    Contribution::update(false)
+                        ->addWhere('id', '=', (int) $remediation['contribution_id'])
+                        ->addWhere('contribution_status_id:name', '=', 'Failed')
+                        ->addValue('contribution_status_id:name', 'Pending')
+                        ->execute();
+                    CRM_SumupPaymentProcessor_RemediationStore::resolve(
+                        (int) $remediation['id'],
+                        $newPaymentTokenId
+                    );
+                }
+                $transaction->commit();
+            } catch (Throwable $exception) {
+                $transaction->rollback();
+                throw $exception;
             }
-            Contribution::update(false)
-                ->addWhere('id', '=', (int) $remediation['contribution_id'])
-                ->addWhere('contribution_status_id:name', '=', 'Failed')
-                ->addValue('contribution_status_id:name', 'Pending')
-                ->execute();
-            CRM_SumupPaymentProcessor_RemediationStore::resolve(
-                (int) $remediation['id'],
-                $newPaymentTokenId
-            );
         } finally {
             $switchLock->release();
         }
 
-        if ($oldPaymentTokenId !== $newPaymentTokenId) {
-            $this->deactivateUnusedPaymentToken($oldPaymentTokenId, $customerId);
+        foreach (array_unique($oldPaymentTokenIds) as $oldPaymentTokenId) {
+            if ($oldPaymentTokenId !== $newPaymentTokenId) {
+                $this->deactivateUnusedPaymentToken($oldPaymentTokenId);
+            }
         }
         $last4 = trim((string) ($instrument->card->last4Digits ?? ''));
         return [
@@ -1751,6 +2081,7 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             'checkout_id' => $checkoutId,
             'payment_token_id' => $newPaymentTokenId,
             'masked_account_number' => $last4 !== '' ? '**** ' . $last4 : null,
+            'recur_ids' => $recurIds,
         ];
     }
 
@@ -1796,14 +2127,30 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
         return $schedule;
     }
 
+    /** @return array<string, mixed> */
+    private function latestRecurringContribution(int $contributionRecurId): array
+    {
+        return Contribution::get(false)
+            ->addSelect('id', 'contribution_status_id:name')
+            ->addWhere('contribution_recur_id', '=', $contributionRecurId)
+            ->addWhere('is_test', 'IN', [true, false])
+            ->addOrderBy('id', 'DESC')
+            ->setLimit(1)
+            ->execute()
+            ->single();
+    }
+
     /**
      * @param array<string, mixed> $schedule
-     * @return array<string, int|string|null>
+     * @param list<int> $recurIds
+     * @return array<string, mixed>
      */
     private function replacementCheckoutConfig(
         \SumUp\Types\Checkout|CheckoutSuccess $checkout,
-        array $schedule
+        array $schedule,
+        array $recurIds = []
     ): array {
+        $merchantProfile = $this->getVerifiedMerchantProfile();
         return [
             'status' => $this->enumValue($checkout->status ?? 'PENDING'),
             'checkout_id' => (string) $checkout->id,
@@ -1812,13 +2159,19 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             'locale' => CRM_SumupPaymentProcessor_CheckoutMode::getLocale(),
             'mode' => CRM_SumupPaymentProcessor_CheckoutMode::WIDGET,
             'public_key' => '',
-            'country_code' => CRM_SumupPaymentProcessor_CheckoutMode::getMerchantCountryCode(),
+            'merchant_code' => $this->getMerchantCode(),
+            'business_name' => $merchantProfile['business_name'],
+            'country_code' => CRM_SumupPaymentProcessor_CheckoutMode::getMerchantCountryCode(
+                $merchantProfile['country']
+            ),
+            'wallets_allowed' => false,
             'browser_return_url' => '',
             'cancel_url' => '',
+            'recur_ids' => $recurIds,
         ];
     }
 
-    private function deactivateUnusedPaymentToken(int $paymentTokenId, string $customerId): void
+    private function deactivateUnusedPaymentToken(int $paymentTokenId): void
     {
         $inUse = ContributionRecur::get(false)
             ->addSelect('id')
@@ -1840,6 +2193,7 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             return;
         }
         try {
+            $customerId = $this->customerIdForPaymentToken($paymentTokenId);
             $this->service()->deactivatePaymentInstrument($customerId, (string) $paymentToken['token']);
         } catch (Throwable $exception) {
             Civi::log()->warning(sprintf(
@@ -1906,7 +2260,8 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
         $status = match ($providerStatus) {
             'SUCCESSFUL' => 'PAID',
             'PENDING' => 'PENDING',
-            'FAILED', 'CANCELLED' => 'FAILED',
+            'CANCELLED' => 'CANCELLED',
+            'FAILED' => 'FAILED',
             default => throw new PaymentProcessorException(E::ts(
                 'Unsupported SumUp terminal transaction status: %1.',
                 [1 => $providerStatus]
@@ -1922,6 +2277,11 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
         );
         if ($status === 'PAID') {
             $this->completeContribution($contribution, $transactionId);
+        } elseif ($status === 'CANCELLED') {
+            $this->cancelPendingContribution(
+                (int) $contribution['id'],
+                (string) $contribution['contribution_status_id:name']
+            );
         } elseif ($status === 'FAILED') {
             $this->failPendingContribution(
                 (int) $contribution['id'],
@@ -1965,7 +2325,7 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
         if (
             $registry['contribution_id'] !== $contributionId
             || $registry['payment_processor_id'] !== $this->getProcessorId()
-            || $registry['purpose'] !== 'PAYMENT'
+            || !in_array($registry['purpose'], ['PAYMENT', 'SETUP_RECURRING_PAYMENT'], true)
             || $registry['checkout_mode'] === CRM_SumupPaymentProcessor_CheckoutMode::HOSTED
         ) {
             return [
@@ -2038,7 +2398,7 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
         if (
             $registry['contribution_id'] !== $contributionId
             || $registry['payment_processor_id'] !== $this->getProcessorId()
-            || $registry['purpose'] !== 'PAYMENT'
+            || !in_array($registry['purpose'], ['PAYMENT', 'SETUP_RECURRING_PAYMENT'], true)
         ) {
             throw new PaymentProcessorException(E::ts('The saved-card checkout is inconsistent.'));
         }
@@ -2049,13 +2409,15 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
                 'total_amount',
                 'currency',
                 'payment_processor_id',
+                'contribution_recur_id',
                 'contribution_status_id:name'
             )
             ->addWhere('id', '=', $contributionId)
             ->addWhere('is_test', 'IN', [true, false])
             ->execute()
             ->single();
-        if ((int) ($contribution['payment_processor_id'] ?? 0) !== $this->getProcessorId()) {
+        $configuredProcessorId = (int) ($contribution['payment_processor_id'] ?? 0);
+        if ($configuredProcessorId > 0 && $configuredProcessorId !== $this->getProcessorId()) {
             throw new PaymentProcessorException(E::ts('The contribution uses another payment processor.'));
         }
         $paymentToken = PaymentToken::get(false)
@@ -2065,17 +2427,32 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             ->single();
         $contactId = (int) $contribution['contact_id'];
         $providerToken = trim((string) $paymentToken['token']);
-        $customerId = $this->recurringCustomerId($contactId);
+        $customerId = $this->customerIdForPaymentToken($paymentTokenId);
+        $registryCustomerId = trim((string) ($registry['customer_id'] ?? ''));
         if (
             (int) $paymentToken['contact_id'] !== $contactId
             || (int) $paymentToken['payment_processor_id'] !== $this->getProcessorId()
-            || !hash_equals((string) ($registry['customer_id'] ?? ''), $customerId)
+            || (
+                $registry['purpose'] === 'PAYMENT'
+                && $registryCustomerId !== ''
+                && !hash_equals($registryCustomerId, $customerId)
+            )
             || !preg_match('/^[A-Za-z0-9_-]{8,255}$/', $providerToken)
         ) {
             throw new PaymentProcessorException(E::ts('The selected SumUp card does not belong to this contribution.'));
         }
         $this->service()->getPaymentInstrument($customerId, $providerToken);
         CRM_SumupPaymentProcessor_CheckoutStore::attachPaymentToken($checkoutId, $paymentTokenId);
+
+        if ($registry['purpose'] === 'SETUP_RECURRING_PAYMENT') {
+            return $this->completeRecurringSetupWithSavedCard(
+                $checkoutId,
+                $paymentTokenId,
+                $customerId,
+                $providerToken,
+                $contribution
+            );
+        }
 
         $verified = $this->verifyAndApplyCheckout($checkoutId, $contributionId);
         if ($verified['status'] !== 'PENDING') {
@@ -2091,6 +2468,62 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             ];
         }
         return $this->verifyAndApplyCheckout($checkoutId, $contributionId);
+    }
+
+    /**
+     * Complete a recurring contribution using an already-authorised SumUp card.
+     *
+     * @param array<string, mixed> $contribution
+     * @return array<string, mixed>
+     */
+    private function completeRecurringSetupWithSavedCard(
+        string $setupCheckoutId,
+        int $paymentTokenId,
+        string $customerId,
+        string $providerToken,
+        array $contribution
+    ): array {
+        $lock = CRM_Core_Lock::createScopedLock('data.sumup.recurring.setup.' . $setupCheckoutId);
+        if (!$lock->acquire()) {
+            throw new PaymentProcessorException(E::ts('This SumUp recurring setup is already being processed.'));
+        }
+        try {
+            $contributionRecurId = (int) ($contribution['contribution_recur_id'] ?? 0);
+            if ($contributionRecurId <= 0) {
+                throw new PaymentProcessorException(E::ts('The SumUp recurring setup is not linked to CiviCRM.'));
+            }
+            ContributionRecur::update(false)
+                ->addWhere('id', '=', $contributionRecurId)
+                ->setValues([
+                    'payment_token_id' => $paymentTokenId,
+                    'payment_processor_id' => $this->getProcessorId(),
+                ])
+                ->execute();
+
+            $charge = CRM_SumupPaymentProcessor_CheckoutStore::getBySetupCheckoutId($setupCheckoutId);
+            if ($charge === null) {
+                $charge = $this->createInitialRecurringCharge($setupCheckoutId, $customerId, $contribution);
+            }
+            $chargeCheckoutId = (string) $charge['checkout_id'];
+            CRM_SumupPaymentProcessor_CheckoutStore::attachPaymentToken($chargeCheckoutId, $paymentTokenId);
+            $verified = $this->verifyAndApplyCheckout($chargeCheckoutId, (int) $contribution['id']);
+            if ($verified['status'] !== 'PENDING') {
+                return $verified;
+            }
+
+            $processed = $this->service()->processWithToken($chargeCheckoutId, $customerId, $providerToken);
+            if ($processed instanceof CheckoutAccepted) {
+                return [
+                    'status' => 'CUSTOMER_ACTION_REQUIRED',
+                    'contribution_id' => (int) $contribution['id'],
+                    'transaction_id' => null,
+                    'next_step' => $this->normaliseNextStep($processed),
+                ];
+            }
+            return $this->verifyAndApplyCheckout($chargeCheckoutId, (int) $contribution['id']);
+        } finally {
+            $lock->release();
+        }
     }
 
     /** @return array{url: string, method: string, payload: array<string, scalar|null>} */
@@ -2132,29 +2565,6 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
     private function getMerchantCode(): string
     {
         return trim((string) ($this->_paymentProcessor['user_name'] ?? ''));
-    }
-
-    private function assertFullRefundAmount(string $transactionReference, float $refundAmount): void
-    {
-        $payments = Payment::get(false)
-            ->addSelect('total_amount')
-            ->addWhere('trxn_id', '=', $transactionReference)
-            ->addWhere('payment_processor_id', '=', $this->getProcessorId())
-            ->addWhere('total_amount', '>', 0)
-            ->setLimit(2)
-            ->execute();
-        if (count($payments) !== 1) {
-            throw new PaymentProcessorException(
-                E::ts('The SumUp refund cannot be requested because the original CiviCRM payment could not be found.')
-            );
-        }
-
-        $originalAmount = (float) $payments->first()['total_amount'];
-        if (abs($originalAmount - $refundAmount) > 0.0001) {
-            throw new PaymentProcessorException(
-                E::ts('SumUp supports full refunds only through this integration. Partial refunds are unavailable.')
-            );
-        }
     }
 
     private function getRefundedMinorUnits(TransactionFull $transaction): int
@@ -2302,6 +2712,7 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
                 ));
             }
 
+            $financialDetails = $this->getFinancialDetails($transactionId);
             $values = [
                 'contribution_id' => $contributionId,
                 'total_amount' => (float) $contribution['total_amount'],
@@ -2310,7 +2721,35 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
                 'trxn_id' => $transactionId,
                 'trxn_date' => date('Y-m-d H:i:s'),
             ];
-            $values += $this->getFinancialCardMetadata($transactionId);
+            if (isset($financialDetails['fee_amount'])) {
+                $values['fee_amount'] = $financialDetails['fee_amount'];
+            }
+            if (isset($financialDetails['pan_truncation'])) {
+                $values['pan_truncation'] = $financialDetails['pan_truncation'];
+            }
+            if (isset($financialDetails['card_type_id'])) {
+                $values['card_type_id'] = $financialDetails['card_type_id'];
+            }
+
+            $contribUpdate = [
+                'receive_date' => date('Y-m-d H:i:s'),
+                'trxn_id' => $transactionId,
+            ];
+            if (isset($financialDetails['fee_amount']) && $financialDetails['fee_amount'] > 0) {
+                $contribUpdate['fee_amount'] = $financialDetails['fee_amount'];
+                $contribUpdate['net_amount'] = max(
+                    0.0,
+                    (float) $contribution['total_amount'] - $financialDetails['fee_amount']
+                );
+            }
+            if (isset($financialDetails['revenue_recognition_date'])) {
+                $contribUpdate['revenue_recognition_date'] = $financialDetails['revenue_recognition_date'];
+            }
+            Contribution::update(false)
+                ->addWhere('id', '=', $contributionId)
+                ->setValues($contribUpdate)
+                ->execute();
+
             Payment::create(false)
                 ->setValues($values)
                 ->setNotificationForCompleteOrder(true)
@@ -2321,27 +2760,213 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
     }
 
     /**
-     * Retrieve optional card details without weakening payment completion.
-     *
-     * @return array{card_type_id?: int, pan_truncation?: string}
+     * @param array<string, mixed> $payload
+     * @return array{status: string, contribution_id: int, transaction_id: string}
      */
-    private function getFinancialCardMetadata(string $transactionId): array
+    private function applyExternalRefund(string $transactionReference, array $payload): array
+    {
+        if ($transactionReference === '') {
+            throw new PaymentProcessorException(E::ts('Missing transaction reference in SumUp refund webhook.'));
+        }
+
+        $lock = CRM_Core_Lock::createScopedLock('data.sumup.external-refund.' . $transactionReference);
+        if (!$lock->acquire()) {
+            throw new PaymentProcessorException(E::ts(
+                'This SumUp refund notification is already being processed.'
+            ));
+        }
+
+        try {
+            $transaction = $this->service()->getTransaction($transactionReference);
+            $transactionId = trim((string) $transaction->id);
+            if (!preg_match('/^[A-Za-z0-9_-]{4,100}$/', $transactionId)) {
+                throw new PaymentProcessorException(E::ts('SumUp did not return a valid transaction identifier.'));
+            }
+
+            $exactPayments = Payment::get(false)
+                ->addSelect('id', 'contribution_id', 'total_amount', 'trxn_id')
+                ->addWhere('trxn_id', '=', $transactionId)
+                ->addWhere('payment_processor_id', '=', $this->getProcessorId())
+                ->addWhere('total_amount', '>', 0)
+                ->execute();
+            $paymentMatches = [];
+            foreach ($exactPayments as $exactPayment) {
+                $paymentMatches[] = $exactPayment;
+            }
+            if ($paymentMatches === []) {
+                $legacyCandidates = Payment::get(false)
+                    ->addSelect('id', 'contribution_id', 'total_amount', 'trxn_id')
+                    ->addWhere('trxn_id', 'LIKE', '%' . $transactionId . '%')
+                    ->addWhere('payment_processor_id', '=', $this->getProcessorId())
+                    ->addWhere('total_amount', '>', 0)
+                    ->execute();
+                foreach ($legacyCandidates as $candidate) {
+                    $references = preg_split('/\s*,\s*/', (string) ($candidate['trxn_id'] ?? '')) ?: [];
+                    if (in_array($transactionId, $references, true)) {
+                        $paymentMatches[] = $candidate;
+                    }
+                }
+            }
+            if (count($paymentMatches) !== 1) {
+                throw new PaymentProcessorException(E::ts(
+                    'Expected one CiviCRM payment for SumUp transaction %1; found %2.',
+                    [1 => $transactionId, 2 => count($paymentMatches)]
+                ));
+            }
+
+            $payment = $paymentMatches[0];
+            $contributionId = (int) $payment['contribution_id'];
+            $providerRefundedMinor = $this->getRefundedMinorUnits($transaction);
+            if ($providerRefundedMinor <= 0) {
+                throw new PaymentProcessorException(E::ts(
+                    'SumUp has not exposed a refundable event for transaction %1 yet.',
+                    [1 => $transactionId]
+                ));
+            }
+            $transactionMinor = (int) round((float) $transaction->amount * 100);
+            if ($providerRefundedMinor > $transactionMinor) {
+                throw new PaymentProcessorException(E::ts(
+                    'The SumUp refunded amount exceeds the original transaction amount.'
+                ));
+            }
+
+            $existingRefunds = Payment::get(false)
+                ->addSelect('id', 'total_amount', 'trxn_id')
+                ->addWhere('contribution_id', '=', $contributionId)
+                ->addWhere('payment_processor_id', '=', $this->getProcessorId())
+                ->addWhere('total_amount', '<', 0)
+                ->execute();
+            $recordedRefundedMinor = 0;
+            foreach ($existingRefunds as $existingRefund) {
+                $recordedRefundedMinor += abs((int) round((float) $existingRefund['total_amount'] * 100));
+            }
+
+            $unrecordedMinor = $providerRefundedMinor - $recordedRefundedMinor;
+            if ($unrecordedMinor > 0) {
+                $unrecordedId = $this->findUnrecordedRefundEventId($transaction, $unrecordedMinor);
+                $refundEventId = $unrecordedId ?? 'external-' . substr(
+                    hash('sha256', $transactionId . ':' . $providerRefundedMinor),
+                    0,
+                    16
+                );
+                $refundTrxnId = $this->refundTransactionId($transactionId, $refundEventId);
+                Payment::create(false)
+                    ->setValues([
+                        'contribution_id' => $contributionId,
+                        'total_amount' => -($unrecordedMinor / 100),
+                        'payment_processor_id' => $this->getProcessorId(),
+                        'payment_instrument_id' => $this->getPaymentInstrumentID(),
+                        'trxn_id' => $refundTrxnId,
+                        'trxn_date' => date('Y-m-d H:i:s'),
+                    ])
+                    ->execute();
+
+                Civi::log()->info(sprintf(
+                    'Recorded external SumUp refund delta for contribution %d: amount=%.2f transaction_id=%s',
+                    $contributionId,
+                    $unrecordedMinor / 100,
+                    $transactionId
+                ));
+            }
+
+            return [
+                'status' => 'REFUNDED',
+                'contribution_id' => $contributionId,
+                'transaction_id' => $transactionId,
+            ];
+        } finally {
+            $lock->release();
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     * @return array{status: string, contribution_id: int, transaction_id: string}
+     */
+    private function applyChargeback(string $transactionReference, array $payload): array
+    {
+        if ($transactionReference === '') {
+            throw new PaymentProcessorException(E::ts('Missing transaction reference in SumUp chargeback webhook.'));
+        }
+
+        $service = $this->service();
+        $transaction = $service->getTransaction($transactionReference);
+        $transactionId = trim((string) $transaction->id);
+
+        $payments = Payment::get(false)
+            ->addSelect('id', 'contribution_id')
+            ->addWhere('trxn_id', 'LIKE', '%' . $transactionId . '%')
+            ->addWhere('payment_processor_id', '=', $this->getProcessorId())
+            ->execute();
+
+        $payment = $payments->first();
+        if (!$payment) {
+            throw new PaymentProcessorException(E::ts(
+                'No matching CiviCRM payment found for SumUp chargeback transaction %1.',
+                [1 => $transactionId]
+            ));
+        }
+
+        $contributionId = (int) $payment['contribution_id'];
+        $chargebackStatusId = CRM_Core_PseudoConstant::getKey(
+            'CRM_Contribute_BAO_Contribution',
+            'contribution_status_id',
+            'Chargeback'
+        );
+        if ($chargebackStatusId === null || $chargebackStatusId === false) {
+            $chargebackStatusId = CRM_Core_PseudoConstant::getKey(
+                'CRM_Contribute_BAO_Contribution',
+                'contribution_status_id',
+                'Cancelled'
+            );
+        }
+
+        if ($chargebackStatusId !== null && $chargebackStatusId !== false) {
+            Contribution::update(false)
+                ->addWhere('id', '=', $contributionId)
+                ->setValues([
+                    'contribution_status_id' => (int) $chargebackStatusId,
+                    'cancel_date' => date('Y-m-d H:i:s'),
+                    'cancel_reason' => E::ts('SumUp chargeback / cardholder dispute'),
+                ])
+                ->execute();
+        }
+
+        Civi::log()->warning(sprintf(
+            'SumUp chargeback applied to contribution %d: transaction_id=%s',
+            $contributionId,
+            $transactionId
+        ));
+
+        return [
+            'status' => 'CHARGEBACK',
+            'contribution_id' => $contributionId,
+            'transaction_id' => $transactionId,
+        ];
+    }
+
+    /**
+     * Retrieve financial details (fees, payout date, card details) without weakening payment completion.
+     *
+     * @return array{card_type_id?: int, pan_truncation?: string, fee_amount?: float, revenue_recognition_date?: string}
+     */
+    private function getFinancialDetails(string $transactionId): array
     {
         try {
             $transaction = $this->service()->getTransaction($transactionId);
         } catch (Throwable $exception) {
             Civi::log()->warning(sprintf(
-                'Unable to retrieve SumUp card metadata for transaction %s: %s',
+                'Unable to retrieve SumUp financial details for transaction %s: %s',
                 $transactionId,
                 $exception->getMessage()
             ));
             return [];
         }
 
-        $metadata = [];
+        $details = [];
         $last4 = $this->cardLast4($transaction->card->last4Digits ?? null);
         if ($last4 !== null) {
-            $metadata['pan_truncation'] = $last4;
+            $details['pan_truncation'] = $last4;
         }
         $cardName = $this->civiCardName($this->enumValue($transaction->card->type ?? ''));
         if ($cardName !== null) {
@@ -2351,10 +2976,47 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
                 $cardName
             );
             if ($cardTypeId !== null && $cardTypeId !== false) {
-                $metadata['card_type_id'] = (int) $cardTypeId;
+                $details['card_type_id'] = (int) $cardTypeId;
             }
         }
-        return $metadata;
+
+        // Fee extraction
+        $feeAmount = null;
+        if ($transaction->feeAmount !== null && (float) $transaction->feeAmount > 0) {
+            $feeAmount = (float) $transaction->feeAmount;
+        } else {
+            foreach ($transaction->events ?? [] as $event) {
+                if (isset($event->feeAmount) && (float) $event->feeAmount > 0) {
+                    $feeAmount = (float) $event->feeAmount;
+                    break;
+                }
+            }
+        }
+        if ($feeAmount !== null) {
+            $details['fee_amount'] = $feeAmount;
+        }
+
+        // Payout date / Revenue recognition date
+        $payoutDate = null;
+        if (!empty($transaction->payoutDate)) {
+            $payoutDate = trim((string) $transaction->payoutDate);
+        } else {
+            foreach ($transaction->transactionEvents ?? [] as $te) {
+                if (!empty($te->dueDate)) {
+                    $payoutDate = trim((string) $te->dueDate);
+                    break;
+                }
+                if (!empty($te->timestamp)) {
+                    $payoutDate = substr(trim((string) $te->timestamp), 0, 10);
+                    break;
+                }
+            }
+        }
+        if ($payoutDate !== null && preg_match('/^\d{4}-\d{2}-\d{2}/', $payoutDate)) {
+            $details['revenue_recognition_date'] = substr($payoutDate, 0, 10) . ' 00:00:00';
+        }
+
+        return $details;
     }
 
     private function cardLast4(mixed $last4): ?string
@@ -2386,6 +3048,18 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             'DISCOVER' => 'Discover',
             default => null,
         };
+    }
+
+    private function cancelPendingContribution(int $contributionId, string $currentStatus): void
+    {
+        if ($currentStatus !== 'Pending') {
+            return;
+        }
+        Contribution::update(false)
+            ->addWhere('id', '=', $contributionId)
+            ->addWhere('contribution_status_id:name', '=', 'Pending')
+            ->addValue('contribution_status_id:name', 'Cancelled')
+            ->execute();
     }
 
     private function failPendingContribution(int $contributionId, string $currentStatus): void

@@ -25,7 +25,9 @@ CiviCRM records a payment only after retrieving and validating the checkout thro
 - contact and administrator visibility of saved cards;
 - card replacement, recurring amount changes and cancellation through native CiviCRM self-service;
 - configurable CiviCRM Scheduled Reminders for SumUp recurring payments and card remediation;
-- full online refunds through CiviCRM;
+- full and partial online refunds through CiviCRM with SumUp constraint reporting;
+- automatic accounting reconciliation: extraction of processing fees (`fee_amount`, `net_amount`) and payout dates (`revenue_recognition_date`);
+- extended lifecycle webhook handling for external refunds, chargebacks/disputes, and explicit cancellations;
 - native CiviCRM success and cancellation URLs;
 - durable SumUp checkout notifications through MJWShared;
 - an API4 `SumupCheckout` registry that counts attempts independently from payments;
@@ -33,7 +35,7 @@ CiviCRM records a payment only after retrieving and validating the checkout thro
 
 The modes `widget`, `widget_wallet`, `wallet`, and `hosted` are implemented. The signed local checkout route verifies the browser return and remains available as a fallback; it is no longer a normal visible payment step.
 
-The Solo Cloud API integration can pair and synchronise physical or Virtual Solo readers, assign an immutable site code, apply a deterministic terminal name, initiate payments from CiviCRM's back office or an Afform checkout, and complete contributions after authoritative SumUp verification.
+The Solo Cloud API integration can pair and synchronise physical or Virtual Solo readers via Afform UI or API4, assign an immutable site code, apply a deterministic terminal name, initiate payments from CiviCRM's back office or an Afform checkout, handle unpair/remote deletion sync, and complete contributions after authoritative SumUp verification.
 
 ## Configuration
 
@@ -54,7 +56,7 @@ Under **Contributions > SumUp settings**, choose:
 
 Drupal Webform mounts Widget and wallet modes directly after the validated form creates the Pending contribution. Hosted Checkout returns Webform's native `WebformRefreshCommand`; an optional Drupal module can decorate payment redirects by using the `paymentRedirect` and `paymentProvider` response metadata. A bundled command remains available only for legacy Webform versions that do not provide the native command.
 
-The merchant country code defaults to the ISO alpha-2 country of the primary address of the CiviCRM domain organisation. The setting can override it when the SumUp merchant's principal place of business differs. Wallet checkout requires HTTPS. Apple Pay also requires SumUp/Apple domain verification, and availability of either wallet depends on the merchant account, browser, device, and configured wallet.
+The extension reads the configured merchant through SumUp's Merchant API. SumUp's customer-facing business name is shown on embedded payment forms, while the returned ISO alpha-2 country and default currency configure wallets and bind the processor to that merchant account. A contribution in another currency is rejected before a checkout is created. Use another CiviCRM processor backed by the corresponding SumUp merchant account for another currency. Wallet checkout requires HTTPS. Apple Pay also requires SumUp/Apple domain verification, and availability of either wallet depends on the merchant account, browser, device, and configured wallet.
 
 Solo Cloud API also requires a SumUp Affiliate Key and its matching Application ID. Configure both under **Contributions > SumUp settings** before initiating a terminal payment. These values identify the integration; the API key remains the authorization credential.
 
@@ -68,7 +70,7 @@ The extension sends this URL to SumUp as the checkout `return_url`. The HTTP req
 
 ## Refunds
 
-Full refunds are available from CiviCRM's native payment refund workflow. The extension verifies the authoritative SumUp transaction, currency and remaining refundable balance before sending the request. Partial refunds are deliberately rejected by the current integration. CiviCRM records the associated negative Payment after SumUp accepts the refund.
+Full and partial refunds are available from CiviCRM's native payment refund workflow. The extension verifies the authoritative SumUp transaction, currency and remaining refundable balance before sending the request. When a specific payment type rejects a partial amount (e.g. recurring card payments requiring full refunds), the extension displays an explicit error message detailing the minimum required amount. CiviCRM records the associated negative Payment after SumUp accepts the refund.
 
 The SumUp credential must include the `refunds.write` or `payments` scope. SumUp does not return the original processing fees when a payment is refunded.
 
@@ -87,7 +89,18 @@ cv api4 SumupRecurringCard.run dryRun=1
 cv api4 SumupRecurringCard.run recurId=9 dryRun=1
 ```
 
-The action processes at most 25 due schedules by default, refuses occurrences overdue by more than seven days, and uses deterministic contribution and checkout references to prevent a retry from creating another charge. Schedule this command only after validating it with the merchant sandbox and the site's normal cron runner.
+The extension installs an active daily scheduled job which invokes this API4
+engine. It processes at most 25 due schedules by default, refuses occurrences
+overdue by more than seven days, and uses deterministic contribution and
+checkout references to prevent a retry from creating another charge. The API4
+commands above remain available for dry runs, support and targeted recovery.
+
+Recurring Widget checkouts offer active saved SumUp cards as well as a new-card
+authorisation. The card-replacement page updates the selected schedule by
+default and can apply the verified replacement card to other schedules selected
+by the payer. Under **Contributions > SumUp settings**, the optional strict
+single-plan policy can prevent a contact from creating a second active SumUp
+plan in the same test or live environment.
 
 CiviCRM's native recurring-payment pages let an authorised contact or
 administrator replace the saved card, change the amount of future occurrences,

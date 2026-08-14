@@ -19,7 +19,7 @@
   },
   "scripts": {
     "cs": "phpcs --standard=phpcs.xml.dist",
-    "analyse": "phpstan analyse --configuration=phpstan.neon.dist",
+    "analyse": "php -d memory_limit=1G ./vendor/bin/phpstan analyse --configuration=phpstan.neon.dist --debug",
     "check": [
       "@cs",
       "@analyse"

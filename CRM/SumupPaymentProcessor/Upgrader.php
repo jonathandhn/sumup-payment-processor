@@ -16,6 +16,7 @@ class CRM_SumupPaymentProcessor_Upgrader extends CRM_Extension_Upgrader_Base
         $this->ensureCheckoutTable();
         $this->ensureReaderTable();
         $this->ensureRemediationTable();
+        $this->ensureTokenCustomerTable();
     }
 
     public function upgrade_1001(): bool
@@ -136,6 +137,31 @@ class CRM_SumupPaymentProcessor_Upgrader extends CRM_Extension_Upgrader_Base
         return true;
     }
 
+    public function upgrade_1009(): bool
+    {
+        $this->ctx->log->info('Applying SumUp update 1009: retain the remote customer for each saved card.');
+        $this->ensureTokenCustomerTable();
+        CRM_Core_DAO::executeQuery(
+            'INSERT INTO civicrm_sumup_payment_token_customer
+                (payment_token_id, customer_id, modified_date)
+             SELECT checkout.payment_token_id, checkout.customer_id, NOW()
+             FROM civicrm_sumup_checkout checkout
+             INNER JOIN (
+                 SELECT payment_token_id, MAX(id) AS id
+                 FROM civicrm_sumup_checkout
+                 WHERE payment_token_id IS NOT NULL
+                   AND customer_id IS NOT NULL
+                   AND customer_id <> \'\'
+                 GROUP BY payment_token_id
+             ) latest ON latest.id = checkout.id
+             ON DUPLICATE KEY UPDATE
+                customer_id = VALUES(customer_id),
+                modified_date = VALUES(modified_date)'
+        );
+
+        return true;
+    }
+
     private function ensureCheckoutTable(): void
     {
         CRM_Core_DAO::executeQuery(
@@ -227,6 +253,22 @@ class CRM_SumupPaymentProcessor_Upgrader extends CRM_Extension_Upgrader_Base
                   FOREIGN KEY (contribution_id) REFERENCES civicrm_contribution(id) ON DELETE CASCADE,
                 CONSTRAINT FK_sumup_remediation_processor
                   FOREIGN KEY (payment_processor_id) REFERENCES civicrm_payment_processor(id) ON DELETE CASCADE
+            ) ENGINE=InnoDB'
+        );
+    }
+
+    private function ensureTokenCustomerTable(): void
+    {
+        CRM_Core_DAO::executeQuery(
+            'CREATE TABLE IF NOT EXISTS civicrm_sumup_payment_token_customer (
+                payment_token_id int unsigned NOT NULL,
+                customer_id varchar(100) NOT NULL,
+                created_date timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                modified_date datetime NULL DEFAULT NULL,
+                PRIMARY KEY (payment_token_id),
+                KEY index_sumup_token_customer (customer_id),
+                CONSTRAINT FK_sumup_token_customer_payment_token
+                  FOREIGN KEY (payment_token_id) REFERENCES civicrm_payment_token(id) ON DELETE CASCADE
             ) ENGINE=InnoDB'
         );
     }
