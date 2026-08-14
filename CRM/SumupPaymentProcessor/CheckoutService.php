@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Civi\Payment\Exception\PaymentProcessorException;
 use CRM_SumupPaymentProcessor_ExtensionUtil as E;
+use SumUp\Hydrator;
 use SumUp\HttpClient\RequestOptions;
 use SumUp\ResponseDecoder;
 use SumUp\SumUp;
@@ -204,14 +205,14 @@ final class CRM_SumupPaymentProcessor_CheckoutService
             throw new PaymentProcessorException(E::ts('Invalid SumUp transaction reference.'));
         }
 
-        $params = new TransactionsGetParams();
+        $params = [];
         if (preg_match('/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i', $transactionReference)) {
-            $params->id = $transactionReference;
+            $params['id'] = $transactionReference;
         } else {
-            $params->transactionCode = $transactionReference;
+            $params['transaction_code'] = $transactionReference;
         }
 
-        return $this->client->transactions()->get($this->merchantCode, $params, $this->requestOptions());
+        return $this->fetchTransactionFull($params);
     }
 
     public function getTransactionByClientTransactionId(string $clientTransactionId): TransactionFull
@@ -220,10 +221,60 @@ final class CRM_SumupPaymentProcessor_CheckoutService
             throw new PaymentProcessorException(E::ts('Invalid SumUp client transaction identifier.'));
         }
 
-        $params = new TransactionsGetParams();
-        $params->clientTransactionId = $clientTransactionId;
+        return $this->fetchTransactionFull(['client_transaction_id' => $clientTransactionId]);
+    }
 
-        return $this->client->transactions()->get($this->merchantCode, $params, $this->requestOptions());
+    /**
+     * @param array<string, string> $queryParams
+     */
+    private function fetchTransactionFull(array $queryParams): TransactionFull
+    {
+        $path = sprintf('/v2.1/merchants/%s/transactions', rawurlencode($this->merchantCode));
+        if (!empty($queryParams)) {
+            $path .= '?' . http_build_query($queryParams);
+        }
+
+        $response = $this->client->request('GET', $path, [], $this->requestOptions());
+        $body = $response->getBody();
+
+        // Sanitize unknown event statuses in payload to prevent SDK Enum deserialization crashes
+        if (is_array($body)) {
+            $knownStatuses = [
+                'FAILED',
+                'PAID_OUT',
+                'PENDING',
+                'RECONCILED',
+                'REFUNDED',
+                'SCHEDULED',
+                'SUCCESSFUL',
+            ];
+            if (isset($body['events']) && is_array($body['events'])) {
+                foreach ($body['events'] as &$event) {
+                    if (is_array($event) && isset($event['status'])) {
+                        if (!in_array($event['status'], $knownStatuses, true)) {
+                            $event['status'] = 'FAILED';
+                        }
+                    }
+                }
+                unset($event);
+            }
+            if (isset($body['transaction_events']) && is_array($body['transaction_events'])) {
+                foreach ($body['transaction_events'] as &$event) {
+                    if (is_array($event) && isset($event['status'])) {
+                        if (!in_array($event['status'], $knownStatuses, true)) {
+                            $event['status'] = 'FAILED';
+                        }
+                    }
+                }
+                unset($event);
+            }
+        }
+
+        $decoded = Hydrator::hydrate($body, TransactionFull::class);
+        if (!$decoded instanceof TransactionFull) {
+            throw new PaymentProcessorException(E::ts('Unable to deserialize SumUp transaction details.'));
+        }
+        return $decoded;
     }
 
     public function refundTransaction(string $transactionId, ?float $amount): void
