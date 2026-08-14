@@ -427,3 +427,14 @@ namespace Civi\Api4\Generic {
         public static function delete(bool $checkPermissions = true): static { return new static(); }
     }
 }
+
+namespace Civi\Core\Service {
+    abstract class AutoService {}
+}
+
+namespace Symfony\Component\EventDispatcher {
+    interface EventSubscriberInterface {
+        public static function getSubscribedEvents(): array;
+    }
+}
+

@@ -27,12 +27,12 @@ function sumup_payment_processor_civicrm_config(\CRM_Core_Config $config): void
             'civi.checkout.options',
             'sumup_payment_processor_register_afform_checkout_options'
         );
-        \Civi::dispatcher()->addListener(
-            'hook_civicrm_tabset',
-            'sumup_payment_processor_decorate_contact_tab',
-            -100
-        );
     }
+    \Civi::dispatcher()->addListener(
+        'hook_civicrm_tabset',
+        'sumup_payment_processor_decorate_contact_tab',
+        -100
+    );
 }
 
 /**
@@ -125,12 +125,8 @@ function sumup_payment_processor_civicrm_angularModules(array &$angularModules):
 
 function sumup_payment_processor_supports_afform_checkout(): bool
 {
-    return version_compare(\CRM_Utils_System::version(), '6.14', '>=')
-        && interface_exists('Civi\\Checkout\\CheckoutOptionInterface')
-        && interface_exists('Civi\\Checkout\\AfformCheckoutOptionInterface')
-        && class_exists('Civi\\Checkout\\CheckoutSession')
-        && class_exists('Civi\\Afform\\Event\\AfformValidateEvent')
-        && class_exists('Civi\\Api4\\PaymentProcessor');
+    return interface_exists('Civi\\Checkout\\CheckoutOptionInterface')
+        && interface_exists('Civi\\Checkout\\AfformCheckoutOptionInterface');
 }
 
 /**

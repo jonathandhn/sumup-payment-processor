@@ -33,15 +33,15 @@ if (
                     \CRM_SumupPaymentProcessor_CheckoutMode::getConfiguredMode()
                 )
             ) {
-                return E::ts('%1 (SumUp Hosted Checkout)', [1 => $this->getConnectionLabel()]);
+                return E::ts('%1 (Hosted Checkout)', [1 => $this->getConnectionLabel()]);
             }
-            return E::ts('%1 (embedded SumUp checkout)', [1 => $this->getConnectionLabel()]);
+            return E::ts('%1 (Online card / Wallets)', [1 => $this->getConnectionLabel()]);
         }
 
         public function getFrontendLabel(): string
         {
             $connection = $this->getDisplayConnection();
-            return (string) ($connection['frontend_title'] ?? $connection['title'] ?? 'SumUp');
+            return (string) ($connection['frontend_title'] ?? $connection['title'] ?? E::ts('Credit or debit card'));
         }
 
         public function getPaymentMethod(): ?string
