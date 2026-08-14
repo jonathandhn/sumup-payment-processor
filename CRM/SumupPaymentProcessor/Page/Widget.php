@@ -129,26 +129,62 @@ class CRM_SumupPaymentProcessor_Page_Widget extends CRM_Core_Page
     private function signedParameters(): array
     {
         $shortC = CRM_Utils_Request::retrieve('c', 'Positive', $this, false);
+        $shortP = CRM_Utils_Request::retrieve('p', 'Positive', $this, false);
         $shortS = CRM_Utils_Request::retrieve('s', 'String', $this, false);
         if (!empty($shortC) && !empty($shortS)) {
             $contributionId = (int) $shortC;
             $sig = (string) $shortS;
             $key = CRM_Core_Payment_Sumup::getBrowserReturnSigningKey();
-            $expected = substr(hash_hmac('sha256', (string) $contributionId, $key), 0, 12);
-            if (!hash_equals($expected, $sig)) {
-                throw new PaymentProcessorException(E::ts('The SumUp payment link signature is invalid.'));
+
+            if (!empty($shortP)) {
+                $processorId = (int) $shortP;
+                $expected = substr(hash_hmac('sha256', $contributionId . ':' . $processorId, $key), 0, 12);
+                if (!hash_equals($expected, $sig)) {
+                    throw new PaymentProcessorException(E::ts('The SumUp payment link signature is invalid.'));
+                }
+            } else {
+                $expected = substr(hash_hmac('sha256', (string) $contributionId, $key), 0, 12);
+                if (!hash_equals($expected, $sig)) {
+                    throw new PaymentProcessorException(E::ts('The SumUp payment link signature is invalid.'));
+                }
+                $latestRecord = \Civi\Api4\SumupCheckout::get(false)
+                    ->addSelect('payment_processor_id')
+                    ->addWhere('contribution_id', '=', $contributionId)
+                    ->addOrderBy('id', 'DESC')
+                    ->setLimit(1)
+                    ->execute()
+                    ->first();
+                $processorId = !empty($latestRecord['payment_processor_id'])
+                    ? (int) $latestRecord['payment_processor_id']
+                    : 0;
             }
 
-            $contribution = Contribution::get(false)
-                ->addSelect('id', 'payment_processor_id')
-                ->addWhere('id', '=', $contributionId)
-                ->execute()
-                ->single();
-            if (empty($contribution['payment_processor_id'])) {
+            if ($processorId <= 0) {
+                $contribution = Contribution::get(false)
+                    ->addSelect('payment_processor_id')
+                    ->addWhere('id', '=', $contributionId)
+                    ->execute()
+                    ->single();
+                $processorId = !empty($contribution['payment_processor_id'])
+                    ? (int) $contribution['payment_processor_id']
+                    : 0;
+            }
+
+            if ($processorId <= 0) {
+                $activeProc = \Civi\Api4\PaymentProcessor::get(false)
+                    ->addSelect('id')
+                    ->addWhere('class_name', 'LIKE', 'Payment_Sum%')
+                    ->addWhere('is_active', '=', true)
+                    ->setLimit(1)
+                    ->execute()
+                    ->first();
+                $processorId = !empty($activeProc['id']) ? (int) $activeProc['id'] : 0;
+            }
+
+            if ($processorId <= 0) {
                 throw new PaymentProcessorException(E::ts('Payment processor not found for this contribution.'));
             }
 
-            $processorId = (int) $contribution['payment_processor_id'];
             $returnUrl = CRM_Utils_System::url('civicrm/donate', '', true, null, false, true);
             $cancelUrl = CRM_Utils_System::url('civicrm/donate', '', true, null, false, true);
 
