@@ -15,12 +15,4 @@
     <is_public>true</is_public>
     <is_ssl>true</is_ssl>
   </item>
-  <item>
-    <path>civicrm/sumup/qr</path>
-    <page_callback>CRM_SumupPaymentProcessor_Page_QrRedirect</page_callback>
-    <title>Instant QR payment</title>
-    <access_callback>1</access_callback>
-    <is_public>true</is_public>
-    <is_ssl>true</is_ssl>
-  </item>
 </menu>

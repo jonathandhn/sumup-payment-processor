@@ -104,6 +104,52 @@ class CRM_SumupPaymentProcessor_Page_Widget extends CRM_Core_Page
      */
     private function signedParameters(): array
     {
+        $shortC = CRM_Utils_Request::retrieve('c', 'Positive', $this, false);
+        $shortS = CRM_Utils_Request::retrieve('s', 'String', $this, false);
+        if (!empty($shortC) && !empty($shortS)) {
+            $contributionId = (int) $shortC;
+            $sig = (string) $shortS;
+            $key = CRM_Core_Payment_Sumup::getBrowserReturnSigningKey();
+            $expected = substr(hash_hmac('sha256', (string) $contributionId, $key), 0, 12);
+            if (!hash_equals($expected, $sig)) {
+                throw new PaymentProcessorException(E::ts('The SumUp payment link signature is invalid.'));
+            }
+
+            $contribution = Contribution::get(false)
+                ->addSelect('id', 'payment_processor_id')
+                ->addWhere('id', '=', $contributionId)
+                ->execute()
+                ->single();
+            if (empty($contribution['payment_processor_id'])) {
+                throw new PaymentProcessorException(E::ts('Payment processor not found for this contribution.'));
+            }
+
+            $processorId = (int) $contribution['payment_processor_id'];
+            $returnUrl = CRM_Utils_System::url('civicrm/donate', '', true, null, false, true);
+            $cancelUrl = CRM_Utils_System::url('civicrm/donate', '', true, null, false, true);
+
+            $processor = \Civi\Payment\System::singleton()->getById($processorId);
+            if ($processor instanceof CRM_Core_Payment_Sumup) {
+                try {
+                    $processor->startEmbeddedCheckoutForContribution(
+                        $contributionId,
+                        $returnUrl,
+                        $cancelUrl
+                    );
+                } catch (\Throwable) {
+                    // Checkout may already exist
+                }
+            }
+
+            return [
+                'contribution_id' => $contributionId,
+                'processor_id' => $processorId,
+                'return_url' => $returnUrl,
+                'cancel_url' => $cancelUrl,
+                'expires' => time() + 7200,
+            ];
+        }
+
         $params = [
             'contribution_id' => (int) CRM_Utils_Request::retrieve('contribution_id', 'Positive', $this, true),
             'processor_id' => (int) CRM_Utils_Request::retrieve('processor_id', 'Positive', $this, true),

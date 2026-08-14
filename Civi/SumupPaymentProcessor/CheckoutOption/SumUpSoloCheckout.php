@@ -146,7 +146,7 @@ if (
             $key = \CRM_Core_Payment_Sumup::getBrowserReturnSigningKey();
             $sig = substr(hash_hmac('sha256', (string) $contributionId, $key), 0, 12);
             $qrUrl = \CRM_Utils_System::url(
-                'civicrm/sumup/qr',
+                'civicrm/sumup/widget',
                 ['c' => $contributionId, 's' => $sig],
                 true,
                 null,
