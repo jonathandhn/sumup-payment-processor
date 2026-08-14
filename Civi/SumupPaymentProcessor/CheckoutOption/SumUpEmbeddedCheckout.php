@@ -33,14 +33,14 @@ if (
                     \CRM_SumupPaymentProcessor_CheckoutMode::getConfiguredMode()
                 )
             ) {
-                return E::ts('%1 (Hosted Checkout)', [1 => $this->getConnectionLabel()]);
+                return E::ts('%1 (Page de paiement SumUp)', [1 => $this->getConnectionLabel()]);
             }
-            return E::ts('%1 (Online card / Wallets)', [1 => $this->getConnectionLabel()]);
+            return E::ts('%1 (Carte bancaire en ligne)', [1 => $this->getConnectionLabel()]);
         }
 
         public function getFrontendLabel(): string
         {
-            return E::ts('%1 (secure payment on this page)', [
+            return E::ts('%1 (Paiement sécurisé par carte)', [
                 1 => $this->getConnectionLabel(),
             ]);
         }
