@@ -33,19 +33,34 @@ class CRM_SumupPaymentProcessor_Page_Widget extends CRM_Core_Page
                 ->addWhere('is_test', 'IN', [true, false])
                 ->execute()
                 ->single();
-            $checkoutRecord = CRM_SumupPaymentProcessor_CheckoutStore::getLatestByContributionId(
+            $checkoutRecord = CRM_SumupPaymentProcessor_CheckoutStore::getLatestOnlineByContributionId(
                 $params['contribution_id'],
                 $params['processor_id']
             );
+
+            if ($checkoutRecord['checkout_mode'] === CRM_SumupPaymentProcessor_CheckoutMode::SOLO) {
+                $processor->startEmbeddedCheckoutForContribution(
+                    $params['contribution_id'],
+                    $params['return_url'],
+                    $params['cancel_url']
+                );
+                $checkoutRecord = CRM_SumupPaymentProcessor_CheckoutStore::getLatestOnlineByContributionId(
+                    $params['contribution_id'],
+                    $params['processor_id']
+                );
+            }
+
             $checkoutId = $checkoutRecord['checkout_id'];
             $checkoutMode = $checkoutRecord['checkout_mode'];
 
-            $result = $processor->verifyAndApplyCheckout($checkoutId, $params['contribution_id']);
-            if ($result['status'] === 'PAID') {
-                CRM_Utils_System::redirect($params['return_url']);
-            }
-            if (in_array($result['status'], ['FAILED', 'EXPIRED'], true)) {
-                CRM_Utils_System::redirect($params['cancel_url']);
+            if ($checkoutMode !== CRM_SumupPaymentProcessor_CheckoutMode::SOLO) {
+                $result = $processor->verifyAndApplyCheckout($checkoutId, $params['contribution_id']);
+                if ($result['status'] === 'PAID') {
+                    CRM_Utils_System::redirect($params['return_url']);
+                }
+                if (in_array($result['status'], ['FAILED', 'EXPIRED'], true)) {
+                    CRM_Utils_System::redirect($params['cancel_url']);
+                }
             }
 
             $this->assign('sumupCheckoutId', $checkoutId);
@@ -88,9 +103,13 @@ class CRM_SumupPaymentProcessor_Page_Widget extends CRM_Core_Page
             CRM_Core_Resources::singleton()->addStyleFile(E::LONG_NAME, 'ang/afSumUp/sumUp.css');
             CRM_Core_Resources::singleton()->addScriptFile(E::LONG_NAME, 'js/checkout.js', 110);
         } catch (Throwable $exception) {
-            Civi::log()->warning('Unable to render SumUp checkout: ' . $exception->getMessage());
+            Civi::log()->warning(sprintf(
+                "Unable to render SumUp checkout: %s\n%s",
+                $exception->getMessage(),
+                $exception->getTraceAsString()
+            ));
             CRM_Core_Session::setStatus(
-                E::ts('The secure payment form is temporarily unavailable. Please try again.'),
+                E::ts('Le formulaire de paiement sécurisé est temporairement indisponible. Veuillez réessayer.'),
                 E::ts('SumUp'),
                 'error'
             );

@@ -5,7 +5,7 @@
       <div class="crm-sumup-kiosk__title-group">
         <span class="crm-sumup-kiosk__badge">
           <span class="crm-sumup-kiosk__pulsing-dot"></span>
-          {{:: ts('Payment in progress') }}
+          {{:: ts('Paiement en cours') }}
         </span>
         <h2 class="crm-sumup-kiosk__amount">{{$ctrl.amount}} {{$ctrl.currency}}</h2>
       </div>
@@ -28,7 +28,7 @@
                 <div class="crm-sumup-solo-device__screen-amount">{{$ctrl.amount}} {{$ctrl.currency}}</div>
                 <div class="crm-sumup-solo-device__prompt">
                   <i class="crm-i fa-credit-card crm-sumup-solo-device__prompt-icon" aria-hidden="true"></i>
-                  <span>{{:: ts('Tap, insert or swipe card') }}</span>
+                  <span>{{:: ts('Insérez ou approchez votre carte') }}</span>
                 </div>
               </div>
               <div class="crm-sumup-solo-device__screen-footer">
@@ -40,20 +40,20 @@
         </div>
 
         <div class="crm-sumup-kiosk__card-info">
-          <h3>{{:: ts('On terminal: %1', {1: $ctrl.readerName}) }}</h3>
-          <p>{{:: ts('Follow the instructions on the SumUp Solo screen (contactless, chip & PIN).') }}</p>
+          <h3>{{:: ts('Sur le lecteur : %1', {1: $ctrl.readerName}) }}</h3>
+          <p>{{:: ts('Suivez les instructions sur l\'écran du SumUp Solo (sans contact, puce et code PIN).') }}</p>
         </div>
       </div>
 
-      <!-- Right Column: Instant QR Code Mobile Payment (Side way) -->
+      <!-- Right Column: Instant QR Code Mobile Payment -->
       <div class="crm-sumup-kiosk__card crm-sumup-kiosk__card--qr" ng-if="$ctrl.qrUrl">
         <div class="crm-sumup-qr-container">
           <div class="crm-sumup-qr-canvas" ng-bind-html="$ctrl.qrSvgTrusted"></div>
         </div>
 
         <div class="crm-sumup-kiosk__card-info">
-          <h3>{{:: ts('Or pay on your phone') }}</h3>
-          <p>{{:: ts('Scan this QR code with your camera for instant mobile payment.') }}</p>
+          <h3>{{:: ts('Ou payez avec votre smartphone') }}</h3>
+          <p>{{:: ts('Scannez ce QR code avec votre appareil photo pour un paiement mobile instantané.') }}</p>
           <div class="crm-sumup-wallet-badges">
             <span class="crm-sumup-wallet-badge"><i class="crm-i fa-apple" aria-hidden="true"></i> Pay</span>
             <span class="crm-sumup-wallet-badge"><i class="crm-i fa-google" aria-hidden="true"></i> Pay</span>
@@ -66,7 +66,7 @@
     <!-- Actions / Cancel -->
     <div class="crm-sumup-kiosk__footer">
       <button class="button btn btn-secondary" type="button" ng-click="$ctrl.cancelCheckout()">
-        <i class="crm-i fa-times" aria-hidden="true"></i> {{:: ts('Cancel payment') }}
+        <i class="crm-i fa-times" aria-hidden="true"></i> {{:: ts('Annuler le paiement') }}
       </button>
     </div>
   </div>
@@ -76,19 +76,19 @@
     <div class="crm-sumup-kiosk__success-icon">
       <i class="crm-i fa-check-circle" aria-hidden="true"></i>
     </div>
-    <h2>{{:: ts('Payment Confirmed!') }}</h2>
+    <h2>{{:: ts('Paiement confirmé !') }}</h2>
     <p class="crm-sumup-kiosk__success-amount">{{$ctrl.amount}} {{$ctrl.currency}}</p>
     <p class="crm-sumup-kiosk__success-msg">
-      {{:: ts('Thank you! Your payment has been approved and recorded successfully.') }}
+      {{:: ts('Merci ! Votre paiement a été validé et enregistré.') }}
     </p>
 
     <div class="crm-sumup-kiosk__receipt-box" ng-if="$ctrl.receiptRef">
-      <small>{{:: ts('Transaction reference:') }} <code>{{$ctrl.receiptRef}}</code></small>
+      <small>{{:: ts('Référence de transaction :') }} <code>{{$ctrl.receiptRef}}</code></small>
     </div>
 
     <div class="crm-sumup-kiosk__footer" style="margin-top: 2rem;">
       <button class="button btn btn-primary btn-lg" type="button" ng-click="$ctrl.resetKiosk()">
-        <i class="crm-i fa-check" aria-hidden="true"></i> {{:: ts('Finish / Next payment') }}
+        <i class="crm-i fa-check" aria-hidden="true"></i> {{:: ts('Terminer / Nouveau don') }}
       </button>
     </div>
   </div>
@@ -98,17 +98,17 @@
     <div class="crm-sumup-kiosk__failed-icon">
       <i class="crm-i fa-exclamation-circle" aria-hidden="true"></i>
     </div>
-    <h2>{{:: ts('Payment Not Completed') }}</h2>
+    <h2>{{:: ts('Paiement non finalisé') }}</h2>
     <p class="crm-sumup-kiosk__failed-msg">
-      {{$ctrl.errorMessage || ts('The payment timed out or was cancelled on the terminal.')}}
+      {{$ctrl.errorMessage || ts('Le délai d\'attente du terminal est expiré ou le paiement a été annulé.')}}
     </p>
 
-    <div class="crm-sumup-kiosk__footer" style="margin-top: 1.5rem;">
+    <div class="crm-sumup-kiosk__footer" style="margin-top: 1.5rem; display: flex; gap: 1rem; justify-content: center;">
       <button class="button btn btn-primary" type="button" ng-click="$ctrl.retryCheckout()">
-        <i class="crm-i fa-refresh" aria-hidden="true"></i> {{:: ts('Retry payment') }}
+        <i class="crm-i fa-refresh" aria-hidden="true"></i> {{:: ts('Réessayer sur le terminal') }}
       </button>
       <button class="button btn btn-secondary" type="button" ng-click="$ctrl.resetKiosk()">
-        <i class="crm-i fa-arrow-left" aria-hidden="true"></i> {{:: ts('Back to form') }}
+        <i class="crm-i fa-arrow-left" aria-hidden="true"></i> {{:: ts('Retour au formulaire') }}
       </button>
     </div>
   </div>

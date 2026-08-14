@@ -149,7 +149,7 @@
           }
 
           if (response.status === 'failed' || response.status === 'cancelled') {
-            this.onPaymentFailure(response.message || ts('Payment was cancelled or declined on the terminal.'));
+            this.onPaymentFailure(response.message || ts('Le paiement a été annulé ou refusé sur le terminal.'));
             return;
           }
 
@@ -158,7 +158,7 @@
               this.schedulePoll(2000);
               return;
             }
-            this.onPaymentFailure(ts('Terminal payment request timed out. Please retry.'));
+            this.onPaymentFailure(ts('Le délai d\'attente du terminal est écoulé (60s). Vous pouvez relancer le paiement ou payer par QR code.'));
             return;
           }
         }).catch((err) => {
@@ -166,7 +166,7 @@
             this.schedulePoll(3000);
             return;
           }
-          this.onPaymentFailure(err && err.error_message ? err.error_message : ts('Unable to retrieve payment status.'));
+          this.onPaymentFailure(err && err.error_message ? err.error_message : ts('Impossible de récupérer l\'état du paiement.'));
         });
       };
 
@@ -198,7 +198,7 @@
       };
 
       this.cancelCheckout = () => {
-        if (!window.confirm(ts('Cancel current terminal payment?'))) {
+        if (!window.confirm(ts('Annuler le paiement en cours sur le terminal ?'))) {
           return;
         }
         this.retryCheckout();

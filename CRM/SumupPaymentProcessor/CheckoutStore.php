@@ -153,6 +153,63 @@ final class CRM_SumupPaymentProcessor_CheckoutStore
     }
 
     /**
+     * @return array{
+     *   id: int,
+     *   checkout_id: string,
+     *   checkout_reference: string,
+     *   contribution_id: int,
+     *   payment_processor_id: int,
+     *   state: string,
+     *   amount: float,
+     *   currency: string,
+     *   checkout_mode: string,
+     *   transaction_id: string|null,
+     *   reader_id: string|null,
+     *   purpose: string,
+     *   customer_id: string|null,
+     *   payment_token_id: int|null,
+     *   setup_checkout_id: string|null
+     * }
+     */
+    public static function getLatestOnlineByContributionId(int $contributionId, int $paymentProcessorId): array
+    {
+        if ($contributionId <= 0 || $paymentProcessorId <= 0) {
+            throw new PaymentProcessorException(E::ts('Invalid SumUp contribution or processor identifier.'));
+        }
+        $record = SumupCheckout::get(false)
+            ->addSelect(
+                'id',
+                'checkout_id',
+                'checkout_reference',
+                'contribution_id',
+                'payment_processor_id',
+                'state',
+                'amount',
+                'currency',
+                'checkout_mode',
+                'transaction_id',
+                'reader_id',
+                'purpose',
+                'customer_id',
+                'payment_token_id',
+                'setup_checkout_id'
+            )
+            ->addWhere('contribution_id', '=', $contributionId)
+            ->addWhere('payment_processor_id', '=', $paymentProcessorId)
+            ->addWhere('checkout_mode', '!=', CRM_SumupPaymentProcessor_CheckoutMode::SOLO)
+            ->addOrderBy('id', 'DESC')
+            ->setLimit(1)
+            ->execute()
+            ->first();
+
+        if (!$record) {
+            return self::getLatestByContributionId($contributionId, $paymentProcessorId);
+        }
+
+        return self::normaliseRecord($record);
+    }
+
+    /**
      * @param array<string, mixed> $record
      * @return array{
      *   id: int,
