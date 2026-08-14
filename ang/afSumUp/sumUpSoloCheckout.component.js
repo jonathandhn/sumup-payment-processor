@@ -75,7 +75,11 @@
           return;
         }
 
-        this.getFormElement().hide();
+        var form = this.getFormElement();
+        form.after($element);
+        form.hide();
+        $element.show();
+
         this.active = true;
         this.waiting = true;
         this.completed = false;
@@ -98,6 +102,7 @@
         this.remainingSeconds = Math.round(maxWaitTimeMs / 1000);
         this.startCountdown();
         this.schedulePoll(1500);
+        $scope.$applyAsync();
       };
 
       this.startCountdown = () => {
