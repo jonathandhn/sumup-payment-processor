@@ -18,12 +18,15 @@
       this.completed = false;
       this.failed = false;
       this.terminalExpired = false;
+      this.retryingTerminal = false;
+      this.terminalRetryError = '';
       this.errorMessage = '';
       this.token = '';
       this.amount = '';
       this.currency = 'EUR';
       this.readerName = '';
       this.siteCode = '';
+      this.soloImageUrl = '';
       this.qrUrl = '';
       this.qrSvgTrusted = null;
       this.remainingSeconds = 60;
@@ -66,12 +69,15 @@
         this.completed = false;
         this.failed = false;
         this.terminalExpired = false;
+        this.retryingTerminal = false;
+        this.terminalRetryError = '';
         this.errorMessage = '';
         this.token = checkout.token;
         this.amount = checkout.amount || '';
         this.currency = checkout.currency || 'EUR';
         this.readerName = checkout.reader_name || 'Solo';
         this.siteCode = checkout.site_code || '';
+        this.soloImageUrl = checkout.solo_image_url || '';
         this.qrUrl = checkout.qr_url || '';
         this.receiptRef = checkout.client_transaction_id || '';
 
@@ -104,16 +110,34 @@
       };
 
       this.retryTerminal = () => {
-        this.terminalExpired = false;
-        pollStartedAt = Date.now();
-        this.remainingSeconds = Math.round(terminalTimeoutMs / 1000);
-        CRM.api4('Contribution', 'continueCheckout', {
-          token: this.token,
-          retry_reader: true
+        if (this.retryingTerminal) {
+          return;
+        }
+        this.retryingTerminal = true;
+        this.terminalRetryError = '';
+        CRM.api4('SumupTerminalCheckout', 'retry', {
+          token: this.token
         }).then((res) => {
           if (res && res[0] && res[0].token) {
             this.token = res[0].token;
           }
+          if (res && res[0] && res[0].client_transaction_id) {
+            this.receiptRef = res[0].client_transaction_id;
+          }
+          this.clearTimers();
+          this.retryingTerminal = false;
+          this.terminalExpired = false;
+          pollStartedAt = Date.now();
+          this.remainingSeconds = Math.round(terminalTimeoutMs / 1000);
+          this.startCountdown();
+          this.schedulePoll(1500);
+          $scope.$applyAsync();
+        }).catch((error) => {
+          this.retryingTerminal = false;
+          this.terminalExpired = true;
+          this.terminalRetryError = error && error.error_message
+            ? error.error_message
+            : ts('Unable to resend the payment to the terminal.');
           $scope.$applyAsync();
         });
       };

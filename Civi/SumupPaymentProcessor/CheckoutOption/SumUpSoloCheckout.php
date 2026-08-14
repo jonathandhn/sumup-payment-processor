@@ -109,6 +109,7 @@ if (
             if ($readerId <= 0) {
                 throw new \CRM_Core_Exception(E::ts('No paired SumUp Solo terminal is available.'));
             }
+            $session->setCheckoutParam('sumup_reader_id', $readerId);
 
             $reader = SumupReader::get(false)
                 ->addSelect('id', 'canonical_name', 'site_code')
@@ -175,6 +176,7 @@ if (
                     'reader_id' => $readerId,
                     'reader_name' => (string) ($reader['canonical_name'] ?? 'Solo'),
                     'site_code' => (string) ($reader['site_code'] ?? ''),
+                    'solo_image_url' => E::url('images/sumup-solo.png'),
                     'amount' => number_format((float) $contribution['total_amount'], 2, '.', ''),
                     'currency' => (string) $contribution['currency'],
                     'qr_url' => $qrUrl,
@@ -247,7 +249,9 @@ if (
                 return;
             }
             if (in_array($result['status'], ['FAILED', 'CANCELLED', 'EXPIRED'], true)) {
-                $session->fail();
+                // A reader attempt may expire while the contribution and QR fallback remain payable.
+                // Keep the CheckoutSession pending so the operator can start a fresh Solo attempt.
+                $session->setCheckoutParam('sumup_reader_attempt_status', $result['status']);
                 return;
             }
         }

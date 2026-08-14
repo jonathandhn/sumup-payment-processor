@@ -187,6 +187,28 @@
       wallet.hidden = true;
       wallet.style.display = 'none';
       container.insertBefore(wallet, message);
+      var removeWallet = function () {
+        if (wallet.isConnected) {
+          wallet.remove();
+        }
+        if (walletCardSeparator) {
+          walletCardSeparator.remove();
+          walletCardSeparator = null;
+        }
+      };
+      var hasVisibleWalletControl = function () {
+        return Array.prototype.some.call(wallet.querySelectorAll(
+          'button, iframe, [role="button"], [data-testid$="-pay-button"]'
+        ), function (control) {
+          var style = window.getComputedStyle(control);
+          var rect = control.getBoundingClientRect();
+          return style.display !== 'none'
+            && style.visibility !== 'hidden'
+            && style.opacity !== '0'
+            && rect.width > 1
+            && rect.height > 1;
+        });
+      };
       tasks.push(loadScript(
         'https://js.sumup.com/swift-checkout/v1/sdk.js',
         function () { return Boolean(window.SumUp && window.SumUp.SwiftCheckout); }
@@ -237,12 +259,11 @@
             wallet.style.visibility = 'hidden';
             buttons.mount({paymentMethods: methods, container: wallet});
             return new Promise(function (resolve) {
-              var checksRemaining = 8;
+              var checksRemaining = 16;
+              var visibleChecks = 0;
               var revealWhenRendered = function () {
-                var hasControl = Boolean(wallet.querySelector(
-                  'button, iframe, [role="button"], [data-testid$="-pay-button"]'
-                ));
-                if (hasControl) {
+                visibleChecks = hasVisibleWalletControl() ? visibleChecks + 1 : 0;
+                if (visibleChecks >= 2) {
                   wallet.style.removeProperty('max-height');
                   wallet.style.removeProperty('overflow');
                   wallet.style.removeProperty('visibility');
@@ -258,11 +279,7 @@
                   window.setTimeout(revealWhenRendered, 250);
                   return;
                 }
-                wallet.remove();
-                if (walletCardSeparator) {
-                  walletCardSeparator.remove();
-                  walletCardSeparator = null;
-                }
+                removeWallet();
                 if (!usesWidget) {
                   showMessage(ts('No compatible wallet is available in this browser.'));
                 }
@@ -272,22 +289,14 @@
             });
           }
           else {
-            wallet.remove();
-            if (walletCardSeparator) {
-              walletCardSeparator.remove();
-              walletCardSeparator = null;
-            }
+            removeWallet();
             if (!usesWidget) {
               showMessage(ts('No compatible wallet is available in this browser.'));
             }
           }
         });
       }).catch(function () {
-        wallet.remove();
-        if (walletCardSeparator) {
-          walletCardSeparator.remove();
-          walletCardSeparator = null;
-        }
+        removeWallet();
         if (!usesWidget) {
           showMessage(ts('The wallet payment form could not be loaded.'));
         }

@@ -211,6 +211,7 @@ namespace {
     class CRM_SumupPaymentProcessor_ExtensionUtil {
         public const LONG_NAME = 'sumup-payment-processor';
         public static function ts(string $text, array $params = []): string { return $text; }
+        public static function url(?string $file = null): string { return $file ?? ''; }
         public static function path(string $file = ''): string { return $file; }
     }
     function _sumup_payment_processor_civix_civicrm_config(CRM_Core_Config $config): void {}
@@ -327,6 +328,7 @@ namespace Civi\Checkout {
         public function getAfformModule(): ?string;
     }
     class CheckoutSession {
+        public static function restoreFromToken(string $token): self { return new self(); }
         public function getContributionId(): int { return 0; }
         public function isTestMode(): bool { return false; }
         public function setCheckoutParam(string $key, mixed $value): self { return $this; }

@@ -31,7 +31,7 @@ Elevate in-person Afform checkouts (self-service kiosks, event registration desk
 ### 2. Frontend Hybrid Layout
 
 `afSumUpSoloCheckout` renders:
-- **Left Column**: SumUp Solo terminal card with live state indicators, 60s reader countdown, and in-place *Resend to terminal* action upon terminal expiry.
+- **Left Column**: official SumUp Solo product visual, centred in the terminal card, with live state indicators, 60s reader countdown, and in-place *Resend to terminal* action upon terminal expiry.
 - **Right Column**: Smartphone Instant QR code with Apple Pay / Google Pay / Card badges, remaining fully active for 5 minutes.
 - **Success View**: Public confirmation badge with transaction receipt details and clean form reset button.
 - **Failure View**: Explanatory message and one-click retry on terminal or return to form.
@@ -42,3 +42,19 @@ To allow seamless coexistence of the physical reader and the mobile QR payment o
 - The terminal checkout is recorded in `civicrm_sumup_checkout` with `checkout_mode = 'SOLO'`.
 - The online embedded card checkout for mobile scanning is pre-created upfront with `checkout_mode = 'WIDGET'` or `'HOSTED'`.
 - When `/civicrm/sumup/widget` renders for a QR code visitor, `CRM_SumupPaymentProcessor_CheckoutStore::getLatestOnlineByContributionId()` retrieves the online card checkout and bypasses the Solo reader record, ensuring no conflict with SumUp's Hosted/Card API.
+
+### 4. Resending to the Solo terminal
+
+The resend button must create a new SumUp reader checkout. Re-polling an expired
+checkout identifier is not a retry.
+
+- `SumupTerminalCheckout.retry` restores the signed `CheckoutSession` token and
+  accepts only the contribution, processor and local reader already bound to it.
+- The contribution must still be unpaid. Completed and cancelled contributions
+  cannot start another reader attempt.
+- A successful resend stores the new reader checkout identifier, returns a fresh
+  CheckoutSession token and restarts both the terminal countdown and polling.
+- Reader expiry does not fail the whole contribution: the QR alternative remains
+  payable and the operator may explicitly create another terminal attempt.
+- The client prevents concurrent resend clicks and a contribution-scoped server
+  lock prevents two browser requests from creating parallel reader attempts.
