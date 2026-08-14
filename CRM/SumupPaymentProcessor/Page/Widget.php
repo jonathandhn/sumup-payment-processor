@@ -109,7 +109,7 @@ class CRM_SumupPaymentProcessor_Page_Widget extends CRM_Core_Page
                 $exception->getTraceAsString()
             ));
             CRM_Core_Session::setStatus(
-                E::ts('Le formulaire de paiement sécurisé est temporairement indisponible. Veuillez réessayer.'),
+                E::ts('The secure payment form is temporarily unavailable. Please try again.'),
                 E::ts('SumUp'),
                 'error'
             );

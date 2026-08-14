@@ -30,12 +30,12 @@ if (
 
         public function getLabel(): string
         {
-            return E::ts('%1 (Terminal Solo / Borne)', [1 => $this->getConnectionLabel()]);
+            return E::ts('%1 (Solo terminal / Kiosk)', [1 => $this->getConnectionLabel()]);
         }
 
         public function getFrontendLabel(): string
         {
-            return E::ts('%1 (Paiement sur terminal Solo)', [
+            return E::ts('%1 (Payment on Solo terminal)', [
                 1 => $this->getConnectionLabel(),
             ]);
         }

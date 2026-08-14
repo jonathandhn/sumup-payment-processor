@@ -1,10 +1,10 @@
 <div class="crm-sumup-checkout-admin" style="margin-top: 12px;" ng-if="$ctrl.readers.length > 0">
   <div class="form-group">
     <label style="font-weight: 600; display: block; margin-bottom: 4px;">
-      <i class="crm-i fa-tablet"></i> {{:: ts('Terminal SumUp Solo par défaut pour cette borne :') }}
+      <i class="crm-i fa-tablet"></i> {{:: ts('Default SumUp Solo terminal for this kiosk:') }}
     </label>
     <select class="form-control" ng-model="$ctrl.node.defn.sumup_reader_id" ng-options="r.id as r.label for r in $ctrl.readers" style="min-width: 280px; max-width: 100%;">
-      <option value="">{{:: ts('-- Premier terminal disponible (Automatique) --') }}</option>
+      <option value="">{{:: ts('-- Automatic (First available reader) --') }}</option>
     </select>
   </div>
 </div>
