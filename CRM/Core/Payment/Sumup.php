@@ -74,9 +74,6 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             if (!str_starts_with($this->getPublicMerchantKey(), 'sup_pk_')) {
                 return E::ts('A valid SumUp public merchant key is required for wallet checkout.');
             }
-            if (!preg_match('/^[A-Z]{2}$/', CRM_SumupPaymentProcessor_CheckoutMode::getMerchantCountryCode())) {
-                return E::ts('A valid two-letter merchant country code is required for wallet checkout.');
-            }
         }
 
         return null;
@@ -112,6 +109,22 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
     public function getProcessorId(): int
     {
         return (int) ($this->_paymentProcessor['id'] ?? 0);
+    }
+
+    /**
+     * Return the SumUp-authoritative profile for this processor's merchant account.
+     *
+     * @return array{
+     *   merchant_code: string,
+     *   business_name: string,
+     *   company_name: string,
+     *   country: string,
+     *   currency: string
+     * }
+     */
+    public function getVerifiedMerchantProfile(): array
+    {
+        return $this->service()->getMerchantProfile($this->getProcessorId());
     }
 
     public function supportsRefund(): bool
@@ -831,8 +844,8 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             ->single();
         $amount = (float) $contribution['total_amount'];
         $currency = strtoupper((string) $contribution['currency']);
-        $merchantProfile = $this->service()->getMerchantProfile($this->getProcessorId());
-        if (!empty($merchantProfile['currency']) && strtoupper($merchantProfile['currency']) !== $currency) {
+        $merchantProfile = $this->getVerifiedMerchantProfile();
+        if ($merchantProfile['currency'] !== $currency) {
             throw new PaymentProcessorException(E::ts(
                 'Currency %1 is not supported by this SumUp merchant account (%2).',
                 [1 => $currency, 2 => $merchantProfile['currency']]
@@ -2137,7 +2150,7 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
         array $schedule,
         array $recurIds = []
     ): array {
-        $merchantProfile = $this->service()->getMerchantProfile($this->getProcessorId());
+        $merchantProfile = $this->getVerifiedMerchantProfile();
         return [
             'status' => $this->enumValue($checkout->status ?? 'PENDING'),
             'checkout_id' => (string) $checkout->id,
@@ -2756,69 +2769,114 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             throw new PaymentProcessorException(E::ts('Missing transaction reference in SumUp refund webhook.'));
         }
 
-        $service = $this->service();
-        $transaction = $service->getTransaction($transactionReference);
-        $transactionId = trim((string) $transaction->id);
-
-        $payments = Payment::get(false)
-            ->addSelect('id', 'contribution_id', 'total_amount')
-            ->addWhere('trxn_id', 'LIKE', '%' . $transactionId . '%')
-            ->addWhere('payment_processor_id', '=', $this->getProcessorId())
-            ->addWhere('total_amount', '>', 0)
-            ->execute();
-
-        $payment = $payments->first();
-        if (!$payment) {
+        $lock = CRM_Core_Lock::createScopedLock('data.sumup.external-refund.' . $transactionReference);
+        if (!$lock->acquire()) {
             throw new PaymentProcessorException(E::ts(
-                'No matching CiviCRM payment found for SumUp refunded transaction %1.',
-                [1 => $transactionId]
+                'This SumUp refund notification is already being processed.'
             ));
         }
 
-        $contributionId = (int) $payment['contribution_id'];
-        $refundedMinor = $this->getRefundedMinorUnits($transaction);
-        if ($refundedMinor <= 0) {
-            $refundedMinor = (int) round((float) $transaction->amount * 100);
-        }
+        try {
+            $transaction = $this->service()->getTransaction($transactionReference);
+            $transactionId = trim((string) $transaction->id);
+            if (!preg_match('/^[A-Za-z0-9_-]{4,100}$/', $transactionId)) {
+                throw new PaymentProcessorException(E::ts('SumUp did not return a valid transaction identifier.'));
+            }
 
-        $existingRefund = Payment::get(false)
-            ->addSelect('id')
-            ->addWhere('contribution_id', '=', $contributionId)
-            ->addWhere('payment_processor_id', '=', $this->getProcessorId())
-            ->addWhere('total_amount', '<', 0)
-            ->setLimit(1)
-            ->execute()
-            ->first();
-
-        if (!$existingRefund) {
-            $unrecordedId = $this->findUnrecordedRefundEventId($transaction, $refundedMinor);
-            $refundEventId = $unrecordedId ?? 'ext-' . bin2hex(random_bytes(6));
-            $refundTrxnId = $this->refundTransactionId($transactionId, $refundEventId);
-            $values = [
-                'contribution_id' => $contributionId,
-                'total_amount' => -($refundedMinor / 100),
-                'payment_processor_id' => $this->getProcessorId(),
-                'payment_instrument_id' => $this->getPaymentInstrumentID(),
-                'trxn_id' => $refundTrxnId,
-                'trxn_date' => date('Y-m-d H:i:s'),
-            ];
-            Payment::create(false)
-                ->setValues($values)
+            $exactPayments = Payment::get(false)
+                ->addSelect('id', 'contribution_id', 'total_amount', 'trxn_id')
+                ->addWhere('trxn_id', '=', $transactionId)
+                ->addWhere('payment_processor_id', '=', $this->getProcessorId())
+                ->addWhere('total_amount', '>', 0)
                 ->execute();
+            $paymentMatches = [];
+            foreach ($exactPayments as $exactPayment) {
+                $paymentMatches[] = $exactPayment;
+            }
+            if ($paymentMatches === []) {
+                $legacyCandidates = Payment::get(false)
+                    ->addSelect('id', 'contribution_id', 'total_amount', 'trxn_id')
+                    ->addWhere('trxn_id', 'LIKE', '%' . $transactionId . '%')
+                    ->addWhere('payment_processor_id', '=', $this->getProcessorId())
+                    ->addWhere('total_amount', '>', 0)
+                    ->execute();
+                foreach ($legacyCandidates as $candidate) {
+                    $references = preg_split('/\s*,\s*/', (string) ($candidate['trxn_id'] ?? '')) ?: [];
+                    if (in_array($transactionId, $references, true)) {
+                        $paymentMatches[] = $candidate;
+                    }
+                }
+            }
+            if (count($paymentMatches) !== 1) {
+                throw new PaymentProcessorException(E::ts(
+                    'Expected one CiviCRM payment for SumUp transaction %1; found %2.',
+                    [1 => $transactionId, 2 => count($paymentMatches)]
+                ));
+            }
 
-            Civi::log()->info(sprintf(
-                'Recorded external SumUp refund for contribution %d: amount=%.2f transaction_id=%s',
-                $contributionId,
-                $refundedMinor / 100,
-                $transactionId
-            ));
+            $payment = $paymentMatches[0];
+            $contributionId = (int) $payment['contribution_id'];
+            $providerRefundedMinor = $this->getRefundedMinorUnits($transaction);
+            if ($providerRefundedMinor <= 0) {
+                throw new PaymentProcessorException(E::ts(
+                    'SumUp has not exposed a refundable event for transaction %1 yet.',
+                    [1 => $transactionId]
+                ));
+            }
+            $transactionMinor = (int) round((float) $transaction->amount * 100);
+            if ($providerRefundedMinor > $transactionMinor) {
+                throw new PaymentProcessorException(E::ts(
+                    'The SumUp refunded amount exceeds the original transaction amount.'
+                ));
+            }
+
+            $existingRefunds = Payment::get(false)
+                ->addSelect('id', 'total_amount', 'trxn_id')
+                ->addWhere('contribution_id', '=', $contributionId)
+                ->addWhere('payment_processor_id', '=', $this->getProcessorId())
+                ->addWhere('total_amount', '<', 0)
+                ->execute();
+            $recordedRefundedMinor = 0;
+            foreach ($existingRefunds as $existingRefund) {
+                $recordedRefundedMinor += abs((int) round((float) $existingRefund['total_amount'] * 100));
+            }
+
+            $unrecordedMinor = $providerRefundedMinor - $recordedRefundedMinor;
+            if ($unrecordedMinor > 0) {
+                $unrecordedId = $this->findUnrecordedRefundEventId($transaction, $unrecordedMinor);
+                $refundEventId = $unrecordedId ?? 'external-' . substr(
+                    hash('sha256', $transactionId . ':' . $providerRefundedMinor),
+                    0,
+                    16
+                );
+                $refundTrxnId = $this->refundTransactionId($transactionId, $refundEventId);
+                Payment::create(false)
+                    ->setValues([
+                        'contribution_id' => $contributionId,
+                        'total_amount' => -($unrecordedMinor / 100),
+                        'payment_processor_id' => $this->getProcessorId(),
+                        'payment_instrument_id' => $this->getPaymentInstrumentID(),
+                        'trxn_id' => $refundTrxnId,
+                        'trxn_date' => date('Y-m-d H:i:s'),
+                    ])
+                    ->execute();
+
+                Civi::log()->info(sprintf(
+                    'Recorded external SumUp refund delta for contribution %d: amount=%.2f transaction_id=%s',
+                    $contributionId,
+                    $unrecordedMinor / 100,
+                    $transactionId
+                ));
+            }
+
+            return [
+                'status' => 'REFUNDED',
+                'contribution_id' => $contributionId,
+                'transaction_id' => $transactionId,
+            ];
+        } finally {
+            $lock->release();
         }
-
-        return [
-            'status' => 'REFUNDED',
-            'contribution_id' => $contributionId,
-            'transaction_id' => $transactionId,
-        ];
     }
 
     /**

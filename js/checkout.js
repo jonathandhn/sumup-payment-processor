@@ -37,6 +37,7 @@
       locale: config.locale || dataset.locale,
       mode: config.mode || dataset.mode || 'widget',
       publicKey: config.public_key || dataset.publicKey || '',
+      businessName: config.business_name || dataset.businessName || '',
       countryCode: config.country_code || dataset.countryCode || '',
       walletsAllowed: config.wallets_allowed === true
         || config.wallets_allowed === 1
@@ -143,6 +144,16 @@
     container.replaceChildren();
     container.appendChild(message);
 
+    if (config.businessName) {
+      var merchantTrust = document.createElement('p');
+      merchantTrust.className = 'crm-sumup-merchant-trust';
+      merchantTrust.appendChild(document.createTextNode(ts('Secure payment to') + ' '));
+      var merchantName = document.createElement('strong');
+      merchantName.textContent = config.businessName;
+      merchantTrust.appendChild(merchantName);
+      container.insertBefore(merchantTrust, message);
+    }
+
     var tasks = [];
     var walletCardSeparator = null;
     if (config.savedPaymentMethods.length) {
@@ -185,7 +196,7 @@
           countryCode: config.countryCode,
           locale: config.locale,
           total: {
-            label: ts('CiviCRM payment'),
+            label: config.businessName || ts('CiviCRM payment'),
             amount: {currency: config.currency, value: config.amount},
           },
         });
@@ -220,12 +231,45 @@
                 });
             });
             wallet.hidden = false;
-            wallet.style.removeProperty('display');
+            wallet.style.display = 'flex';
+            wallet.style.maxHeight = '0';
+            wallet.style.overflow = 'hidden';
+            wallet.style.visibility = 'hidden';
             buttons.mount({paymentMethods: methods, container: wallet});
-            if (walletCardSeparator) {
-              walletCardSeparator.hidden = false;
-              walletCardSeparator.style.removeProperty('display');
-            }
+            return new Promise(function (resolve) {
+              var checksRemaining = 8;
+              var revealWhenRendered = function () {
+                var hasControl = Boolean(wallet.querySelector(
+                  'button, iframe, [role="button"], [data-testid$="-pay-button"]'
+                ));
+                if (hasControl) {
+                  wallet.style.removeProperty('max-height');
+                  wallet.style.removeProperty('overflow');
+                  wallet.style.removeProperty('visibility');
+                  if (walletCardSeparator) {
+                    walletCardSeparator.hidden = false;
+                    walletCardSeparator.style.removeProperty('display');
+                  }
+                  resolve();
+                  return;
+                }
+                checksRemaining -= 1;
+                if (checksRemaining > 0) {
+                  window.setTimeout(revealWhenRendered, 250);
+                  return;
+                }
+                wallet.remove();
+                if (walletCardSeparator) {
+                  walletCardSeparator.remove();
+                  walletCardSeparator = null;
+                }
+                if (!usesWidget) {
+                  showMessage(ts('No compatible wallet is available in this browser.'));
+                }
+                resolve();
+              };
+              window.setTimeout(revealWhenRendered, 0);
+            });
           }
           else {
             wallet.remove();

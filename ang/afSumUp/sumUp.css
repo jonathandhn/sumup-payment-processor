@@ -353,6 +353,17 @@
   text-decoration-thickness: 2px;
 }
 
+.crm-sumup-merchant-trust {
+  color: var(--sumup-muted, #51575d);
+  font-size: 0.95rem;
+  margin: 0 0 1rem;
+  text-align: center;
+}
+
+.crm-sumup-merchant-trust strong {
+  color: var(--sumup-text, #101010);
+}
+
 .crm-sumup-checkout-block [data-sumup-id='submit_button'],
 .crm-sumup-embedded-checkout [data-sumup-id='submit_button'],
 .crm-sumup-replacement-widget [data-sumup-id='submit_button'] {
@@ -871,23 +882,11 @@
   width: 12.5rem;
 }
 
-.crm-sumup-wallet-badges {
-  display: flex;
-  gap: 0.4rem;
-  justify-content: center;
-  margin-top: 0.65rem;
-}
-
-.crm-sumup-wallet-badge {
-  align-items: center;
-  background: #eee;
-  border-radius: 0.35rem;
-  color: #333;
-  display: inline-flex;
-  font-size: 0.7rem;
-  font-weight: 600;
-  gap: 0.25rem;
-  padding: 0.2rem 0.45rem;
+.crm-sumup-qr-canvas svg {
+  display: block;
+  height: auto;
+  max-width: 100%;
+  width: 10.75rem;
 }
 
 .crm-sumup-kiosk__footer {

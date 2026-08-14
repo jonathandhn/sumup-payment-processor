@@ -4,6 +4,8 @@
 
 The selected SumUp Card Widget and wallet buttons appear directly on the CiviCRM payment form. The signed local checkout page remains the provider return and verification endpoint, not a visible payment step.
 
+The extension registers its Afform CheckoutOptions once and leaves CiviCRM's global CheckoutBlock administration template unchanged. A SumUp-specific managed Afform or kiosk editor is outside this initial product scope.
+
 ## Contract
 
 - QuickForm submits its validated CiviCRM form once and receives public checkout presentation data as JSON.

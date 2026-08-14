@@ -26,28 +26,6 @@ return [
             ],
         ],
     ],
-    'sumup_merchant_country_code' => [
-        'name' => 'sumup_merchant_country_code',
-        'type' => 'String',
-        'html_type' => 'text',
-        'html_attributes' => [
-            'maxlength' => 2,
-            'size' => 2,
-        ],
-        'default' => '',
-        'is_domain' => 1,
-        'is_contact' => 0,
-        'title' => E::ts('Merchant country code'),
-        'description' => E::ts(
-            'Optional two-letter ISO override for Apple Pay and Google Pay. When empty, use the country of the '
-            . 'CiviCRM domain organisation primary address.'
-        ),
-        'settings_pages' => [
-            'sumup' => [
-                'weight' => 20,
-            ],
-        ],
-    ],
     'sumup_affiliate_app_id' => [
         'name' => 'sumup_affiliate_app_id',
         'type' => 'String',

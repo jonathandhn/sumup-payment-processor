@@ -1,6 +1,11 @@
 <?php
 
 namespace {
+    class QRcode {
+        public function __construct(string $code, string $eclevel = 'L') {}
+        /** @return array<string, mixed> */
+        public function getBarcodeArray(): array { return []; }
+    }
     class CRM_Contribute_WorkflowMessage_RecurringEdit {
         public function setReceiptFromEmail(string $email): self { return $this; }
         public function setContact(array $contact): self { return $this; }
@@ -437,4 +442,3 @@ namespace Symfony\Component\EventDispatcher {
         public static function getSubscribedEvents(): array;
     }
 }
-

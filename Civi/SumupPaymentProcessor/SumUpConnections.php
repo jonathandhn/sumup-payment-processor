@@ -24,18 +24,7 @@ class SumUpConnections extends AutoService implements EventSubscriberInterface
     {
         return [
             'civi.checkout.options' => 'getCheckoutOptions',
-            'civi.afform.input_types' => ['alterAfformInputTypes', -200],
         ];
-    }
-
-    public function alterAfformInputTypes(GenericHookEvent $e): void
-    {
-        if (empty($e->inputTypes['CheckoutBlock'])) {
-            return;
-        }
-
-        $e->inputTypes['CheckoutBlock']['admin_template'] = '~/afSumUp/checkoutBlockAdmin.html';
-        $e->inputTypes['CheckoutBlock']['admin_module'] = 'afSumUp';
     }
 
     public function getCheckoutOptions(GenericHookEvent $e): void

@@ -26,6 +26,9 @@ An administrator can request a full or partial SumUp refund from CiviCRM. CiviCR
 - Existing refund events are snapshotted before the request so an earlier refund cannot be mistaken for the new operation.
 - An API exception does not create a CiviCRM refund Payment. A successful empty response is treated as the authoritative acceptance response documented by SumUp.
 - Provider error details (such as `min_refundable_amount` or rejection reasons) are surfaced safely without exposing secrets, card data, or sensitive tokens.
+- External refund notifications are processed under a transaction-scoped lock. The extension compares the authoritative total of SumUp refund events with the negative payments already recorded in CiviCRM and records only the missing delta.
+- A notification without a visible SumUp refund event remains retryable. The original transaction amount is never substituted for missing refund data.
+- The original positive CiviCRM payment is resolved by an exact transaction identifier. Legacy comma-separated references are accepted only after tokenised comparison, and ambiguous matches fail explicitly.
 - Logs contain identifiers and amounts but no payer or card data.
 
 ## Acceptance

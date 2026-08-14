@@ -1,27 +1,6 @@
 (function (angular, $) {
   'use strict';
 
-  /**
-   * Minimal self-contained QR Code SVG generator (Type 1-10 Byte mode).
-   * Generates a clean standalone SVG element.
-   */
-  function generateQrSvg(text, size) {
-    size = size || 180;
-    // Fallback QR matrix encoder for browser URLs
-    try {
-      if (window.QRCode && typeof window.QRCode.generateSVG === 'function') {
-        return window.QRCode.generateSVG(text, {size: size});
-      }
-    } catch (e) {
-      // Continue to builtin renderer
-    }
-
-    // High quality vector SVG QR container using encodeURIComponent URL
-    var encoded = encodeURIComponent(text);
-    var qrImgUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=' + size + 'x' + size + '&margin=4&ecc=M&data=' + encoded;
-    return '<img src="' + qrImgUrl + '" alt="QR Code" width="' + size + '" height="' + size + '" style="max-width:100%; height:auto; display:block; border-radius:8px; image-rendering: pixelated;" />';
-  }
-
   angular.module('afSumUp').component('afSumUpSoloCheckout', {
     require: {afCheckoutBlock: '^^afCheckoutBlock'},
     templateUrl: '~/afSumUp/sumUpSoloCheckout.html',
@@ -96,9 +75,8 @@
         this.qrUrl = checkout.qr_url || '';
         this.receiptRef = checkout.client_transaction_id || '';
 
-        if (this.qrUrl) {
-          var qrHtml = generateQrSvg(this.qrUrl, 160);
-          this.qrSvgTrusted = $sce.trustAsHtml(qrHtml);
+        if (checkout.qr_svg) {
+          this.qrSvgTrusted = $sce.trustAsHtml(checkout.qr_svg);
         }
 
         pollStartedAt = Date.now();

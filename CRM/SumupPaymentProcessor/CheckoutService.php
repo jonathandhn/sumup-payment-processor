@@ -372,58 +372,89 @@ final class CRM_SumupPaymentProcessor_CheckoutService
 
         try {
             $cached = Civi::cache('long')->get($cacheKey);
-            if (is_array($cached) && !empty($cached['merchant_code'])) {
-                /** @var array{merchant_code: string, business_name: string, company_name: string, country: string, currency: string} $cached */
-                return $cached;
+            if (is_array($cached)) {
+                return $this->validateMerchantProfile($cached);
             }
         } catch (\Throwable) {
-            // Non-blocking cache lookup failure
+            // Invalid old cache entries and cache lookup failures trigger a fresh provider read.
         }
+
+        $merchant = $this->client->merchants()->get(
+            $this->merchantCode,
+            null,
+            $this->requestOptions()
+        );
+        $businessName = $merchant->businessProfile !== null
+            ? trim((string) $merchant->businessProfile->name)
+            : '';
+        $companyName = $merchant->company !== null
+            ? trim((string) $merchant->company->name)
+            : '';
+        if ($businessName === '') {
+            $businessName = $companyName !== '' ? $companyName : (string) $merchant->merchantCode;
+        }
+
+        $profile = $this->validateMerchantProfile([
+            'merchant_code' => (string) $merchant->merchantCode,
+            'business_name' => $businessName,
+            'company_name' => $companyName !== '' ? $companyName : $businessName,
+            'country' => (string) $merchant->country,
+            'currency' => (string) $merchant->defaultCurrency,
+        ]);
 
         try {
-            $path = '/v0.1/me/merchant-profile';
-            $response = $this->client->request('GET', $path, [], $this->requestOptions());
-            $body = (string) $response->getBody();
-            $data = json_decode($body, true);
-            if (!is_array($data)) {
-                throw new PaymentProcessorException(E::ts('Unable to retrieve SumUp merchant profile.'));
-            }
-
-            $merchantCode = (string) ($data['merchant_code'] ?? $this->merchantCode);
-            $businessName = (string) (
-                $data['doing_business_as']['business_name']
-                ?? $data['business_name']
-                ?? $data['company_name']
-                ?? $merchantCode
-            );
-            $companyName = (string) ($data['company_name'] ?? $businessName);
-            $country = (string) ($data['country'] ?? '');
-            $currency = (string) ($data['currency'] ?? '');
-
-            $profile = [
-                'merchant_code' => $merchantCode,
-                'business_name' => $businessName,
-                'company_name' => $companyName,
-                'country' => $country,
-                'currency' => $currency,
-            ];
-
-            try {
-                Civi::cache('long')->set($cacheKey, $profile, 86400);
-            } catch (\Throwable) {
-                // Non-blocking cache store failure
-            }
-
-            return $profile;
+            Civi::cache('long')->set($cacheKey, $profile, 86400);
         } catch (\Throwable) {
-            return [
-                'merchant_code' => $this->merchantCode,
-                'business_name' => $this->merchantCode,
-                'company_name' => $this->merchantCode,
-                'country' => '',
-                'currency' => 'EUR',
-            ];
+            // A cache failure must not invalidate an otherwise verified provider response.
         }
+
+        return $profile;
+    }
+
+    /**
+     * @param array<string, mixed> $profile
+     * @return array{
+     *   merchant_code: string,
+     *   business_name: string,
+     *   company_name: string,
+     *   country: string,
+     *   currency: string
+     * }
+     */
+    private function validateMerchantProfile(array $profile): array
+    {
+        $configuredCode = strtoupper(trim($this->merchantCode));
+        $merchantCode = strtoupper(trim((string) ($profile['merchant_code'] ?? '')));
+        if ($merchantCode === '' || !hash_equals($configuredCode, $merchantCode)) {
+            throw new PaymentProcessorException(E::ts(
+                'The authenticated SumUp merchant (%1) does not match the configured merchant code (%2).',
+                [1 => $merchantCode !== '' ? $merchantCode : E::ts('unknown'), 2 => $configuredCode]
+            ));
+        }
+
+        $country = strtoupper(trim((string) ($profile['country'] ?? '')));
+        if (!preg_match('/^[A-Z]{2}$/', $country)) {
+            throw new PaymentProcessorException(E::ts('SumUp did not return a valid merchant country code.'));
+        }
+
+        $currency = strtoupper(trim((string) ($profile['currency'] ?? '')));
+        if (!preg_match('/^[A-Z]{3}$/', $currency)) {
+            throw new PaymentProcessorException(E::ts('SumUp did not return a valid merchant currency.'));
+        }
+
+        $businessName = trim((string) ($profile['business_name'] ?? ''));
+        if ($businessName === '') {
+            $businessName = $merchantCode;
+        }
+        $companyName = trim((string) ($profile['company_name'] ?? ''));
+
+        return [
+            'merchant_code' => $merchantCode,
+            'business_name' => $businessName,
+            'company_name' => $companyName !== '' ? $companyName : $businessName,
+            'country' => $country,
+            'currency' => $currency,
+        ];
     }
 
     private static function toMinorUnits(float $amount): int

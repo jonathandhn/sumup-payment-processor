@@ -30,6 +30,7 @@ https://example.org/civicrm/sumup/widget?c=176&p=11&s=1fa6565a5644
 - **Tamper-proof**: Any alteration of `c` or `p` invalidates the signature, immediately returning an error without exposing internal data.
 - **No privilege elevation**: The link only grants permission to view the payment widget and pay the exact amount of that specific pending contribution.
 - **Zero credential exposure**: No API keys, merchant tokens, or card numbers are ever embedded in the URL.
+- **Local QR rendering**: The SVG matrix is generated server-side with CiviCRM's bundled TCPDF QR encoder. The signed payment URL is not sent to a third-party QR service.
 - **Low density for QR scanning**: Kept strictly under 60 characters, producing a low-density (Version 3) QR matrix that mobile cameras scan reliably from distance, poor lighting, or damaged printouts.
 
 ### 2. Lifecycle and Status Transitions
@@ -37,6 +38,7 @@ https://example.org/civicrm/sumup/widget?c=176&p=11&s=1fa6565a5644
 1. **Pending Payment (`Pending`)**:
    - The link loads the SumUp Card Widget (with Apple Pay, Google Pay, and Credit Card options).
    - If an online checkout session does not already exist or has expired in SumUp, `CRM_Core_Payment_Sumup::startEmbeddedCheckoutForContribution()` provisions a fresh checkout session on the fly.
+   - Signature parsing never creates a checkout. The contribution status and processor ownership are validated first, and an existing online checkout is reused on refresh.
 2. **Completed Payment (`Completed`)**:
    - Once payment is verified and completed via SumUp (including 3D Secure), `Widget.php` marks the transaction paid in CiviCRM.
    - The page displays a dedicated confirmation receipt view (*"Payment Confirmed! Thank you! Your payment has been approved and recorded successfully."*) with the amount and currency.

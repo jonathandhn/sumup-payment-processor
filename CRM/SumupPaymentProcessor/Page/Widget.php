@@ -26,9 +26,14 @@ class CRM_SumupPaymentProcessor_Page_Widget extends CRM_Core_Page
             if (!$processor instanceof CRM_Core_Payment_Sumup) {
                 throw new PaymentProcessorException(E::ts('Invalid SumUp payment processor.'));
             }
-
             $contribution = Contribution::get(false)
-                ->addSelect('id', 'total_amount', 'currency', 'contribution_status_id:name')
+                ->addSelect(
+                    'id',
+                    'total_amount',
+                    'currency',
+                    'payment_processor_id',
+                    'contribution_status_id:name'
+                )
                 ->addWhere('id', '=', $params['contribution_id'])
                 ->addWhere('is_test', 'IN', [true, false])
                 ->execute()
@@ -46,6 +51,19 @@ class CRM_SumupPaymentProcessor_Page_Widget extends CRM_Core_Page
                     return;
                 }
                 CRM_Utils_System::redirect($params['return_url']);
+            }
+            if (($contribution['contribution_status_id:name'] ?? '') !== 'Pending') {
+                throw new PaymentProcessorException(E::ts(
+                    'This contribution is no longer available for payment.'
+                ));
+            }
+            if (
+                !empty($contribution['payment_processor_id'])
+                && (int) $contribution['payment_processor_id'] !== $params['processor_id']
+            ) {
+                throw new PaymentProcessorException(E::ts(
+                    'The contribution uses another payment processor.'
+                ));
             }
 
             $checkoutRecord = CRM_SumupPaymentProcessor_CheckoutStore::getLatestOnlineByContributionId(
@@ -86,6 +104,7 @@ class CRM_SumupPaymentProcessor_Page_Widget extends CRM_Core_Page
             }
 
             $this->assign('sumupCheckoutId', $checkoutId);
+            $merchantProfile = $processor->getVerifiedMerchantProfile();
             $this->assign('sumupCancelUrl', $params['cancel_url']);
             $this->assign('sumupBrowserReturnUrl', CRM_Utils_System::url(
                 'civicrm/sumup/widget',
@@ -109,9 +128,10 @@ class CRM_SumupPaymentProcessor_Page_Widget extends CRM_Core_Page
                 CRM_SumupPaymentProcessor_CheckoutMode::usesWallet($checkoutMode)
             );
             $this->assign('sumupPublicMerchantKey', $processor->getPublicMerchantKey());
+            $this->assign('sumupBusinessName', $merchantProfile['business_name']);
             $this->assign(
                 'sumupMerchantCountryCode',
-                CRM_SumupPaymentProcessor_CheckoutMode::getMerchantCountryCode()
+                CRM_SumupPaymentProcessor_CheckoutMode::getMerchantCountryCode($merchantProfile['country'])
             );
 
             CRM_Core_Resources::singleton()->addVars(
@@ -211,19 +231,6 @@ class CRM_SumupPaymentProcessor_Page_Widget extends CRM_Core_Page
 
             $returnUrl = CRM_Utils_System::url('civicrm/donate', '', true, null, false, true);
             $cancelUrl = CRM_Utils_System::url('civicrm/donate', '', true, null, false, true);
-
-            $processor = \Civi\Payment\System::singleton()->getById($processorId);
-            if ($processor instanceof CRM_Core_Payment_Sumup) {
-                try {
-                    $processor->startEmbeddedCheckoutForContribution(
-                        $contributionId,
-                        $returnUrl,
-                        $cancelUrl
-                    );
-                } catch (\Throwable) {
-                    // Checkout may already exist
-                }
-            }
 
             return [
                 'contribution_id' => $contributionId,

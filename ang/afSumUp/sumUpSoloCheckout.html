@@ -63,7 +63,7 @@
       </div>
 
       <!-- Right Column: Instant QR Code Mobile Payment -->
-      <div class="crm-sumup-kiosk__card crm-sumup-kiosk__card--qr" ng-if="$ctrl.qrUrl">
+      <div class="crm-sumup-kiosk__card crm-sumup-kiosk__card--qr" ng-if="$ctrl.qrSvgTrusted">
         <div class="crm-sumup-qr-container">
           <div class="crm-sumup-qr-canvas" ng-bind-html="$ctrl.qrSvgTrusted"></div>
         </div>
@@ -71,11 +71,6 @@
         <div class="crm-sumup-kiosk__card-info">
           <h3>{{:: ts('Or pay on your phone') }}</h3>
           <p>{{:: ts('Scan this QR code with your camera for instant mobile payment.') }}</p>
-          <div class="crm-sumup-wallet-badges">
-            <span class="crm-sumup-wallet-badge"><i class="crm-i fa-apple" aria-hidden="true"></i> Pay</span>
-            <span class="crm-sumup-wallet-badge"><i class="crm-i fa-google" aria-hidden="true"></i> Pay</span>
-            <span class="crm-sumup-wallet-badge"><i class="crm-i fa-credit-card" aria-hidden="true"></i> CB</span>
-          </div>
         </div>
       </div>
     </div>

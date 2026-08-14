@@ -22,12 +22,6 @@ function sumup_payment_processor_civicrm_config(\CRM_Core_Config $config): void
 {
     _sumup_payment_processor_civix_civicrm_config($config);
 
-    if (sumup_payment_processor_supports_afform_checkout()) {
-        \Civi::dispatcher()->addListener(
-            'civi.checkout.options',
-            'sumup_payment_processor_register_afform_checkout_options'
-        );
-    }
     \Civi::dispatcher()->addListener(
         'hook_civicrm_tabset',
         'sumup_payment_processor_decorate_contact_tab',
@@ -127,37 +121,6 @@ function sumup_payment_processor_supports_afform_checkout(): bool
 {
     return interface_exists('Civi\\Checkout\\CheckoutOptionInterface')
         && interface_exists('Civi\\Checkout\\AfformCheckoutOptionInterface');
-}
-
-/**
- * @param \Civi\Core\Event\GenericHookEvent $event
- */
-function sumup_payment_processor_register_afform_checkout_options($event): void
-{
-    if (!sumup_payment_processor_supports_afform_checkout()) {
-        return;
-    }
-    $processors = \Civi\Api4\PaymentProcessor::get(false)
-        ->addWhere('class_name', 'LIKE', 'Payment_Sum%')
-        ->addWhere('is_active', '=', true)
-        ->addWhere('is_test', 'IN', [true, false])
-        ->execute();
-    $pairs = [];
-    foreach ($processors as $processor) {
-        $pairs[$processor['name']][$processor['is_test'] ? 'test' : 'live'] = $processor;
-    }
-    foreach ($pairs as $name => $pair) {
-        $event->options['sumup_embedded_checkout_' . $name] =
-            new \Civi\SumupPaymentProcessor\CheckoutOption\SumUpEmbeddedCheckout(
-                $pair['live'] ?? null,
-                $pair['test'] ?? null
-            );
-        $event->options['sumup_solo_checkout_' . $name] =
-            new \Civi\SumupPaymentProcessor\CheckoutOption\SumUpSoloCheckout(
-                $pair['live'] ?? null,
-                $pair['test'] ?? null
-            );
-    }
 }
 
 /**

@@ -54,44 +54,16 @@ final class CRM_SumupPaymentProcessor_CheckoutMode
         return $mode === self::SOLO || array_key_exists($mode, self::getOptions());
     }
 
-    public static function getMerchantCountryCode(?string $sumupProfileCountry = null): string
+    public static function getMerchantCountryCode(string $sumupProfileCountry): string
     {
-        $override = strtoupper(trim((string) Civi::settings()->get('sumup_merchant_country_code')));
-        if ($override !== '') {
-            return $override;
+        $countryCode = strtoupper(trim($sumupProfileCountry));
+        if (!preg_match('/^[A-Z]{2}$/', $countryCode)) {
+            throw new \Civi\Payment\Exception\PaymentProcessorException(
+                E::ts('SumUp did not return a valid merchant country code.')
+            );
         }
 
-        if ($sumupProfileCountry !== null && trim($sumupProfileCountry) !== '') {
-            $code = strtoupper(trim($sumupProfileCountry));
-            if (strlen($code) === 2) {
-                return $code;
-            }
-            if (strlen($code) === 3) {
-                $commonMap = [
-                    'FRA' => 'FR', 'DEU' => 'DE', 'GBR' => 'GB', 'USA' => 'US',
-                    'ESP' => 'ES', 'ITA' => 'IT', 'BEL' => 'BE', 'CHE' => 'CH',
-                    'NLD' => 'NL', 'PRT' => 'PT', 'AUT' => 'AT', 'IRL' => 'IE',
-                ];
-                if (isset($commonMap[$code])) {
-                    return $commonMap[$code];
-                }
-            }
-        }
-
-        $countryCode = CRM_Core_DAO::singleValueQuery(
-            'SELECT country.iso_code
-               FROM civicrm_domain domain_record
-               INNER JOIN civicrm_address address_record
-                       ON address_record.contact_id = domain_record.contact_id
-                      AND address_record.is_primary = 1
-               INNER JOIN civicrm_country country ON country.id = address_record.country_id
-              WHERE domain_record.id = %1
-              ORDER BY address_record.id ASC
-              LIMIT 1',
-            [1 => [(int) CRM_Core_Config::domainID(), 'Integer']]
-        );
-
-        return strtoupper(trim(is_string($countryCode) && $countryCode !== '' ? $countryCode : 'FR'));
+        return $countryCode;
     }
 
     public static function getLocale(): string
