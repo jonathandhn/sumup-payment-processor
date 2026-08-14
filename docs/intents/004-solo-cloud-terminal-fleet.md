@@ -2,9 +2,7 @@
 
 ## Outcome
 
-An Afform builder can offer **SumUp - Solo terminal** as a checkout option. An
-authorised operator sees only paired terminals for the selected site and can
-start an in-person payment on a SumUp Solo or Virtual Solo.
+An administrator can manage their entire SumUp Solo terminal fleet across CiviCRM sites from a modern Afform UI (`civicrm/admin/sumup-readers`), pair new readers using their on-screen pairing code, adopt existing Cloud readers for a site, and unpair or delete readers. An Afform builder can offer **SumUp - Solo terminal** as a checkout option. An authorised operator sees only paired terminals for the selected site and can start an in-person payment on a SumUp Solo or Virtual Solo.
 
 ## Terminal identity
 
@@ -17,7 +15,17 @@ start an in-person payment on a SumUp Solo or Virtual Solo.
 - A terminal never falls back to another site. An unavailable Paris terminal
   must not cause a checkout to start in Marseille.
 
-## Afform contract
+## Fleet administration & Afform management
+
+- An administrator interface (`afSumupReaders`) at `civicrm/admin/sumup-readers` provides comprehensive fleet management:
+  - processor selection (Live and Sandbox);
+  - fleet status synchronisation (`SumupReader.synchronise`);
+  - pairing new terminals with site code and on-screen pairing code (`SumupReader.pair`);
+  - discovering unassigned merchant readers and adopting them for a site (`SumupReader.listDiscovered` and `SumupReader.adopt`);
+  - disconnecting / unpairing terminals from SumUp Cloud API and CiviCRM (`SumupReader.unpair`);
+  - automatic deactivation of local readers deleted directly on `me.sumup.com`.
+
+## Afform checkout contract
 
 - Solo is a distinct CheckoutOption using the existing SumUp processor; it is
   not another payment-processor record and not a global online checkout mode.
@@ -30,7 +38,7 @@ start an in-person payment on a SumUp Solo or Virtual Solo.
 
 ## Provider contract
 
-- Pairing, listing, status, checkout and termination use the maintained SumUp
+- Pairing, listing, status, checkout, termination and deletion use the maintained SumUp
   PHP SDK Readers service.
 - API credentials remain server-side. Every Reader Checkout includes the
   Affiliate Key and matching Application ID required by SumUp Cloud API.
@@ -39,33 +47,11 @@ start an in-person payment on a SumUp Solo or Virtual Solo.
 - SumUp's HTTPS result URL is queued through MJWShared. CiviCRM completes a
   contribution only after server-side verification.
 
-## First sandbox slice
-
-- Pair one Virtual Solo through an API4 action.
-- Adopt an already paired physical Solo only through an explicit API4 action
-  naming its remote reader ID and CiviCRM site code.
-- Persist and rename it deterministically for site `PAR` or `MRS`.
-- Synchronise its pairing and device status.
-- Render it in a separate Afform Solo checkout option.
-- Start the same Reader Checkout from Afform and the native back-office form.
-- Store the exact client transaction ID in the signed CheckoutSession so the
-  landing page never resolves an attempt by contribution alone.
-- Keep the Afform contribution Pending while the terminal is waiting for the
-  cardholder, then verify the transaction through SumUp before success.
-- Map SumUp `PENDING` to a local pending attempt; only explicit `FAILED` or
-  `CANCELLED` terminal states may fail the CiviCRM contribution.
-- Replace the raw card fields with the paired-reader selector when an operator
-  opens CiviCRM's native back-office contribution form. Do not add a dedicated
-  test-collection shortcut to the global Contributions menu.
-- Create the contribution as Pending, send its amount to the selected Solo and
-  persist the returned client transaction ID together with the reader ID.
-- Queue `solo.transaction.updated` through MJWShared, read the authoritative
-  transaction from SumUp, then complete or fail the contribution idempotently.
-
 ## Acceptance
 
 - A Virtual Solo pairing code creates one local `SumupReader` record.
 - Synchronising the same reader updates that record instead of duplicating it.
+- Deleting a reader from SumUp Cloud marks the local CiviCRM record inactive upon sync.
 - The rendered label includes the site and deterministic terminal name.
 - An Afform using the Solo option never lists readers belonging to another
   processor environment.

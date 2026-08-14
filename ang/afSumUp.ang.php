@@ -15,6 +15,7 @@ return [
     'exports' => [
         'af-sum-up-embedded-checkout' => 'E',
         'af-sum-up-payment-methods' => 'E',
+        'af-sum-up-readers' => 'E',
         'af-sum-up-replace-card' => 'E',
     ],
 ];

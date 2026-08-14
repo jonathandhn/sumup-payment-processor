@@ -112,6 +112,18 @@ final class CRM_SumupPaymentProcessor_ReaderService
         );
     }
 
+    public function delete(string $readerId): void
+    {
+        if (!preg_match('/^rdr_[A-Za-z0-9]{20,}$/', $readerId)) {
+            throw new PaymentProcessorException(E::ts('Invalid SumUp reader identifier.'));
+        }
+        $this->client->readers()->delete(
+            $this->merchantCode,
+            $readerId,
+            $this->requestOptions()
+        );
+    }
+
     public function createCheckout(
         string $readerId,
         int $amountMinor,

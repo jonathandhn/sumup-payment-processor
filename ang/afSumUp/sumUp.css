@@ -1,6 +1,7 @@
 .crm-sumup-checkout-block,
 .crm-sumup-embedded-checkout,
 .crm-sumup-payment-methods,
+.crm-sumup-readers-admin,
 .crm-sumup-replace-card {
   --sumup-surface: #fff;
   --sumup-surface-muted: #f7f7f5;
@@ -22,6 +23,7 @@
 .crm-sumup-checkout-block *,
 .crm-sumup-embedded-checkout *,
 .crm-sumup-payment-methods *,
+.crm-sumup-readers-admin *,
 .crm-sumup-replace-card * {
   box-sizing: border-box;
 }
@@ -471,3 +473,149 @@
     width: 100%;
   }
 }
+
+/* Solo fleet management admin styling */
+.crm-sumup-toolbar {
+  margin-bottom: 0;
+}
+
+.crm-sumup-processor-select-bar {
+  align-items: center;
+  border-top: 1px solid var(--sumup-border, #dededb);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+}
+
+.crm-sumup-processor-select-bar select {
+  border: 1px solid var(--sumup-border, #dededb);
+  border-radius: 0.5rem;
+  max-width: 24rem;
+  padding: 0.4rem 0.75rem;
+}
+
+.crm-sumup-reader-title {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.crm-sumup-reader-meta {
+  color: var(--sumup-text-muted, #5f6368);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.35rem;
+}
+
+.crm-sumup-reader-meta code {
+  background: var(--sumup-surface, #fff);
+  border: 1px solid var(--sumup-border, #dededb);
+  border-radius: 0.35rem;
+  font-family: monospace;
+  font-size: 0.85em;
+  padding: 0.1rem 0.35rem;
+}
+
+.crm-sumup-reader-actions {
+  display: flex;
+  gap: 0.4rem;
+  justify-content: flex-end;
+}
+
+.crm-sumup-reader--inactive {
+  opacity: 0.7;
+}
+
+.crm-sumup-badge--site {
+  background: var(--sumup-accent, #006f69);
+  color: #fff;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.crm-sumup-badge--device-ready {
+  background: #e6f4ea;
+  border: 1px solid #ceead6;
+  color: #137333;
+}
+
+.crm-sumup-badge--device-busy {
+  background: #fef7e0;
+  border: 1px solid #feefc3;
+  color: #b06000;
+}
+
+.crm-sumup-pair-form .crm-sumup-form-row {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+}
+
+.crm-sumup-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.crm-sumup-form-group input {
+  border: 1px solid var(--sumup-border, #dededb);
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  padding: 0.55rem 0.75rem;
+}
+
+.crm-sumup-code-input {
+  font-family: monospace;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.crm-sumup-form-group--submit {
+  justify-content: flex-end;
+}
+
+.crm-sumup-form-group--submit button {
+  height: 2.65rem;
+}
+
+.crm-sumup-help {
+  color: var(--sumup-text-muted, #5f6368);
+  font-size: 0.75rem;
+}
+
+/* Modal Dialog */
+.crm-sumup-modal-backdrop {
+  align-items: center;
+  background: rgb(0 0 0 / 45%);
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  left: 0;
+  padding: 1rem;
+  position: fixed;
+  right: 0;
+  top: 0;
+  z-index: 9999;
+}
+
+.crm-sumup-modal {
+  background: #fff;
+  max-width: 30rem;
+  position: relative;
+  width: 100%;
+}
+
+.crm-sumup-modal-close {
+  background: none;
+  border: 0;
+  cursor: pointer;
+  font-size: 1.5rem;
+  line-height: 1;
+  padding: 0.25rem;
+}
+

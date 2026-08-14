@@ -410,5 +410,6 @@ namespace Civi\Api4\Generic {
         public static function get(bool $checkPermissions = true): static { return new static(); }
         public static function create(bool $checkPermissions = true): static { return new static(); }
         public static function update(bool $checkPermissions = true): static { return new static(); }
+        public static function delete(bool $checkPermissions = true): static { return new static(); }
     }
 }

@@ -1,0 +1,215 @@
+<div class="crm-block crm-sumup-payment-methods crm-sumup-readers-admin">
+  <div class="crm-loading-spinner" ng-if="$ctrl.loading && !$ctrl.pairedReaders.length"></div>
+
+  <!-- Messages -->
+  <div class="messages status no-popup" ng-if="$ctrl.statusMessage">{{$ctrl.statusMessage}}</div>
+  <div class="messages error" ng-if="$ctrl.error">{{$ctrl.error}}</div>
+
+  <!-- Processor Selector & Toolbar Panel -->
+  <section class="crm-sumup-panel">
+    <header class="crm-sumup-panel__header">
+      <div>
+        <p class="crm-sumup-eyebrow">SumUp Cloud API</p>
+        <h2>{{:: ts('Solo terminal fleet') }}</h2>
+      </div>
+      <div class="crm-sumup-actions crm-sumup-toolbar">
+        <button class="button btn btn-secondary" type="button"
+                ng-disabled="$ctrl.syncing || $ctrl.loading"
+                ng-click="$ctrl.sync()">
+          <i class="crm-i fa-refresh" ng-class="{'fa-spin': $ctrl.syncing}" aria-hidden="true"></i>
+          {{$ctrl.syncing ? ts('Synchronising…') : ts('Synchronise fleet') }}
+        </button>
+      </div>
+    </header>
+
+    <div class="crm-sumup-processor-select-bar" ng-if="$ctrl.processors.length > 1">
+      <label for="sumup-processor-select"><strong>{{:: ts('Payment processor:') }}</strong></label>
+      <select id="sumup-processor-select" class="crm-form-select"
+              ng-model="$ctrl.selectedProcessorId"
+              ng-change="$ctrl.onProcessorChange()"
+              ng-options="p.id as (p.title + (p.is_test ? ' (' + ts('Test') + ')' : ' (' + ts('Live') + ')')) for p in $ctrl.processors">
+      </select>
+    </div>
+  </section>
+
+  <!-- Paired Readers Section -->
+  <section class="crm-sumup-panel">
+    <header class="crm-sumup-panel__header">
+      <div>
+        <p class="crm-sumup-eyebrow">{{:: ts('Site Terminals') }}</p>
+        <h2>{{:: ts('Paired terminals') }}</h2>
+      </div>
+      <span class="crm-sumup-count" ng-if="$ctrl.pairedReaders.length">{{$ctrl.pairedReaders.length}}</span>
+    </header>
+
+    <div class="messages status no-popup" ng-if="!$ctrl.pairedReaders.length && !$ctrl.loading">
+      {{:: ts('No SumUp Solo terminal is currently paired with this CiviCRM site.') }}
+    </div>
+
+    <ul class="crm-sumup-card-list crm-sumup-reader-list" ng-if="$ctrl.pairedReaders.length">
+      <li ng-repeat="reader in $ctrl.pairedReaders track by reader.id" ng-class="{'crm-sumup-reader--inactive': !reader.is_active}">
+        <i class="crm-i fa-tablet crm-sumup-card-icon" aria-hidden="true"></i>
+        <div class="crm-sumup-card-list__details">
+          <div class="crm-sumup-reader-title">
+            <strong>{{reader.canonical_name}}</strong>
+            <span class="crm-sumup-badge crm-sumup-badge--site">{{reader.site_code}}</span>
+            <span class="crm-sumup-badge crm-sumup-badge--active" ng-if="reader.is_active && reader.pairing_status === 'paired'">
+              {{:: ts('Active') }}
+            </span>
+            <span class="crm-sumup-badge crm-sumup-badge--warning" ng-if="!reader.is_active || reader.pairing_status !== 'paired'">
+              {{reader.pairing_status || ts('Inactive')}}
+            </span>
+            <span class="crm-sumup-badge crm-sumup-badge--device-ready" ng-if="reader.device_status === 'READY'">
+              <i class="crm-i fa-check-circle" aria-hidden="true"></i> {{:: ts('Ready') }}
+            </span>
+            <span class="crm-sumup-badge crm-sumup-badge--device-busy" ng-if="reader.device_status === 'BUSY'">
+              <i class="crm-i fa-hourglass-half" aria-hidden="true"></i> {{:: ts('In payment') }}
+            </span>
+          </div>
+          <div class="crm-sumup-reader-meta">
+            <small><span>{{:: ts('Device ID:') }}</span> <code>{{reader.device_identifier}}</code></small>
+            <small><span>{{:: ts('Reader ID:') }}</span> <code>{{reader.reader_id}}</code></small>
+            <small><span>{{:: ts('Model:') }}</span> {{reader.model}}</small>
+            <small ng-if="reader.last_sync_date"><span>{{:: ts('Last sync:') }}</span> {{reader.last_sync_date}}</small>
+          </div>
+        </div>
+
+        <div class="crm-sumup-reader-actions">
+          <button class="button btn btn-secondary btn-sm" type="button"
+                  title="{{:: ts('Disconnect from Cloud API') }}"
+                  ng-if="reader.is_active"
+                  ng-click="$ctrl.unpairReader(reader, false)">
+            {{:: ts('Disconnect') }}
+          </button>
+          <button class="button btn btn-danger btn-sm" type="button"
+                  title="{{:: ts('Delete from Cloud API and CiviCRM') }}"
+                  ng-click="$ctrl.unpairReader(reader, true)">
+            <i class="crm-i fa-trash" aria-hidden="true"></i>
+          </button>
+        </div>
+      </li>
+    </ul>
+  </section>
+
+  <!-- Pair New Reader Form Panel -->
+  <section class="crm-sumup-panel">
+    <header class="crm-sumup-panel__header">
+      <div>
+        <p class="crm-sumup-eyebrow">{{:: ts('Add Terminal') }}</p>
+        <h2>{{:: ts('Pair a new Solo terminal') }}</h2>
+      </div>
+    </header>
+
+    <div class="messages status no-popup" ng-if="$ctrl.pairing.success">{{$ctrl.pairing.success}}</div>
+    <div class="messages error" ng-if="$ctrl.pairing.error">{{$ctrl.pairing.error}}</div>
+
+    <form class="crm-sumup-pair-form" ng-submit="$ctrl.pairReader()">
+      <div class="crm-sumup-form-row">
+        <div class="crm-sumup-form-group">
+          <label for="sumup-site-code"><strong>{{:: ts('Site code') }}</strong> <span class="crm-marker">*</span></label>
+          <input type="text" id="sumup-site-code" class="crm-form-text"
+                 placeholder="e.g. BAR, ACCUEIL, MRS"
+                 maxlength="12"
+                 ng-model="$ctrl.pairing.siteCode"
+                 required />
+          <small class="crm-sumup-help">{{:: ts('2 to 12 uppercase letters or digits.') }}</small>
+        </div>
+
+        <div class="crm-sumup-form-group">
+          <label for="sumup-pairing-code"><strong>{{:: ts('Pairing code') }}</strong> <span class="crm-marker">*</span></label>
+          <input type="text" id="sumup-pairing-code" class="crm-form-text crm-sumup-code-input"
+                 placeholder="e.g. 50C044"
+                 maxlength="9"
+                 ng-model="$ctrl.pairing.pairingCode"
+                 required />
+          <small class="crm-sumup-help">{{:: ts('Displayed on the Solo terminal screen.') }}</small>
+        </div>
+
+        <div class="crm-sumup-form-group crm-sumup-form-group--submit">
+          <button class="button btn btn-primary" type="submit"
+                  ng-disabled="$ctrl.pairing.submitting || !$ctrl.pairing.siteCode || !$ctrl.pairing.pairingCode">
+            <i class="crm-i fa-link" aria-hidden="true"></i>
+            {{$ctrl.pairing.submitting ? ts('Pairing…') : ts('Pair terminal') }}
+          </button>
+        </div>
+      </div>
+    </form>
+  </section>
+
+  <!-- Discovered / Unattached Readers Panel -->
+  <section class="crm-sumup-panel" ng-if="$ctrl.discoveredReaders.length">
+    <header class="crm-sumup-panel__header">
+      <div>
+        <p class="crm-sumup-eyebrow">{{:: ts('Merchant Account') }}</p>
+        <h2>{{:: ts('Discovered readers on SumUp account') }}</h2>
+      </div>
+      <span class="crm-sumup-count">{{$ctrl.discoveredReaders.length}}</span>
+    </header>
+
+    <ul class="crm-sumup-card-list">
+      <li ng-repeat="discovered in $ctrl.discoveredReaders track by discovered.reader_id">
+        <i class="crm-i fa-tablet crm-sumup-card-icon" aria-hidden="true"></i>
+        <div class="crm-sumup-card-list__details">
+          <div>
+            <strong>{{discovered.name || discovered.reader_id}}</strong>
+            <span class="crm-sumup-badge crm-sumup-badge--active" ng-if="discovered.is_paired_in_civi">
+              {{:: ts('Paired in CiviCRM') }}
+            </span>
+            <span class="crm-sumup-badge crm-sumup-badge--warning" ng-if="!discovered.is_paired_in_civi">
+              {{:: ts('Unassigned / Cloud only') }}
+            </span>
+          </div>
+          <div class="crm-sumup-reader-meta">
+            <small><span>{{:: ts('Device ID:') }}</span> <code>{{discovered.device_identifier}}</code></small>
+            <small><span>{{:: ts('Reader ID:') }}</span> <code>{{discovered.reader_id}}</code></small>
+            <small ng-if="discovered.site_code"><span>{{:: ts('Site code:') }}</span> {{discovered.site_code}}</small>
+          </div>
+        </div>
+
+        <div class="crm-sumup-reader-actions">
+          <button class="button btn btn-secondary btn-sm" type="button"
+                  ng-if="!discovered.is_paired_in_civi"
+                  ng-click="$ctrl.openAdoptModal(discovered)">
+            {{:: ts('Adopt for site…') }}
+          </button>
+        </div>
+      </li>
+    </ul>
+  </section>
+
+  <!-- Adopt Modal Dialog -->
+  <div class="crm-sumup-modal-backdrop" ng-if="$ctrl.adoptModal.open">
+    <div class="crm-sumup-modal crm-sumup-panel">
+      <header class="crm-sumup-panel__header">
+        <div>
+          <p class="crm-sumup-eyebrow">{{:: ts('Adopt terminal') }}</p>
+          <h2>{{$ctrl.adoptModal.reader.name || $ctrl.adoptModal.reader.reader_id}}</h2>
+        </div>
+        <button class="crm-sumup-modal-close" type="button" ng-click="$ctrl.closeAdoptModal()">&times;</button>
+      </header>
+
+      <div class="messages error" ng-if="$ctrl.adoptModal.error">{{$ctrl.adoptModal.error}}</div>
+
+      <form ng-submit="$ctrl.adoptReader()">
+        <p>{{:: ts('Assign this existing SumUp Solo terminal to a CiviCRM site code:') }}</p>
+        <div class="crm-sumup-form-group">
+          <label for="sumup-adopt-site-code"><strong>{{:: ts('Site code') }}</strong></label>
+          <input type="text" id="sumup-adopt-site-code" class="crm-form-text"
+                 placeholder="e.g. BAR"
+                 maxlength="12"
+                 ng-model="$ctrl.adoptModal.siteCode"
+                 required />
+        </div>
+        <div class="crm-sumup-actions" style="margin-top: 1.25rem;">
+          <button class="button btn btn-primary" type="submit"
+                  ng-disabled="$ctrl.adoptModal.submitting || !$ctrl.adoptModal.siteCode">
+            {{$ctrl.adoptModal.submitting ? ts('Adopting…') : ts('Confirm adoption') }}
+          </button>
+          <button class="button btn btn-secondary" type="button" ng-click="$ctrl.closeAdoptModal()">
+            {{:: ts('Cancel') }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
