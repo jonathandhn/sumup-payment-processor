@@ -32,6 +32,14 @@
           error: '',
         };
 
+        this.reassignModal = {
+          open: false,
+          reader: null,
+          siteCode: '',
+          submitting: false,
+          error: '',
+        };
+
         this.loadProcessors();
       };
 
@@ -185,6 +193,46 @@
           this.adoptModal.error = err.error_message || ts('Failed to adopt the terminal.');
         }).finally(() => {
           this.adoptModal.submitting = false;
+          $scope.$applyAsync();
+        });
+      };
+
+      this.openReassignModal = (reader) => {
+        this.reassignModal.reader = reader;
+        this.reassignModal.siteCode = reader.site_code || '';
+        this.reassignModal.error = '';
+        this.reassignModal.open = true;
+      };
+
+      this.closeReassignModal = () => {
+        this.reassignModal.open = false;
+        this.reassignModal.reader = null;
+        this.reassignModal.error = '';
+      };
+
+      this.submitReassign = () => {
+        var siteCode = (this.reassignModal.siteCode || '').trim().toUpperCase();
+        if (!/^[A-Z0-9]{2,12}$/.test(siteCode)) {
+          this.reassignModal.error = ts('Site code must be 2 to 12 alphanumeric characters (e.g. BAR, ACCUEIL).');
+          return;
+        }
+
+        this.reassignModal.submitting = true;
+        this.reassignModal.error = '';
+
+        CRM.api4('SumupReader', 'reassignSite', {
+          id: this.reassignModal.reader.id || 0,
+          paymentProcessorId: this.selectedProcessorId,
+          readerId: this.reassignModal.reader.reader_id,
+          siteCode: siteCode,
+        }).then(() => {
+          this.statusMessage = ts('Terminal reassigned successfully to site %1.', {1: siteCode});
+          this.closeReassignModal();
+          this.loadReaders();
+        }).catch((err) => {
+          this.reassignModal.error = err.error_message || ts('Failed to reassign terminal site.');
+        }).finally(() => {
+          this.reassignModal.submitting = false;
           $scope.$applyAsync();
         });
       };

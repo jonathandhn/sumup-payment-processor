@@ -211,11 +211,25 @@ namespace {
     function _sumup_payment_processor_civix_civicrm_config(CRM_Core_Config $config): void {}
     function _sumup_payment_processor_civix_civicrm_install(): void {}
     function _sumup_payment_processor_civix_civicrm_enable(): void {}
+    interface CRM_Utils_Cache_Interface {
+        public function get(string $key, mixed $default = null): mixed;
+        public function set(string $key, mixed $value, null|int|\DateInterval $ttl = null): bool;
+        public function delete(string $key): bool;
+        public function flush(): bool;
+    }
     class Civi {
         public static function log(string $channel = ''): \Civi\Log { return new \Civi\Log(); }
         public static function settings(): \Civi\Settings { return new \Civi\Settings(); }
         public static function dispatcher(): \Civi\Dispatcher { return new \Civi\Dispatcher(); }
         public static function resources(): CRM_Core_Resources { return CRM_Core_Resources::singleton(); }
+        public static function cache(string $name = 'default'): CRM_Utils_Cache_Interface {
+            return new class implements CRM_Utils_Cache_Interface {
+                public function get(string $key, mixed $default = null): mixed { return null; }
+                public function set(string $key, mixed $value, null|int|\DateInterval $ttl = null): bool { return true; }
+                public function delete(string $key): bool { return true; }
+                public function flush(): bool { return true; }
+            };
+        }
     }
 }
 

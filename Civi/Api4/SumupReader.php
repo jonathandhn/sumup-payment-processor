@@ -36,6 +36,12 @@ class SumupReader extends Generic\DAOEntity
             ->setCheckPermissions($checkPermissions);
     }
 
+    public static function reassignSite(bool $checkPermissions = true): Action\SumupReader\ReassignSite
+    {
+        return (new Action\SumupReader\ReassignSite(static::getEntityName(), __FUNCTION__))
+            ->setCheckPermissions($checkPermissions);
+    }
+
     public static function unpair(bool $checkPermissions = true): Unpair
     {
         return (new Unpair(static::getEntityName(), __FUNCTION__))

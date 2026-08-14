@@ -63,6 +63,11 @@ if (
             return !empty($connection['id']) ? (int) $connection['id'] : null;
         }
 
+        public function supportsRecurring(): bool
+        {
+            return false;
+        }
+
         public function validate(AfformValidateEvent $event): void
         {
             // The selected reader is revalidated after the contribution exists.
@@ -103,7 +108,7 @@ if (
             }
 
             return [
-                'description' => E::ts('The payment will be sent to the selected in-person SumUp terminal.'),
+                'description' => E::ts('In-person payment via SumUp Solo terminal (one-time only).'),
                 'template' => '~/afSumUp/sumup_solo_checkout.html',
                 'fields' => [[
                     'name' => 'sumup_reader_id',
@@ -125,7 +130,7 @@ if (
             $readerId = (int) $session->getCheckoutParam('sumup_reader_id');
             $connection = $this->getConnectionDetails($session->isTestMode());
             $reader = SumupReader::get(false)
-                ->addSelect('id', 'canonical_name')
+                ->addSelect('id', 'canonical_name', 'site_code')
                 ->addWhere('id', '=', $readerId)
                 ->addWhere('payment_processor_id', '=', (int) $connection['id'])
                 ->addWhere('pairing_status', '=', 'paired')
@@ -135,17 +140,58 @@ if (
             if (!$reader) {
                 throw new \CRM_Core_Exception(E::ts('The selected SumUp terminal is unavailable.'));
             }
+
+            $contribution = \Civi\Api4\Contribution::get(false)
+                ->addSelect('id', 'total_amount', 'currency', 'contribution_recur_id')
+                ->addWhere('id', '=', $session->getContributionId())
+                ->execute()
+                ->single();
+
+            if (!empty($contribution['contribution_recur_id'])) {
+                throw new \CRM_Core_Exception(E::ts(
+                    'SumUp Solo terminals only support one-time payments.'
+                    . ' Recurring contributions require online card checkout.'
+                ));
+            }
+
             $processor = $this->getProcessor($session);
             $clientTransactionId = $processor->startSoloCheckoutForContribution(
                 $session->getContributionId(),
                 $readerId
             );
             $session->setCheckoutParam('sumup_reader_checkout_id', $clientTransactionId);
+
+            $qrUrl = \CRM_Utils_System::url(
+                'civicrm/sumup/widget',
+                [
+                    'contribution_id' => $session->getContributionId(),
+                    'token' => $session->tokenise(),
+                ],
+                true,
+                null,
+                false,
+                true
+            );
+
             $session->setResponseItem(
                 'sumup_solo_checkout',
                 [
                     'token' => $session->tokenise(),
-                    'message' => E::ts('Payment sent to the SumUp terminal. Complete it on the terminal.'),
+                    'reader_id' => $readerId,
+                    'reader_name' => (string) ($reader['canonical_name'] ?? 'Solo'),
+                    'site_code' => (string) ($reader['site_code'] ?? ''),
+                    'amount' => number_format((float) $contribution['total_amount'], 2, '.', ''),
+                    'currency' => (string) $contribution['currency'],
+                    'qr_url' => $qrUrl,
+                    'client_transaction_id' => $clientTransactionId,
+                    'message' => E::ts(
+                        'Payment of %1 %2 sent to terminal %3.',
+                        [
+                            1 => number_format((float) $contribution['total_amount'], 2, '.', ''),
+                            2 => (string) $contribution['currency'],
+                            3 => (string) ($reader['canonical_name'] ?? 'Solo'),
+                        ]
+                    ),
                 ]
             );
             $session->setResponseItem('redirect', false);

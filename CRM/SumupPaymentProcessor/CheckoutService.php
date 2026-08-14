@@ -302,6 +302,79 @@ final class CRM_SumupPaymentProcessor_CheckoutService
         return (bool) preg_match('/^[A-Za-z0-9_-]{8,100}$/', $checkoutId);
     }
 
+    /**
+     * Retrieve the merchant's profile, commercial name (Doing Business As), and currency.
+     *
+     * @return array{
+     *   merchant_code: string,
+     *   business_name: string,
+     *   company_name: string,
+     *   country: string,
+     *   currency: string
+     * }
+     */
+    public function getMerchantProfile(?int $processorId = null): array
+    {
+        $cacheKey = $processorId !== null && $processorId > 0
+            ? 'sumup.merchant_profile.' . $processorId
+            : 'sumup.merchant_profile.' . md5($this->apiKey . ':' . $this->merchantCode);
+
+        try {
+            $cached = Civi::cache('long')->get($cacheKey);
+            if (is_array($cached) && !empty($cached['merchant_code'])) {
+                /** @var array{merchant_code: string, business_name: string, company_name: string, country: string, currency: string} $cached */
+                return $cached;
+            }
+        } catch (\Throwable) {
+            // Non-blocking cache lookup failure
+        }
+
+        try {
+            $path = '/v0.1/me/merchant-profile';
+            $response = $this->client->request('GET', $path, [], $this->requestOptions());
+            $body = (string) $response->getBody();
+            $data = json_decode($body, true);
+            if (!is_array($data)) {
+                throw new PaymentProcessorException(E::ts('Unable to retrieve SumUp merchant profile.'));
+            }
+
+            $merchantCode = (string) ($data['merchant_code'] ?? $this->merchantCode);
+            $businessName = (string) (
+                $data['doing_business_as']['business_name']
+                ?? $data['business_name']
+                ?? $data['company_name']
+                ?? $merchantCode
+            );
+            $companyName = (string) ($data['company_name'] ?? $businessName);
+            $country = (string) ($data['country'] ?? '');
+            $currency = (string) ($data['currency'] ?? '');
+
+            $profile = [
+                'merchant_code' => $merchantCode,
+                'business_name' => $businessName,
+                'company_name' => $companyName,
+                'country' => $country,
+                'currency' => $currency,
+            ];
+
+            try {
+                Civi::cache('long')->set($cacheKey, $profile, 86400);
+            } catch (\Throwable) {
+                // Non-blocking cache store failure
+            }
+
+            return $profile;
+        } catch (\Throwable) {
+            return [
+                'merchant_code' => $this->merchantCode,
+                'business_name' => $this->merchantCode,
+                'company_name' => $this->merchantCode,
+                'country' => '',
+                'currency' => 'EUR',
+            ];
+        }
+    }
+
     private static function toMinorUnits(float $amount): int
     {
         return (int) round($amount * 100);

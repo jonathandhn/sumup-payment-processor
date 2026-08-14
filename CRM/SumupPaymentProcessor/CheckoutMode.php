@@ -54,11 +54,28 @@ final class CRM_SumupPaymentProcessor_CheckoutMode
         return $mode === self::SOLO || array_key_exists($mode, self::getOptions());
     }
 
-    public static function getMerchantCountryCode(): string
+    public static function getMerchantCountryCode(?string $sumupProfileCountry = null): string
     {
         $override = strtoupper(trim((string) Civi::settings()->get('sumup_merchant_country_code')));
         if ($override !== '') {
             return $override;
+        }
+
+        if ($sumupProfileCountry !== null && trim($sumupProfileCountry) !== '') {
+            $code = strtoupper(trim($sumupProfileCountry));
+            if (strlen($code) === 2) {
+                return $code;
+            }
+            if (strlen($code) === 3) {
+                $commonMap = [
+                    'FRA' => 'FR', 'DEU' => 'DE', 'GBR' => 'GB', 'USA' => 'US',
+                    'ESP' => 'ES', 'ITA' => 'IT', 'BEL' => 'BE', 'CHE' => 'CH',
+                    'NLD' => 'NL', 'PRT' => 'PT', 'AUT' => 'AT', 'IRL' => 'IE',
+                ];
+                if (isset($commonMap[$code])) {
+                    return $commonMap[$code];
+                }
+            }
         }
 
         $countryCode = CRM_Core_DAO::singleValueQuery(
@@ -74,7 +91,7 @@ final class CRM_SumupPaymentProcessor_CheckoutMode
             [1 => [(int) CRM_Core_Config::domainID(), 'Integer']]
         );
 
-        return strtoupper(trim(is_string($countryCode) ? $countryCode : ''));
+        return strtoupper(trim(is_string($countryCode) && $countryCode !== '' ? $countryCode : 'FR'));
     }
 
     public static function getLocale(): string

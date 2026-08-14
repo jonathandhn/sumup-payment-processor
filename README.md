@@ -25,7 +25,9 @@ CiviCRM records a payment only after retrieving and validating the checkout thro
 - contact and administrator visibility of saved cards;
 - card replacement, recurring amount changes and cancellation through native CiviCRM self-service;
 - configurable CiviCRM Scheduled Reminders for SumUp recurring payments and card remediation;
-- full online refunds through CiviCRM;
+- full and partial online refunds through CiviCRM with SumUp constraint reporting;
+- automatic accounting reconciliation: extraction of processing fees (`fee_amount`, `net_amount`) and payout dates (`revenue_recognition_date`);
+- extended lifecycle webhook handling for external refunds, chargebacks/disputes, and explicit cancellations;
 - native CiviCRM success and cancellation URLs;
 - durable SumUp checkout notifications through MJWShared;
 - an API4 `SumupCheckout` registry that counts attempts independently from payments;
@@ -33,7 +35,7 @@ CiviCRM records a payment only after retrieving and validating the checkout thro
 
 The modes `widget`, `widget_wallet`, `wallet`, and `hosted` are implemented. The signed local checkout route verifies the browser return and remains available as a fallback; it is no longer a normal visible payment step.
 
-The Solo Cloud API integration can pair and synchronise physical or Virtual Solo readers, assign an immutable site code, apply a deterministic terminal name, initiate payments from CiviCRM's back office or an Afform checkout, and complete contributions after authoritative SumUp verification.
+The Solo Cloud API integration can pair and synchronise physical or Virtual Solo readers via Afform UI or API4, assign an immutable site code, apply a deterministic terminal name, initiate payments from CiviCRM's back office or an Afform checkout, handle unpair/remote deletion sync, and complete contributions after authoritative SumUp verification.
 
 ## Configuration
 

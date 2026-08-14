@@ -66,6 +66,11 @@ if (
             return !empty($connection['id']) ? (int) $connection['id'] : null;
         }
 
+        public function supportsRecurring(): bool
+        {
+            return true;
+        }
+
         public function validate(AfformValidateEvent $event): void
         {
             // CiviCRM validates the contribution. SumUp validates payment details.

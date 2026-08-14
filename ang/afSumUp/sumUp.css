@@ -619,3 +619,334 @@
   padding: 0.25rem;
 }
 
+/* ==========================================================================
+   Afform Solo Kiosk & Hybrid QR Side-Way Layout
+   ========================================================================== */
+
+.crm-sumup-kiosk {
+  animation: crmSumupFadeIn 0.3s ease-out;
+  background: var(--sumup-surface, #ffffff);
+  border: 1px solid var(--sumup-border, #e0e0e0);
+  border-radius: 1rem;
+  box-shadow: 0 10px 25px -5px rgb(0 0 0 / 8%), 0 8px 10px -6px rgb(0 0 0 / 4%);
+  margin: 1.5rem auto;
+  max-width: 52rem;
+  overflow: hidden;
+  padding: 1.5rem;
+}
+
+@keyframes crmSumupFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.crm-sumup-kiosk__header {
+  align-items: center;
+  border-bottom: 1px solid var(--sumup-border, #e0e0e0);
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+}
+
+.crm-sumup-kiosk__title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.crm-sumup-kiosk__badge {
+  align-items: center;
+  background: #e8f5e9;
+  border-radius: 9999px;
+  color: #2e7d32;
+  display: inline-flex;
+  font-size: 0.8rem;
+  font-weight: 600;
+  gap: 0.4rem;
+  padding: 0.2rem 0.65rem;
+  width: fit-content;
+}
+
+.crm-sumup-kiosk__pulsing-dot {
+  animation: crmSumupPulse 1.5s infinite;
+  background: #2e7d32;
+  border-radius: 50%;
+  display: inline-block;
+  height: 0.5rem;
+  width: 0.5rem;
+}
+
+@keyframes crmSumupPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgb(46 125 50 / 60%);
+    transform: scale(0.95);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgb(46 125 50 / 0%);
+    transform: scale(1.15);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgb(46 125 50 / 0%);
+    transform: scale(0.95);
+  }
+}
+
+.crm-sumup-kiosk__amount {
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.crm-sumup-kiosk__countdown {
+  align-items: center;
+  background: #f5f5f5;
+  border-radius: 0.5rem;
+  color: #616161;
+  display: flex;
+  font-size: 0.85rem;
+  font-weight: 600;
+  gap: 0.35rem;
+  padding: 0.4rem 0.75rem;
+}
+
+.crm-sumup-kiosk__grid {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  margin-bottom: 1.5rem;
+}
+
+.crm-sumup-kiosk__card {
+  align-items: center;
+  background: #fafafa;
+  border: 1px solid var(--sumup-border, #e0e0e0);
+  border-radius: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 1.5rem 1.25rem;
+  text-align: center;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.crm-sumup-kiosk__card:hover {
+  border-color: #bdbdbd;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 5%);
+}
+
+.crm-sumup-kiosk__card-info h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0.75rem 0 0.35rem;
+}
+
+.crm-sumup-kiosk__card-info p {
+  color: #616161;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* Solo Terminal Vector Device */
+.crm-sumup-solo-device {
+  margin: 0.5rem auto 1rem;
+  perspective: 600px;
+}
+
+.crm-sumup-solo-device__frame {
+  background: #1e1e1e;
+  border: 2px solid #333;
+  border-radius: 1.25rem;
+  box-shadow: 0 12px 24px -4px rgb(0 0 0 / 30%), inset 0 1px 2px rgb(255 255 255 / 20%);
+  display: flex;
+  flex-direction: column;
+  height: 12.5rem;
+  justify-content: space-between;
+  padding: 0.75rem;
+  position: relative;
+  width: 9rem;
+}
+
+.crm-sumup-solo-device__screen {
+  background: #000;
+  border-radius: 0.6rem;
+  box-shadow: inset 0 0 8px rgb(0 0 0 / 80%);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  height: 9.5rem;
+  justify-content: space-between;
+  padding: 0.5rem;
+}
+
+.crm-sumup-solo-device__screen-header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.crm-sumup-solo-device__logo {
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  opacity: 0.85;
+  text-transform: lowercase;
+}
+
+.crm-sumup-solo-device__signal {
+  color: #4caf50;
+  font-size: 0.65rem;
+}
+
+.crm-sumup-solo-device__screen-body {
+  margin: auto 0;
+  text-align: center;
+}
+
+.crm-sumup-solo-device__screen-amount {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin-bottom: 0.35rem;
+}
+
+.crm-sumup-solo-device__prompt {
+  align-items: center;
+  animation: crmSumupBlink 1.8s ease-in-out infinite;
+  color: #4fc3f7;
+  display: flex;
+  flex-direction: column;
+  font-size: 0.65rem;
+  font-weight: 500;
+  gap: 0.2rem;
+  line-height: 1.2;
+}
+
+.crm-sumup-solo-device__prompt-icon {
+  font-size: 0.9rem;
+}
+
+@keyframes crmSumupBlink {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+
+.crm-sumup-solo-device__screen-footer {
+  border-top: 1px solid #222;
+  font-size: 0.55rem;
+  opacity: 0.6;
+  padding-top: 0.2rem;
+  text-align: center;
+}
+
+.crm-sumup-solo-device__slot {
+  background: #111;
+  border-radius: 2px;
+  box-shadow: inset 0 1px 2px #000;
+  height: 0.3rem;
+  margin: 0.35rem auto 0;
+  width: 4rem;
+}
+
+/* QR Code & Wallet Badges */
+.crm-sumup-qr-container {
+  align-items: center;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 0.65rem;
+  box-shadow: 0 4px 8px rgb(0 0 0 / 4%);
+  display: flex;
+  height: 12.5rem;
+  justify-content: center;
+  margin: 0.5rem auto 1rem;
+  padding: 0.75rem;
+  width: 12.5rem;
+}
+
+.crm-sumup-wallet-badges {
+  display: flex;
+  gap: 0.4rem;
+  justify-content: center;
+  margin-top: 0.65rem;
+}
+
+.crm-sumup-wallet-badge {
+  align-items: center;
+  background: #eee;
+  border-radius: 0.35rem;
+  color: #333;
+  display: inline-flex;
+  font-size: 0.7rem;
+  font-weight: 600;
+  gap: 0.25rem;
+  padding: 0.2rem 0.45rem;
+}
+
+.crm-sumup-kiosk__footer {
+  align-items: center;
+  border-top: 1px solid var(--sumup-border, #e0e0e0);
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  padding-top: 1rem;
+}
+
+/* Success & Failure states */
+.crm-sumup-kiosk__body--success,
+.crm-sumup-kiosk__body--failed {
+  animation: crmSumupFadeIn 0.4s ease-out;
+  padding: 2rem 1rem;
+  text-align: center;
+}
+
+.crm-sumup-kiosk__success-icon {
+  color: #2e7d32;
+  font-size: 4rem;
+  margin-bottom: 0.75rem;
+}
+
+.crm-sumup-kiosk__failed-icon {
+  color: #c62828;
+  font-size: 4rem;
+  margin-bottom: 0.75rem;
+}
+
+.crm-sumup-kiosk__success-amount {
+  color: #1b5e20;
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0.5rem 0;
+}
+
+.crm-sumup-kiosk__success-msg,
+.crm-sumup-kiosk__failed-msg {
+  color: #616161;
+  font-size: 1rem;
+  max-width: 28rem;
+  margin: 0 auto;
+}
+
+.crm-sumup-kiosk__receipt-box {
+  background: #f5f5f5;
+  border-radius: 0.4rem;
+  display: inline-block;
+  margin-top: 1rem;
+  padding: 0.4rem 0.75rem;
+}
+
+@media (max-width: 38rem) {
+  .crm-sumup-kiosk {
+    padding: 1rem;
+  }
+  .crm-sumup-kiosk__grid {
+    grid-template-columns: 1fr;
+  }
+}
