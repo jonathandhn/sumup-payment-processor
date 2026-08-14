@@ -112,6 +112,8 @@
           this.remainingSeconds = remaining;
           if (remaining > 0 && this.waiting) {
             countdownTimer = $timeout(update, 1000);
+          } else if (remaining <= 0 && this.waiting) {
+            this.onPaymentFailure(ts('Le délai d\'attente du terminal est écoulé (60s). Vous pouvez relancer le paiement ou payer par QR code.'));
           }
         };
         countdownTimer = $timeout(update, 1000);

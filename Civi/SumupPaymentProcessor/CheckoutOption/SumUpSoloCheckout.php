@@ -237,8 +237,9 @@ if (
                 $session->success();
                 return;
             }
-            if ($result['status'] === 'FAILED') {
+            if (in_array($result['status'], ['FAILED', 'CANCELLED', 'EXPIRED'], true)) {
                 $session->fail();
+                return;
             }
         }
 
