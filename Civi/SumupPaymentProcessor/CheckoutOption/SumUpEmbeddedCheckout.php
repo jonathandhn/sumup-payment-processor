@@ -40,8 +40,9 @@ if (
 
         public function getFrontendLabel(): string
         {
-            $connection = $this->getDisplayConnection();
-            return (string) ($connection['frontend_title'] ?? $connection['title'] ?? E::ts('Credit or debit card'));
+            return E::ts('%1 (secure payment on this page)', [
+                1 => $this->getConnectionLabel(),
+            ]);
         }
 
         public function getPaymentMethod(): ?string

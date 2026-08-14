@@ -35,11 +35,9 @@ if (
 
         public function getFrontendLabel(): string
         {
-            $connection = $this->getDisplayConnection();
-            return (string) (
-                $connection['frontend_title']
-                ?? E::ts('%1 - Payment on terminal', [1 => (string) ($connection['title'] ?? 'SumUp')])
-            );
+            return E::ts('%1 (Solo terminal / Kiosk)', [
+                1 => $this->getConnectionLabel(),
+            ]);
         }
 
         public function getPaymentMethod(): ?string
