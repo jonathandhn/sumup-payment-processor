@@ -142,6 +142,19 @@ if (
             );
             $session->setCheckoutParam('sumup_reader_checkout_id', $clientTransactionId);
 
+            $returnUrl = $session->getLandingUrl();
+            $cancelUrl = $session->getLandingUrl();
+
+            try {
+                $processor->startEmbeddedCheckoutForContribution(
+                    $session->getContributionId(),
+                    $returnUrl,
+                    $cancelUrl
+                );
+            } catch (\Throwable $e) {
+                \Civi::log()->warning('Unable to pre-create online checkout for QR: ' . $e->getMessage());
+            }
+
             $contributionId = $session->getContributionId();
             $key = \CRM_Core_Payment_Sumup::getBrowserReturnSigningKey();
             $sig = substr(hash_hmac('sha256', (string) $contributionId, $key), 0, 12);

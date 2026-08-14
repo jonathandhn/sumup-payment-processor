@@ -33,6 +33,11 @@ class CRM_SumupPaymentProcessor_Page_Widget extends CRM_Core_Page
                 ->addWhere('is_test', 'IN', [true, false])
                 ->execute()
                 ->single();
+
+            if (($contribution['contribution_status_id:name'] ?? '') === 'Completed') {
+                CRM_Utils_System::redirect($params['return_url']);
+            }
+
             $checkoutRecord = CRM_SumupPaymentProcessor_CheckoutStore::getLatestOnlineByContributionId(
                 $params['contribution_id'],
                 $params['processor_id']
