@@ -188,13 +188,12 @@
       };
 
       this.retryCheckout = () => {
-        this.getFormElement().show();
+        this.clearTimers();
         this.active = false;
         this.waiting = false;
         this.completed = false;
         this.failed = false;
-        this.clearTimers();
-        $scope.$applyAsync();
+        $window.location.reload();
       };
 
       this.cancelCheckout = () => {
@@ -205,18 +204,12 @@
       };
 
       this.resetKiosk = () => {
+        this.clearTimers();
         this.active = false;
         this.waiting = false;
         this.completed = false;
         this.failed = false;
-        this.clearTimers();
-        this.getFormElement().show();
-        // Reset form inputs if standard form
-        var form = this.getFormElement().find('form')[0];
-        if (form && typeof form.reset === 'function') {
-          form.reset();
-        }
-        $scope.$applyAsync();
+        $window.location.reload();
       };
     },
   });
