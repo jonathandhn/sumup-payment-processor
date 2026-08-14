@@ -5,7 +5,6 @@ return [
         'ang/afSumUp/sumUp.css',
     ],
     'js' => [
-        'js/checkout.js',
         'ang/afSumUp.js',
         'ang/afSumUp/*.js',
     ],
