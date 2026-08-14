@@ -2718,12 +2718,10 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
                 $values['card_type_id'] = $financialDetails['card_type_id'];
             }
 
-            Payment::create(false)
-                ->setValues($values)
-                ->setNotificationForCompleteOrder(true)
-                ->execute();
-
-            $contribUpdate = [];
+            $contribUpdate = [
+                'receive_date' => date('Y-m-d H:i:s'),
+                'trxn_id' => $transactionId,
+            ];
             if (isset($financialDetails['fee_amount']) && $financialDetails['fee_amount'] > 0) {
                 $contribUpdate['fee_amount'] = $financialDetails['fee_amount'];
                 $contribUpdate['net_amount'] = max(
@@ -2734,12 +2732,15 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             if (isset($financialDetails['revenue_recognition_date'])) {
                 $contribUpdate['revenue_recognition_date'] = $financialDetails['revenue_recognition_date'];
             }
-            if (!empty($contribUpdate)) {
-                Contribution::update(false)
-                    ->addWhere('id', '=', $contributionId)
-                    ->setValues($contribUpdate)
-                    ->execute();
-            }
+            Contribution::update(false)
+                ->addWhere('id', '=', $contributionId)
+                ->setValues($contribUpdate)
+                ->execute();
+
+            Payment::create(false)
+                ->setValues($values)
+                ->setNotificationForCompleteOrder(true)
+                ->execute();
         } finally {
             $lock->release();
         }
