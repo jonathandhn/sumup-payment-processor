@@ -68,6 +68,12 @@ not send an unsolicited email. A logged-in member can manage the plan directly;
 an administrator can continue using the existing workflow-message action to
 send a checksum-protected card-change or plan-change link.
 
+When an embedded QuickForm submission is rejected by this policy, the browser
+must display CiviCRM's payment-processor error, including the management URL.
+The AJAX bridge must not replace a known business error with a generic secure
+payment form initialization error. It accepts both CiviCRM JSON messages and an
+HTML error response returned after a core redirect.
+
 ## Scheduled job
 
 The extension installs one active daily CiviCRM scheduled job. The Job action
@@ -90,4 +96,6 @@ occurrence logic.
   retains any old token still used elsewhere.
 - Enabling the strict policy blocks a second active plan without exposing a
   public checksum or contact data.
+- QuickForm displays the strict-policy explanation and management URL instead
+  of a generic payment-form initialization error.
 - PHPCS and PHPStan level 8 pass.

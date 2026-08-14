@@ -14,15 +14,55 @@
     return processorIds.indexOf(selectedProcessorId($form)) !== -1;
   }
 
+  function displayCrmMessages(response, $response) {
+    var displayed = false;
+    var messages = response && response.crmMessages;
+
+    if (messages && typeof messages === 'object') {
+      Object.keys(messages).forEach(function (key) {
+        var message = messages[key];
+        if (!message || !message.text) {
+          return;
+        }
+        CRM.alert(message.text, message.title || '', message.type || 'error', message.options || {});
+        displayed = true;
+      });
+    }
+
+    if (!displayed && $response && response.isHtmlDocument) {
+      var $message = $response
+        .find('#crm-notification-container .ui-notify-message, .messages--error, .messages.error, .crm-error, [role="alert"]')
+        .first();
+      if ($message.length) {
+        CRM.alert($message.html() || $message.text(), '', 'error', {expires: 0});
+        displayed = true;
+      }
+    }
+
+    return displayed;
+  }
+
   function displayFormResponse($form, response) {
     if (!response || !response.content) {
+      if (displayCrmMessages(response)) {
+        return;
+      }
       CRM.alert(CRM.ts('sumup-payment-processor')('Unable to start the secure payment form. Please try again.'), '', 'error');
       return;
     }
     var $response = $('<div>').html(response.content);
+    var displayedMessage = displayCrmMessages(response, $response);
+    if (response.isHtmlDocument) {
+      if (!displayedMessage) {
+        CRM.alert(CRM.ts('sumup-payment-processor')('Unable to start the secure payment form. Please try again.'), '', 'error');
+      }
+      return;
+    }
     var $replacement = $response.find('form').first();
     if (!$replacement.length) {
-      CRM.alert(CRM.ts('sumup-payment-processor')('Unable to start the secure payment form. Please try again.'), '', 'error');
+      if (!displayedMessage) {
+        CRM.alert(CRM.ts('sumup-payment-processor')('Unable to start the secure payment form. Please try again.'), '', 'error');
+      }
       return;
     }
     $form.replaceWith($replacement);
@@ -79,7 +119,13 @@
       credentials: 'same-origin',
       headers: {'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest'},
     }).then(function (response) {
-      return response.json();
+      var contentType = response.headers.get('content-type') || '';
+      if (contentType.indexOf('application/json') !== -1) {
+        return response.json();
+      }
+      return response.text().then(function (content) {
+        return {content: content, isHtmlDocument: true};
+      });
     }).then(function (response) {
       if (response.sumup_embedded_checkout) {
         mountCheckout($form, response.sumup_embedded_checkout);
