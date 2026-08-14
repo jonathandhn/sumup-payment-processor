@@ -68,7 +68,7 @@ The extension sends this URL to SumUp as the checkout `return_url`. The HTTP req
 
 ## Refunds
 
-Full refunds are available from CiviCRM's native payment refund workflow. The extension verifies the authoritative SumUp transaction, currency and remaining refundable balance before sending the request. Partial refunds are deliberately rejected by the current integration. CiviCRM records the associated negative Payment after SumUp accepts the refund.
+Full and partial refunds are available from CiviCRM's native payment refund workflow. The extension verifies the authoritative SumUp transaction, currency and remaining refundable balance before sending the request. When a specific payment type rejects a partial amount (e.g. recurring card payments requiring full refunds), the extension displays an explicit error message detailing the minimum required amount. CiviCRM records the associated negative Payment after SumUp accepts the refund.
 
 The SumUp credential must include the `refunds.write` or `payments` scope. SumUp does not return the original processing fees when a payment is refunded.
 

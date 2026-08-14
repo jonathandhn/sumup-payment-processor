@@ -362,7 +362,6 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
                 E::ts('A SumUp refund requires a valid transaction reference and a positive two-decimal amount.')
             );
         }
-        $this->assertFullRefundAmount($transactionReference, $requestedAmount);
 
         $lock = CRM_Core_Lock::createScopedLock('data.sumup.refund.' . $transactionReference);
         if (!$lock->acquire()) {
@@ -460,11 +459,40 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             $providerDetail = is_array($responseBody)
                 ? (string) ($responseBody['detail'] ?? $responseBody['message'] ?? '')
                 : '';
+            $minRefundableAmount = null;
+            if (is_array($responseBody) && !empty($responseBody['errors']) && is_array($responseBody['errors'])) {
+                foreach ($responseBody['errors'] as $error) {
+                    if (
+                        is_array($error)
+                        && ($error['code'] ?? '') === 'min_amount'
+                        && isset($error['min_refundable_amount'])
+                    ) {
+                        $minRefundableAmount = (float) $error['min_refundable_amount'];
+                        break;
+                    }
+                }
+            }
+
             Civi::log()->error(sprintf(
                 'SumUp refund request failed: status=%d detail=%s',
                 $exception->getStatusCode(),
                 $providerDetail !== '' ? $providerDetail : $exception->getMessage()
             ));
+
+            if ($minRefundableAmount !== null) {
+                throw new PaymentProcessorException(E::ts(
+                    'SumUp does not allow a partial refund for this transaction (minimum required: %1 %2).',
+                    [
+                        1 => sprintf('%.2f', $minRefundableAmount),
+                        2 => $currency ?? 'EUR',
+                    ]
+                ));
+            }
+            if ($providerDetail !== '' && $providerDetail !== 'Refund failed.') {
+                throw new PaymentProcessorException(
+                    E::ts('SumUp refund failed: %1', [1 => $providerDetail])
+                );
+            }
             throw new PaymentProcessorException(
                 E::ts('The SumUp refund could not be processed. Please try again later.')
             );
@@ -2459,29 +2487,6 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
     private function getMerchantCode(): string
     {
         return trim((string) ($this->_paymentProcessor['user_name'] ?? ''));
-    }
-
-    private function assertFullRefundAmount(string $transactionReference, float $refundAmount): void
-    {
-        $payments = Payment::get(false)
-            ->addSelect('total_amount')
-            ->addWhere('trxn_id', '=', $transactionReference)
-            ->addWhere('payment_processor_id', '=', $this->getProcessorId())
-            ->addWhere('total_amount', '>', 0)
-            ->setLimit(2)
-            ->execute();
-        if (count($payments) !== 1) {
-            throw new PaymentProcessorException(
-                E::ts('The SumUp refund cannot be requested because the original CiviCRM payment could not be found.')
-            );
-        }
-
-        $originalAmount = (float) $payments->first()['total_amount'];
-        if (abs($originalAmount - $refundAmount) > 0.0001) {
-            throw new PaymentProcessorException(
-                E::ts('SumUp supports full refunds only through this integration. Partial refunds are unavailable.')
-            );
-        }
     }
 
     private function getRefundedMinorUnits(TransactionFull $transaction): int

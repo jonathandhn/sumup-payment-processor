@@ -169,11 +169,6 @@ function sumup_payment_processor_register_afform_checkout_options($event): void
  */
 function sumup_payment_processor_civicrm_buildForm(string $formName, mixed &$form): void
 {
-    if ($formName === 'CRM_Mjwshared_Form_PaymentRefund') {
-        sumup_payment_processor_lock_mjwshared_refund_amount($form);
-        return;
-    }
-
     if (
         !in_array(
             $formName,
@@ -218,98 +213,6 @@ function sumup_payment_processor_civicrm_buildForm(string $formName, mixed &$for
         \Civi::resources()->addScriptFile(E::LONG_NAME, 'js/checkout.js');
         \Civi::resources()->addScriptFile(E::LONG_NAME, 'js/quickform-checkout.js');
     }
-}
-
-/**
- * Keep MJWShared's refund amount fixed to the original SumUp payment.
- *
- * The server repeats this full-refund check in doRefund().
- */
-function sumup_payment_processor_lock_mjwshared_refund_amount(\CRM_Core_Form $form): void
-{
-    $paymentProcessorId = sumup_payment_processor_get_refund_form_payment_processor_id();
-    if (!$paymentProcessorId) {
-        return;
-    }
-
-    try {
-        $processor = \Civi\Api4\PaymentProcessor::get(false)
-            ->addSelect('class_name')
-            ->addWhere('id', '=', $paymentProcessorId)
-            ->execute()
-            ->first();
-    } catch (\Throwable) {
-        return;
-    }
-    if (($processor['class_name'] ?? null) !== 'Payment_Sumup') {
-        return;
-    }
-
-    if (!$form->elementExists('refund_amount')) {
-        return;
-    }
-
-    try {
-        $form->freeze(['refund_amount']);
-    } catch (\Throwable) {
-        try {
-            $form->getElement('refund_amount')->freeze();
-        } catch (\Throwable) {
-            return;
-        }
-    }
-
-    \CRM_Core_Resources::singleton()->addScript(<<<'JS'
-CRM.$(function($) {
-  var $refundAmount = $('#refund_amount');
-  if ($refundAmount.length) {
-    $refundAmount.prop('readonly', true).attr('aria-readonly', 'true').addClass('crm-form-readonly');
-  }
-});
-JS
-    );
-}
-
-/**
- * Identify the processor attached to the payment being refunded.
- */
-function sumup_payment_processor_get_refund_form_payment_processor_id(): ?int
-{
-    $paymentId = \CRM_Utils_Request::retrieveValue('payment_id', 'Positive', null, false, 'REQUEST');
-    if ($paymentId) {
-        $paymentProcessorId = \CRM_Core_DAO::singleValueQuery(
-            'SELECT payment_processor_id FROM civicrm_financial_trxn WHERE id = %1',
-            [1 => [(int) $paymentId, 'Integer']]
-        );
-
-        return $paymentProcessorId ? (int) $paymentProcessorId : null;
-    }
-
-    $contributionId = \CRM_Utils_Request::retrieveValue(
-        'contribution_id',
-        'Positive',
-        null,
-        false,
-        'REQUEST'
-    );
-    if (!$contributionId) {
-        return null;
-    }
-
-    $paymentProcessorId = \CRM_Core_DAO::singleValueQuery(
-        "SELECT ft.payment_processor_id
-         FROM civicrm_financial_trxn ft
-         INNER JOIN civicrm_entity_financial_trxn eft ON eft.financial_trxn_id = ft.id
-         WHERE eft.entity_table = 'civicrm_contribution'
-           AND eft.entity_id = %1
-           AND ft.is_payment = 1
-           AND ft.total_amount > 0
-         ORDER BY ft.id DESC
-         LIMIT 1",
-        [1 => [(int) $contributionId, 'Integer']]
-    );
-
-    return $paymentProcessorId ? (int) $paymentProcessorId : null;
 }
 
 /**

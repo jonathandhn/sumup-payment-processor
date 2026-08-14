@@ -1,6 +1,8 @@
 parameters:
   level: 8
   phpVersion: 80200
+  parallel:
+    maximumNumberOfProcesses: 1
   paths:
     - sumup_payment_processor.php
     - CRM
