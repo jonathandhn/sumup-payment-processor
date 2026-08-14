@@ -18,8 +18,8 @@
 
     // High quality vector SVG QR container using encodeURIComponent URL
     var encoded = encodeURIComponent(text);
-    var qrImgUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=' + size + 'x' + size + '&margin=8&data=' + encoded;
-    return '<img src="' + qrImgUrl + '" alt="QR Code" width="' + size + '" height="' + size + '" style="max-width:100%; height:auto; display:block; border-radius:6px;" />';
+    var qrImgUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=' + size + 'x' + size + '&margin=4&ecc=M&data=' + encoded;
+    return '<img src="' + qrImgUrl + '" alt="QR Code" width="' + size + '" height="' + size + '" style="max-width:100%; height:auto; display:block; border-radius:8px; image-rendering: pixelated;" />';
   }
 
   angular.module('afSumUp').component('afSumUpSoloCheckout', {
