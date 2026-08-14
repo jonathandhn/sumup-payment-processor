@@ -9,7 +9,7 @@
         </span>
         <h2 class="crm-sumup-kiosk__amount">{{$ctrl.amount}} {{$ctrl.currency}}</h2>
       </div>
-      <div class="crm-sumup-kiosk__countdown" ng-if="$ctrl.remainingSeconds > 0">
+      <div class="crm-sumup-kiosk__countdown" ng-if="!$ctrl.terminalExpired && $ctrl.remainingSeconds > 0">
         <i class="crm-i fa-clock-o" aria-hidden="true"></i> {{$ctrl.remainingSeconds}}s
       </div>
     </div>
@@ -17,31 +17,48 @@
     <div class="crm-sumup-kiosk__grid">
       <!-- Left Column: Terminal Solo Visual & Instructions -->
       <div class="crm-sumup-kiosk__card crm-sumup-kiosk__card--solo">
-        <div class="crm-sumup-solo-device">
-          <div class="crm-sumup-solo-device__frame">
-            <div class="crm-sumup-solo-device__screen">
-              <div class="crm-sumup-solo-device__screen-header">
-                <span class="crm-sumup-solo-device__logo">sumup</span>
-                <span class="crm-sumup-solo-device__signal"><i class="crm-i fa-wifi" aria-hidden="true"></i></span>
-              </div>
-              <div class="crm-sumup-solo-device__screen-body">
-                <div class="crm-sumup-solo-device__screen-amount">{{$ctrl.amount}} {{$ctrl.currency}}</div>
-                <div class="crm-sumup-solo-device__prompt">
-                  <i class="crm-i fa-credit-card crm-sumup-solo-device__prompt-icon" aria-hidden="true"></i>
-                  <span>{{:: ts('Tap, insert or swipe card') }}</span>
+        <div ng-if="!$ctrl.terminalExpired">
+          <div class="crm-sumup-solo-device">
+            <div class="crm-sumup-solo-device__frame">
+              <div class="crm-sumup-solo-device__screen">
+                <div class="crm-sumup-solo-device__screen-header">
+                  <span class="crm-sumup-solo-device__logo">sumup</span>
+                  <span class="crm-sumup-solo-device__signal"><i class="crm-i fa-wifi" aria-hidden="true"></i></span>
+                </div>
+                <div class="crm-sumup-solo-device__screen-body">
+                  <div class="crm-sumup-solo-device__screen-amount">{{$ctrl.amount}} {{$ctrl.currency}}</div>
+                  <div class="crm-sumup-solo-device__prompt">
+                    <i class="crm-i fa-credit-card crm-sumup-solo-device__prompt-icon" aria-hidden="true"></i>
+                    <span>{{:: ts('Tap, insert or swipe card') }}</span>
+                  </div>
+                </div>
+                <div class="crm-sumup-solo-device__screen-footer">
+                  <span class="crm-sumup-solo-device__site">{{$ctrl.siteCode || $ctrl.readerName}}</span>
                 </div>
               </div>
-              <div class="crm-sumup-solo-device__screen-footer">
-                <span class="crm-sumup-solo-device__site">{{$ctrl.siteCode || $ctrl.readerName}}</span>
-              </div>
+              <div class="crm-sumup-solo-device__slot"></div>
             </div>
-            <div class="crm-sumup-solo-device__slot"></div>
+          </div>
+
+          <div class="crm-sumup-kiosk__card-info">
+            <h3>{{:: ts('On terminal: %1', {1: $ctrl.readerName}) }}</h3>
+            <p>{{:: ts('Follow the instructions on the SumUp Solo screen (contactless, chip & PIN).') }}</p>
           </div>
         </div>
 
-        <div class="crm-sumup-kiosk__card-info">
-          <h3>{{:: ts('On terminal: %1', {1: $ctrl.readerName}) }}</h3>
-          <p>{{:: ts('Follow the instructions on the SumUp Solo screen (contactless, chip & PIN).') }}</p>
+        <div ng-if="$ctrl.terminalExpired" style="text-align: center; padding: 2rem 1rem;">
+          <div style="font-size: 2.5rem; color: #8c8c88; margin-bottom: 0.75rem;">
+            <i class="crm-i fa-clock-o"></i>
+          </div>
+          <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 0.5rem;">
+            {{:: ts('Terminal session timed out') }}
+          </h3>
+          <p style="color: #5f6368; font-size: 0.9rem; margin-bottom: 1.25rem;">
+            {{:: ts('No card was tapped. You can wake up the terminal again or pay by QR code.') }}
+          </p>
+          <button class="button btn btn-primary" type="button" ng-click="$ctrl.retryTerminal()">
+            <i class="crm-i fa-refresh" aria-hidden="true"></i> {{:: ts('Resend to terminal') }}
+          </button>
         </div>
       </div>
 

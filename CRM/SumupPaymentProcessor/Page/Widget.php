@@ -34,7 +34,17 @@ class CRM_SumupPaymentProcessor_Page_Widget extends CRM_Core_Page
                 ->execute()
                 ->single();
 
+            $isQrFlow = !empty($params['is_qr_flow']);
+            $this->assign('sumupPaid', false);
+
             if (($contribution['contribution_status_id:name'] ?? '') === 'Completed') {
+                if ($isQrFlow) {
+                    $this->assign('sumupPaid', true);
+                    $this->assign('sumupAmount', number_format((float) $contribution['total_amount'], 2, '.', ''));
+                    $this->assign('sumupCurrency', strtoupper((string) $contribution['currency']));
+                    parent::run();
+                    return;
+                }
                 CRM_Utils_System::redirect($params['return_url']);
             }
 
@@ -61,6 +71,13 @@ class CRM_SumupPaymentProcessor_Page_Widget extends CRM_Core_Page
             if ($checkoutMode !== CRM_SumupPaymentProcessor_CheckoutMode::SOLO) {
                 $result = $processor->verifyAndApplyCheckout($checkoutId, $params['contribution_id']);
                 if ($result['status'] === 'PAID') {
+                    if ($isQrFlow) {
+                        $this->assign('sumupPaid', true);
+                        $this->assign('sumupAmount', number_format((float) $contribution['total_amount'], 2, '.', ''));
+                        $this->assign('sumupCurrency', strtoupper((string) $contribution['currency']));
+                        parent::run();
+                        return;
+                    }
                     CRM_Utils_System::redirect($params['return_url']);
                 }
                 if (in_array($result['status'], ['FAILED', 'EXPIRED'], true)) {
@@ -124,7 +141,14 @@ class CRM_SumupPaymentProcessor_Page_Widget extends CRM_Core_Page
     }
 
     /**
-     * @return array{contribution_id: int, processor_id: int, return_url: string, cancel_url: string, expires: int}
+     * @return array{
+     *   contribution_id: int,
+     *   processor_id: int,
+     *   return_url: string,
+     *   cancel_url: string,
+     *   expires: int,
+     *   is_qr_flow?: bool
+     * }
      */
     private function signedParameters(): array
     {
@@ -207,6 +231,7 @@ class CRM_SumupPaymentProcessor_Page_Widget extends CRM_Core_Page
                 'return_url' => $returnUrl,
                 'cancel_url' => $cancelUrl,
                 'expires' => time() + 7200,
+                'is_qr_flow' => true,
             ];
         }
 
@@ -216,6 +241,7 @@ class CRM_SumupPaymentProcessor_Page_Widget extends CRM_Core_Page
             'return_url' => (string) CRM_Utils_Request::retrieve('return_url', 'String', $this, true),
             'cancel_url' => (string) CRM_Utils_Request::retrieve('cancel_url', 'String', $this, true),
             'expires' => (int) CRM_Utils_Request::retrieve('expires', 'Positive', $this, true),
+            'is_qr_flow' => false,
         ];
         $signature = (string) CRM_Utils_Request::retrieve('_sgn', 'String', $this, true);
         if (!preg_match('/^[A-Za-z0-9]{4}_[a-f0-9]{32}$/', $signature)) {

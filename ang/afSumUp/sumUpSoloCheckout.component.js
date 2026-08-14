@@ -31,12 +31,14 @@
       var pollStartedAt = 0;
       var pollTimer = null;
       var countdownTimer = null;
-      var maxWaitTimeMs = 60000; // 60 seconds (hardware Solo POS timeout)
+      var maxWaitTimeMs = 300000; // 5 minutes overall session for QR / 3DS
+      var terminalTimeoutMs = 60000; // 60 seconds hardware terminal window
 
       this.active = false;
       this.waiting = false;
       this.completed = false;
       this.failed = false;
+      this.terminalExpired = false;
       this.errorMessage = '';
       this.token = '';
       this.amount = '';
@@ -45,7 +47,7 @@
       this.siteCode = '';
       this.qrUrl = '';
       this.qrSvgTrusted = null;
-      this.remainingSeconds = 180;
+      this.remainingSeconds = 60;
       this.receiptRef = '';
 
       this.$onInit = () => this.getFormElement().on('crmFormSuccess', listener);
@@ -84,6 +86,7 @@
         this.waiting = true;
         this.completed = false;
         this.failed = false;
+        this.terminalExpired = false;
         this.errorMessage = '';
         this.token = checkout.token;
         this.amount = checkout.amount || '';
@@ -99,7 +102,7 @@
         }
 
         pollStartedAt = Date.now();
-        this.remainingSeconds = Math.round(maxWaitTimeMs / 1000);
+        this.remainingSeconds = Math.round(terminalTimeoutMs / 1000);
         this.startCountdown();
         this.schedulePoll(1500);
         $scope.$applyAsync();
@@ -108,15 +111,33 @@
       this.startCountdown = () => {
         var update = () => {
           var elapsed = Date.now() - pollStartedAt;
-          var remaining = Math.max(0, Math.round((maxWaitTimeMs - elapsed) / 1000));
-          this.remainingSeconds = remaining;
-          if (remaining > 0 && this.waiting) {
+          var remainingTerminal = Math.max(0, Math.round((terminalTimeoutMs - elapsed) / 1000));
+          var remainingSession = Math.max(0, Math.round((maxWaitTimeMs - elapsed) / 1000));
+          this.remainingSeconds = remainingTerminal;
+          this.terminalExpired = (remainingTerminal <= 0);
+
+          if (remainingSession > 0 && this.waiting) {
             countdownTimer = $timeout(update, 1000);
-          } else if (remaining <= 0 && this.waiting) {
-            this.onPaymentFailure(ts('Le délai d\'attente du terminal est écoulé (60s). Vous pouvez relancer le paiement ou payer par QR code.'));
+          } else if (remainingSession <= 0 && this.waiting) {
+            this.onPaymentFailure(ts('Payment session timed out. Please try again.'));
           }
         };
         countdownTimer = $timeout(update, 1000);
+      };
+
+      this.retryTerminal = () => {
+        this.terminalExpired = false;
+        pollStartedAt = Date.now();
+        this.remainingSeconds = Math.round(terminalTimeoutMs / 1000);
+        CRM.api4('Contribution', 'continueCheckout', {
+          token: this.token,
+          retry_reader: true
+        }).then((res) => {
+          if (res && res[0] && res[0].token) {
+            this.token = res[0].token;
+          }
+          $scope.$applyAsync();
+        });
       };
 
       this.schedulePoll = (delay) => {
@@ -149,18 +170,15 @@
           }
 
           if (response.status === 'failed' || response.status === 'cancelled') {
-            this.onPaymentFailure(response.message || ts('Payment was cancelled or declined on the terminal.'));
-            return;
+            // Solo reader hardware timeout or cancel should mark the reader expired while keeping QR active
+            this.terminalExpired = true;
           }
 
-          if (response.status === 'pending') {
-            if (Date.now() - pollStartedAt < maxWaitTimeMs) {
-              this.schedulePoll(2000);
-              return;
-            }
-            this.onPaymentFailure(ts('Terminal payment request timed out (60s). You can retry or pay by QR code.'));
+          if (Date.now() - pollStartedAt < maxWaitTimeMs) {
+            this.schedulePoll(2000);
             return;
           }
+          this.onPaymentFailure(ts('Payment session timed out. Please try again.'));
         }).catch((err) => {
           if (Date.now() - pollStartedAt < maxWaitTimeMs) {
             this.schedulePoll(3000);
