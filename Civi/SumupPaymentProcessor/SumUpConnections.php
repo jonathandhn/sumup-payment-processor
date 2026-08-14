@@ -54,7 +54,10 @@ class SumUpConnections extends AutoService implements EventSubscriberInterface
     private function getPaymentProcessorPairs(): array
     {
         $all = \Civi\Api4\PaymentProcessor::get(false)
-            ->addWhere('class_name', '=', 'Payment_Sumup')
+            ->addClause('OR', [
+                ['class_name', 'IN', ['Payment_Sumup', 'Payment_SumUp', 'Payment_sumup']],
+                ['payment_processor_type_id:name', '=', 'SumUp'],
+            ])
             ->addWhere('is_active', '=', true)
             ->addWhere('is_test', 'IN', [true, false])
             ->execute();
