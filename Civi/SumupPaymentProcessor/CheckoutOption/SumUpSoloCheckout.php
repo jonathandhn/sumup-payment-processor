@@ -77,45 +77,9 @@ if (
          */
         public function getAfformSettings(bool $testMode): array
         {
-            $connection = $this->getDisplayConnection();
-            $readers = SumupReader::get(false)
-                ->addSelect('id', 'canonical_name', 'site_code', 'device_status', 'device_state')
-                ->addWhere('payment_processor_id', '=', (int) $connection['id'])
-                ->addWhere('pairing_status', '=', 'paired')
-                ->addWhere('is_active', '=', true)
-                ->addOrderBy('site_code', 'ASC')
-                ->addOrderBy('canonical_name', 'ASC')
-                ->execute();
-            $options = [];
-            foreach ($readers as $reader) {
-                $state = trim((string) ($reader['device_state'] ?? $reader['device_status'] ?? ''));
-                $options[] = [
-                    'id' => (string) $reader['id'],
-                    'label' => sprintf(
-                        '%s - %s%s',
-                        (string) $reader['site_code'],
-                        (string) $reader['canonical_name'],
-                        $state !== '' ? ' (' . $state . ')' : ''
-                    ),
-                ];
-            }
-
-            if ($options === []) {
-                return [
-                    'description' => E::ts('No paired SumUp Solo terminal is available for this processor.'),
-                ];
-            }
-
             return [
                 'description' => E::ts('In-person payment via SumUp Solo terminal (one-time only).'),
                 'template' => '~/afSumUp/sumup_solo_checkout.html',
-                'fields' => [[
-                    'name' => 'sumup_reader_id',
-                    'title' => E::ts('Payment terminal'),
-                    'htmlType' => 'select',
-                    'is_required' => true,
-                    'options' => $options,
-                ]],
             ];
         }
 
@@ -128,6 +92,24 @@ if (
         {
             $readerId = (int) $session->getCheckoutParam('sumup_reader_id');
             $connection = $this->getConnectionDetails($session->isTestMode());
+
+            if ($readerId <= 0) {
+                $defaultReader = SumupReader::get(false)
+                    ->addSelect('id')
+                    ->addWhere('payment_processor_id', '=', (int) $connection['id'])
+                    ->addWhere('pairing_status', '=', 'paired')
+                    ->addWhere('is_active', '=', true)
+                    ->addOrderBy('site_code', 'ASC')
+                    ->addOrderBy('canonical_name', 'ASC')
+                    ->execute()
+                    ->first();
+                $readerId = !empty($defaultReader['id']) ? (int) $defaultReader['id'] : 0;
+            }
+
+            if ($readerId <= 0) {
+                throw new \CRM_Core_Exception(E::ts('No paired SumUp Solo terminal is available.'));
+            }
+
             $reader = SumupReader::get(false)
                 ->addSelect('id', 'canonical_name', 'site_code')
                 ->addWhere('id', '=', $readerId)
