@@ -307,4 +307,8 @@
       mount(relay);
     }
   });
-}(CRM.ts('sumup-payment-processor')));
+}(function (str, params) {
+  return typeof CRM !== 'undefined' && typeof CRM.ts === 'function'
+    ? CRM.ts('sumup-payment-processor')(str, params)
+    : str;
+}));

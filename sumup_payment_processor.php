@@ -138,10 +138,7 @@ function sumup_payment_processor_register_afform_checkout_options($event): void
         return;
     }
     $processors = \Civi\Api4\PaymentProcessor::get(false)
-        ->addClause('OR', [
-            ['class_name', 'IN', ['Payment_Sumup', 'Payment_SumUp', 'Payment_sumup']],
-            ['payment_processor_type_id:name', '=', 'SumUp'],
-        ])
+        ->addWhere('class_name', 'LIKE', 'Payment_Sum%')
         ->addWhere('is_active', '=', true)
         ->addWhere('is_test', 'IN', [true, false])
         ->execute();
