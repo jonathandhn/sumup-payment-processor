@@ -88,4 +88,26 @@ return [
             ],
         ],
     ],
+    'sumup_apple_pay_domain_association' => [
+        'name' => 'sumup_apple_pay_domain_association',
+        'type' => 'String',
+        'html_type' => 'textarea',
+        'html_attributes' => [
+            'rows' => 6,
+            'cols' => 60,
+        ],
+        'default' => '',
+        'is_domain' => 1,
+        'is_contact' => 0,
+        'title' => E::ts('Apple Pay domain association text'),
+        'description' => E::ts(
+            'Paste the contents of the Apple Developer Merchant ID Domain Association file provided by SumUp. '
+            . 'CiviCRM will automatically serve it at /.well-known/apple-developer-merchantid-domain-association.'
+        ),
+        'settings_pages' => [
+            'sumup' => [
+                'weight' => 60,
+            ],
+        ],
+    ],
 ];

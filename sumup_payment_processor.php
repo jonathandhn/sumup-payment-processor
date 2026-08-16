@@ -22,6 +22,8 @@ function sumup_payment_processor_civicrm_config(\CRM_Core_Config $config): void
 {
     _sumup_payment_processor_civix_civicrm_config($config);
 
+    CRM_SumupPaymentProcessor_Page_ApplePayDomainAssociation::checkAndServeEarly();
+
     \Civi::dispatcher()->addListener(
         'hook_civicrm_tabset',
         'sumup_payment_processor_decorate_contact_tab',
