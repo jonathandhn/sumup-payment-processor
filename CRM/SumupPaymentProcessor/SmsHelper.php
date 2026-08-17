@@ -75,7 +75,12 @@ class CRM_SumupPaymentProcessor_SmsHelper
                 'number' => $cleanPhone,
             ],
         ];
-        $header = ['From' => 'SumUp', 'from' => 'SumUp'];
+        $header = [
+            'From' => 'SumUp',
+            'from' => 'SumUp',
+            'To' => $cleanPhone,
+            'to' => $cleanPhone,
+        ];
 
         if (class_exists('CRM_SMS_Provider')) {
             try {
@@ -93,12 +98,12 @@ class CRM_SumupPaymentProcessor_SmsHelper
                 $provider = \CRM_SMS_Provider::singleton($providerParams);
                 if (is_object($provider) && method_exists($provider, 'send')) {
                     try {
-                        $provider->send($recipients, $header, $messageText);
+                        $provider->send($recipients, $header, $messageText, null, null);
                     } catch (\Throwable $e1) {
                         try {
-                            $provider->send($recipients, $messageText);
+                            $provider->send($cleanPhone, $header, $messageText, null, null);
                         } catch (\Throwable $e2) {
-                            $provider->send($cleanPhone, $messageText);
+                            throw $e1;
                         }
                     }
                     return;
