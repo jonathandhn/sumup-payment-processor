@@ -237,9 +237,15 @@ final class Run extends AbstractAction
             ->addWhere('id', '=', $tokenId)
             ->execute()
             ->single();
+        $tokenProcessor = PaymentProcessor::get(false)
+            ->addSelect('class_name')
+            ->addWhere('id', '=', (int) $token['payment_processor_id'])
+            ->addWhere('is_test', 'IN', [true, false])
+            ->execute()
+            ->first();
         if (
             (int) $token['contact_id'] !== (int) $schedule['contact_id']
-            || (int) $token['payment_processor_id'] !== (int) $schedule['payment_processor_id']
+            || ($tokenProcessor['class_name'] ?? '') !== 'Payment_Sumup'
             || !preg_match('/^[A-Za-z0-9_-]{8,255}$/', (string) $token['token'])
         ) {
             throw new CRM_Core_Exception(E::ts(
