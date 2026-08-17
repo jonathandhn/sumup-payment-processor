@@ -115,7 +115,9 @@ final class ContributionRecurMapping extends MappingBase
             'sumup_processor',
             "INNER JOIN civicrm_payment_processor sumup_processor
               ON sumup_processor.id = e.payment_processor_id
-              AND sumup_processor.class_name = 'Payment_Sumup'"
+              AND (sumup_processor.class_name LIKE 'Payment_Sum%' OR sumup_processor.payment_processor_type_id IN (
+                SELECT ppt.id FROM civicrm_payment_processor_type ppt WHERE ppt.class_name LIKE 'Payment_Sum%'
+              ))"
         );
 
         if (empty($schedule->absolute_date)) {
