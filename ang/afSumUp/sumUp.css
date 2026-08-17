@@ -1348,6 +1348,50 @@
   padding: 0.5rem 1.25rem;
 }
 
+@media (max-width: 640px) {
+  .crm-sumup-alma-container {
+    border-radius: 0.85rem;
+    box-sizing: border-box;
+    margin: 0.5rem auto;
+    max-width: 100%;
+    padding: 0.85rem 0.65rem;
+    width: 100%;
+  }
+
+  .crm-sumup-compact-recap {
+    align-items: center;
+    box-sizing: border-box;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.6rem 0.75rem;
+  }
+
+  .crm-sumup-compact-recap__content {
+    flex: 1 1 auto;
+    font-size: 0.88rem;
+    min-width: 0;
+  }
+
+  .crm-sumup-compact-recap__donor {
+    hyphens: none;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .crm-sumup-choice__header {
+    padding: 0.75rem 0.65rem;
+  }
+
+  .crm-sumup-choice__drawer {
+    padding: 0.75rem 0.35rem;
+  }
+
+  .crm-sumup-alma-summary__amount {
+    font-size: 1.25rem;
+  }
+}
+
 /* Suppress ghost Apple Pay button and session timeout errors with zero CPU cost */
 [id^="sumup-card-"] [data-testid="apple-pay-button"],
 [id^="sumup-card-"] [data-testid="timeout-session-error-message"],

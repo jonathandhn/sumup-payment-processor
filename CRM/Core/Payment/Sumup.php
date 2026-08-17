@@ -1489,13 +1489,39 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
     }
 
     /**
+     * Check if the current browser/API session is authenticated to access this contact's saved cards.
+     */
+    public function isContactAuthorizedForSavedCards(int $contactId): bool
+    {
+        if ($contactId <= 0) {
+            return false;
+        }
+        $loggedInContactId = (int) CRM_Core_Session::getLoggedInContactID();
+        if ($loggedInContactId > 0 && $loggedInContactId === $contactId) {
+            return true;
+        }
+        if (
+            $loggedInContactId > 0
+            && \CRM_Core_Permission::check('access CiviContribute')
+            && \CRM_Core_Permission::check('edit contributions')
+        ) {
+            return true;
+        }
+        $cs = trim((string) ($_GET['cs'] ?? $_POST['cs'] ?? $_REQUEST['cs'] ?? ''));
+        if ($cs !== '' && strlen($cs) <= 255 && \CRM_Contact_BAO_Contact_Utils::validChecksum($contactId, $cs)) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
      * Return active SumUp cards which also belong to this contact in CiviCRM.
      *
      * @return list<array{payment_token_id: int, masked_account_number: string}>
      */
     public function getSavedCardsForContact(int $contactId): array
     {
-        if ($contactId <= 0) {
+        if ($contactId <= 0 || !$this->isContactAuthorizedForSavedCards($contactId)) {
             return [];
         }
         $localTokens = PaymentToken::get(false)
@@ -2506,6 +2532,9 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             ->execute()
             ->single();
         $contactId = (int) $contribution['contact_id'];
+        if (!$this->isContactAuthorizedForSavedCards($contactId)) {
+            throw new PaymentProcessorException(E::ts('You are not authorised to use this saved card.'));
+        }
         $providerToken = trim((string) $paymentToken['token']);
         $customerId = $this->customerIdForPaymentToken($paymentTokenId);
         $registryCustomerId = trim((string) ($registry['customer_id'] ?? ''));
