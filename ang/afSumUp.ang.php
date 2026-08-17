@@ -18,5 +18,6 @@ return [
         'af-sum-up-replace-card' => 'E',
         'af-sum-up-solo-checkout' => 'E',
         'af-sum-up-qr-checkout' => 'E',
+        'af-sum-up-hybrid-checkout' => 'E',
     ],
 ];
