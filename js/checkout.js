@@ -1,26 +1,29 @@
 (function (ts) {
   'use strict';
 
-  var scripts = {};
   var instance = 0;
 
-  function loadScript(url, isReady) {
-    if (isReady()) {
+  function whenReady(getter, maxWait) {
+    if (getter()) {
       return Promise.resolve();
     }
-    if (!scripts[url]) {
-      scripts[url] = new Promise(function (resolve, reject) {
-        var script = document.createElement('script');
-        script.src = url;
-        script.async = true;
-        script.onload = function () {
-          isReady() ? resolve() : reject(new Error('SDK unavailable'));
-        };
-        script.onerror = reject;
-        document.head.appendChild(script);
-      });
-    }
-    return scripts[url];
+    return new Promise(function (resolve, reject) {
+      var interval = 50;
+      var elapsed = 0;
+      var max = maxWait || 6000;
+      var timer = setInterval(function () {
+        if (getter()) {
+          clearInterval(timer);
+          resolve();
+        } else {
+          elapsed += interval;
+          if (elapsed >= max) {
+            clearInterval(timer);
+            reject(new Error('SDK timeout'));
+          }
+        }
+      }, interval);
+    });
   }
 
   function normaliseConfig(container, config) {
@@ -210,10 +213,9 @@
         });
         observer.observe(wallet, {childList: true, subtree: true});
       }
-      tasks.push(loadScript(
-        'https://js.sumup.com/swift-checkout/v1/sdk.js',
-        function () { return Boolean(window.SumUp && window.SumUp.SwiftCheckout); }
-      ).then(function () {
+      tasks.push(whenReady(function () {
+        return Boolean(window.SumUp && window.SumUp.SwiftCheckout);
+      }).then(function () {
         var client = new window.SumUp.SwiftCheckout(config.publicKey);
         var request = client.paymentRequest({
           countryCode: config.countryCode,
@@ -455,10 +457,9 @@
         container.insertBefore(card, message);
       }
 
-      tasks.push(loadScript(
-        'https://gateway.sumup.com/gateway/ecom/card/v2/sdk.js',
-        function () { return Boolean(window.SumUpCard); }
-      ).then(function () {
+      tasks.push(whenReady(function () {
+        return Boolean(window.SumUpCard);
+      }).then(function () {
         window.SumUpCard.mount({
           id: card.id,
           checkoutId: config.checkoutId,

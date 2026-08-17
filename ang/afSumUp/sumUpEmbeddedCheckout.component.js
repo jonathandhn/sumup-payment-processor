@@ -13,14 +13,17 @@
       this.getFormElement = () => $element.closest('af-form');
 
       function ensureCheckoutSdk() {
-        if (window.CiviSumUpCheckout) {
-          return Promise.resolve();
+        var tasks = [];
+        if (!window.SumUpCard && typeof CRM.loadScript === 'function') {
+          tasks.push(CRM.loadScript('https://gateway.sumup.com/gateway/ecom/card/v2/sdk.js'));
         }
-        var url = CRM.resources ? CRM.resources.getUrl('sumup-payment-processor', 'js/checkout.js') : null;
-        if (url && typeof CRM.loadScript === 'function') {
-          return CRM.loadScript(url);
+        if (!window.CiviSumUpCheckout) {
+          var url = CRM.resources ? CRM.resources.getUrl('sumup-payment-processor', 'js/checkout.js') : null;
+          if (url && typeof CRM.loadScript === 'function') {
+            tasks.push(CRM.loadScript(url));
+          }
         }
-        return Promise.resolve();
+        return Promise.all(tasks);
       }
 
       this.onAfformSuccess = (data) => {

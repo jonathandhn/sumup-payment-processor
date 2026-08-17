@@ -326,11 +326,8 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
                 ),
                 'weight' => 90,
             ]);
-            if (
-                !CRM_SumupPaymentProcessor_CheckoutMode::usesHosted(
-                    CRM_SumupPaymentProcessor_CheckoutMode::getConfiguredMode()
-                )
-            ) {
+            $configuredMode = CRM_SumupPaymentProcessor_CheckoutMode::getConfiguredMode();
+            if (!CRM_SumupPaymentProcessor_CheckoutMode::usesHosted($configuredMode)) {
                 CRM_Core_Region::instance('billing-block')->add([
                     'styleUrl' => CRM_Core_Resources::singleton()->getUrl(
                         E::LONG_NAME,
@@ -338,6 +335,16 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
                     ),
                     'weight' => -10,
                 ]);
+                CRM_Core_Region::instance('billing-block')->add([
+                    'scriptUrl' => 'https://gateway.sumup.com/gateway/ecom/card/v2/sdk.js',
+                    'weight' => 70,
+                ]);
+                if (CRM_SumupPaymentProcessor_CheckoutMode::usesWallet($configuredMode)) {
+                    CRM_Core_Region::instance('billing-block')->add([
+                        'scriptUrl' => 'https://js.sumup.com/swift-checkout/v1/sdk.js',
+                        'weight' => 75,
+                    ]);
+                }
                 CRM_Core_Region::instance('billing-block')->add([
                     'scriptUrl' => CRM_Core_Resources::singleton()->getUrl(
                         E::LONG_NAME,
