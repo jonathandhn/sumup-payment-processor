@@ -288,7 +288,7 @@ namespace Civi\Payment {
     }
     class System {
         public static function singleton(): self { return new self(); }
-        public function getById(int $id): ?\CRM_Core_Payment { return null; }
+        public function getById(int $id, string $mode = 'live'): ?\CRM_Core_Payment { return null; }
         public function getByName(string $name, bool $isTest = false): ?\CRM_Core_Payment { return null; }
         public function getByProcessor(array $paymentProcessor): ?\CRM_Core_Payment { return null; }
     }

@@ -112,6 +112,44 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
     }
 
     /**
+     * @return list<int>
+     */
+    public function getRelatedProcessorIds(): array
+    {
+        $currentId = $this->getProcessorId();
+        if ($currentId <= 0) {
+            return [];
+        }
+
+        try {
+            $current = PaymentProcessor::get(false)
+                ->addSelect('name')
+                ->addWhere('id', '=', $currentId)
+                ->addWhere('is_test', 'IN', [true, false])
+                ->execute()
+                ->first();
+            if (!$current || empty($current['name'])) {
+                return [$currentId];
+            }
+
+            $matches = PaymentProcessor::get(false)
+                ->addSelect('id')
+                ->addWhere('class_name', '=', 'Payment_Sumup')
+                ->addWhere('name', '=', $current['name'])
+                ->addWhere('is_test', 'IN', [true, false])
+                ->execute();
+
+            $ids = [];
+            foreach ($matches as $match) {
+                $ids[] = (int) $match['id'];
+            }
+            return !empty($ids) ? $ids : [$currentId];
+        } catch (\Throwable) {
+            return [$currentId];
+        }
+    }
+
+    /**
      * Return the SumUp-authoritative profile for this processor's merchant account.
      *
      * @return array{
@@ -1653,10 +1691,13 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             )
             ->addWhere('id', '=', $contributionId)
             ->addWhere('contribution_recur_id', '=', $contributionRecurId)
+            ->addWhere('is_test', 'IN', [true, false])
             ->execute()
             ->single();
         $processorId = $this->getProcessorId();
-        if ((int) ($contribution['payment_processor_id'] ?? 0) !== $processorId) {
+        $relatedProcessorIds = $this->getRelatedProcessorIds();
+        $contributionProcessorId = (int) ($contribution['payment_processor_id'] ?? 0);
+        if (!in_array($contributionProcessorId, $relatedProcessorIds, true)) {
             throw new PaymentProcessorException(E::ts('The recurring contribution uses another payment processor.'));
         }
 
@@ -1667,9 +1708,10 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             ->single();
         $contactId = (int) $contribution['contact_id'];
         $token = trim((string) $paymentToken['token']);
+        $paymentTokenProcessorId = (int) ($paymentToken['payment_processor_id'] ?? 0);
         if (
             (int) $paymentToken['contact_id'] !== $contactId
-            || (int) $paymentToken['payment_processor_id'] !== $processorId
+            || !in_array($paymentTokenProcessorId, $relatedProcessorIds, true)
             || !preg_match('/^[A-Za-z0-9_-]{8,255}$/', $token)
         ) {
             throw new PaymentProcessorException(E::ts('The recurring contribution has no valid SumUp card token.'));
