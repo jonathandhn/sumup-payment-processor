@@ -207,13 +207,19 @@
       this.cancelCheckout = () => {
         this.clearTimers();
         if (this.token) {
-          $.ajax({
-            url: CRM.url('civicrm/checkout/cancel', {token: this.token}),
-            type: 'POST',
-            dataType: 'json',
-          });
+          try {
+            if (navigator.sendBeacon) {
+              navigator.sendBeacon(CRM.url('civicrm/checkout/cancel', {token: this.token}));
+            } else {
+              $.ajax({
+                url: CRM.url('civicrm/checkout/cancel', {token: this.token}),
+                type: 'POST',
+                async: false,
+              });
+            }
+          } catch (e) {}
         }
-        this.resetKiosk();
+        $window.location.reload();
       };
 
       this.resetKiosk = () => {
@@ -223,10 +229,7 @@
         this.completed = false;
         this.failed = false;
         this.token = '';
-        var form = this.getFormElement();
-        $element.hide();
-        form.show();
-        $scope.$applyAsync();
+        $window.location.reload();
       };
     },
   });
