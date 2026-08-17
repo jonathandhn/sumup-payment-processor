@@ -77,6 +77,7 @@ final class Run extends AbstractAction
             ->addSelect('id', 'class_name', 'is_test', 'name')
             ->addWhere('class_name', '=', 'Payment_Sumup')
             ->addWhere('is_active', '=', true)
+            ->addWhere('is_test', 'IN', [true, false])
             ->execute();
         $processorById = [];
         foreach ($processors as $processor) {
@@ -109,7 +110,7 @@ final class Run extends AbstractAction
             ->addWhere('next_sched_contribution_date', '<=', $todayEnd)
             ->addWhere('payment_processor_id', 'IN', array_keys($processorById))
             ->addWhere('contribution_status_id:name', '=', 'In Progress')
-            ->addWhere('payment_token_id', '>', 0)
+            ->addWhere('is_test', 'IN', [true, false])
             ->addOrderBy('next_sched_contribution_date', 'ASC')
             ->setLimit($limit);
         if ($this->recurId !== null) {
@@ -147,13 +148,8 @@ final class Run extends AbstractAction
                 }
 
                 $processorId = (int) $schedule['payment_processor_id'];
-                if ((bool) $processorById[$processorId]['is_test'] !== (bool) $schedule['is_test']) {
-                    throw new CRM_Core_Exception(E::ts(
-                        'Schedule %1 test mode does not match its SumUp processor.',
-                        [1 => $scheduleId]
-                    ));
-                }
-                $provider = System::singleton()->getById($processorId);
+                $isTest = !empty($schedule['is_test']);
+                $provider = System::singleton()->getById($processorId, $isTest ? 'test' : 'live');
                 if (!$provider instanceof CRM_Core_Payment_Sumup) {
                     throw new CRM_Core_Exception(E::ts(
                         'Unable to load the SumUp processor for schedule %1.',
@@ -197,16 +193,59 @@ final class Run extends AbstractAction
     }
 
     /** @param array<string, mixed> $schedule */
-    private static function assertPaymentToken(array $schedule): void
+    private static function resolvePaymentTokenId(array &$schedule): int
     {
+        $tokenId = (int) ($schedule['payment_token_id'] ?? 0);
+        if ($tokenId > 0) {
+            return $tokenId;
+        }
+
+        $token = PaymentToken::get(false)
+            ->addSelect('id', 'token')
+            ->addWhere('contact_id', '=', (int) $schedule['contact_id'])
+            ->addWhere('payment_processor_id', '=', (int) $schedule['payment_processor_id'])
+            ->addOrderBy('id', 'DESC')
+            ->execute()
+            ->first();
+
+        if ($token && !empty($token['id'])) {
+            $tokenId = (int) $token['id'];
+            $schedule['payment_token_id'] = $tokenId;
+            ContributionRecur::update(false)
+                ->addValue('payment_token_id', $tokenId)
+                ->addWhere('id', '=', (int) $schedule['id'])
+                ->execute();
+            return $tokenId;
+        }
+
+        return 0;
+    }
+
+    /** @param array<string, mixed> $schedule */
+    private static function assertPaymentToken(array &$schedule): void
+    {
+        $tokenId = self::resolvePaymentTokenId($schedule);
+        if ($tokenId <= 0) {
+            throw new CRM_Core_Exception(E::ts(
+                'Schedule %1 has no linked SumUp card token.',
+                [1 => (int) $schedule['id']]
+            ));
+        }
+
         $token = PaymentToken::get(false)
             ->addSelect('id', 'contact_id', 'payment_processor_id', 'token')
-            ->addWhere('id', '=', (int) $schedule['payment_token_id'])
+            ->addWhere('id', '=', $tokenId)
             ->execute()
             ->single();
+        $tokenProcessor = PaymentProcessor::get(false)
+            ->addSelect('class_name')
+            ->addWhere('id', '=', (int) $token['payment_processor_id'])
+            ->addWhere('is_test', 'IN', [true, false])
+            ->execute()
+            ->first();
         if (
             (int) $token['contact_id'] !== (int) $schedule['contact_id']
-            || (int) $token['payment_processor_id'] !== (int) $schedule['payment_processor_id']
+            || ($tokenProcessor['class_name'] ?? '') !== 'Payment_Sumup'
             || !preg_match('/^[A-Za-z0-9_-]{8,255}$/', (string) $token['token'])
         ) {
             throw new CRM_Core_Exception(E::ts(
@@ -227,6 +266,7 @@ final class Run extends AbstractAction
             ->addSelect('id', 'trxn_id')
             ->addWhere('contribution_recur_id', '=', (int) $schedule['id'])
             ->addWhere('invoice_id', '=', $invoiceId)
+            ->addWhere('is_test', 'IN', [true, false])
             ->setLimit(1)
             ->execute()
             ->first();
@@ -261,6 +301,7 @@ final class Run extends AbstractAction
             ->addSelect('id')
             ->addWhere('contribution_recur_id', '=', (int) $schedule['id'])
             ->addWhere('contribution_status_id:name', '=', 'Completed')
+            ->addWhere('is_test', 'IN', [true, false])
             ->execute()
             ->count();
         $installments = (int) ($schedule['installments'] ?? 0);

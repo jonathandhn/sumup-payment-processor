@@ -88,4 +88,80 @@ return [
             ],
         ],
     ],
+    'sumup_apple_pay_domain_association' => [
+        'name' => 'sumup_apple_pay_domain_association',
+        'type' => 'String',
+        'html_type' => 'textarea',
+        'html_attributes' => [
+            'rows' => 6,
+            'cols' => 60,
+        ],
+        'default' => '',
+        'is_domain' => 1,
+        'is_contact' => 0,
+        'title' => E::ts('Apple Pay domain association text'),
+        'description' => E::ts(
+            'Paste the contents of the Apple Developer Merchant ID Domain Association file provided by SumUp. '
+            . 'CiviCRM will automatically serve it at /.well-known/apple-developer-merchantid-domain-association.'
+        ),
+        'settings_pages' => [
+            'sumup' => [
+                'weight' => 60,
+            ],
+        ],
+    ],
+    'sumup_qr_allow_send_email' => [
+        'name' => 'sumup_qr_allow_send_email',
+        'type' => 'Boolean',
+        'html_type' => 'checkbox',
+        'default' => true,
+        'is_domain' => 1,
+        'is_contact' => 0,
+        'title' => E::ts('Allow sending payment link by Email from QR views'),
+        'description' => E::ts(
+            'When enabled, users and kiosk operators can send the payment link by Email from QR payment screens.'
+        ),
+        'settings_pages' => [
+            'sumup' => [
+                'weight' => 70,
+            ],
+        ],
+    ],
+    'sumup_qr_allow_send_sms' => [
+        'name' => 'sumup_qr_allow_send_sms',
+        'type' => 'Boolean',
+        'html_type' => 'checkbox',
+        'default' => true,
+        'is_domain' => 1,
+        'is_contact' => 0,
+        'title' => E::ts('Allow sending payment link by SMS from QR views'),
+        'description' => E::ts(
+            'When enabled, users and kiosk operators can send the payment link by SMS from QR payment screens.'
+        ),
+        'settings_pages' => [
+            'sumup' => [
+                'weight' => 80,
+            ],
+        ],
+    ],
+    'sumup_qr_sms_provider_id' => [
+        'name' => 'sumup_qr_sms_provider_id',
+        'type' => 'Integer',
+        'html_type' => 'select',
+        'default' => 0,
+        'is_domain' => 1,
+        'is_contact' => 0,
+        'title' => E::ts('SMS Provider for payment links'),
+        'description' => E::ts(
+            'Choose the active CiviCRM SMS Provider / Gateway used to send SMS payment links.'
+        ),
+        'pseudoconstant' => [
+            'callback' => 'CRM_SumupPaymentProcessor_SmsHelper::getProviderOptions',
+        ],
+        'settings_pages' => [
+            'sumup' => [
+                'weight' => 90,
+            ],
+        ],
+    ],
 ];

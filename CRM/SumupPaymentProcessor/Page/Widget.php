@@ -50,7 +50,9 @@ class CRM_SumupPaymentProcessor_Page_Widget extends CRM_Core_Page
                     parent::run();
                     return;
                 }
+                CRM_Core_Config::singleton()->userSystem->prePostRedirect();
                 CRM_Utils_System::redirect($params['return_url']);
+                return;
             }
             if (($contribution['contribution_status_id:name'] ?? '') !== 'Pending') {
                 throw new PaymentProcessorException(E::ts(
@@ -66,12 +68,12 @@ class CRM_SumupPaymentProcessor_Page_Widget extends CRM_Core_Page
                 ));
             }
 
-            $checkoutRecord = CRM_SumupPaymentProcessor_CheckoutStore::getLatestOnlineByContributionId(
+            $checkoutRecord = CRM_SumupPaymentProcessor_CheckoutStore::findLatestOnlineByContributionId(
                 $params['contribution_id'],
                 $params['processor_id']
             );
 
-            if ($checkoutRecord['checkout_mode'] === CRM_SumupPaymentProcessor_CheckoutMode::SOLO) {
+            if ($checkoutRecord === null || $checkoutRecord['state'] === 'EXPIRED') {
                 $processor->startEmbeddedCheckoutForContribution(
                     $params['contribution_id'],
                     $params['return_url'],
@@ -117,22 +119,53 @@ class CRM_SumupPaymentProcessor_Page_Widget extends CRM_Core_Page
             $this->assign('sumupAmount', number_format((float) $contribution['total_amount'], 2, '.', ''));
             $this->assign('sumupCurrency', strtoupper((string) $contribution['currency']));
             $this->assign('sumupLocale', CRM_SumupPaymentProcessor_CheckoutMode::getLocale());
-            $this->assign('sumupCheckoutMode', $checkoutMode);
-            $this->assign('sumupWalletsAllowed', $checkoutRecord['purpose'] === 'PAYMENT');
+            $configuredMode = CRM_SumupPaymentProcessor_CheckoutMode::getConfiguredMode();
+            $walletsAllowed = ($checkoutRecord['purpose'] === 'PAYMENT')
+                && CRM_SumupPaymentProcessor_CheckoutMode::usesWallet($configuredMode);
+
+            $this->assign('sumupCheckoutMode', $configuredMode);
+            $this->assign('sumupWalletsAllowed', $walletsAllowed);
             $this->assign(
                 'sumupUsesWidget',
-                CRM_SumupPaymentProcessor_CheckoutMode::usesWidget($checkoutMode)
+                CRM_SumupPaymentProcessor_CheckoutMode::usesWidget($configuredMode)
             );
             $this->assign(
                 'sumupUsesWallet',
-                CRM_SumupPaymentProcessor_CheckoutMode::usesWallet($checkoutMode)
+                $walletsAllowed
             );
-            $this->assign('sumupPublicMerchantKey', $processor->getPublicMerchantKey());
+            $this->assign('sumupPublicMerchantKey', $walletsAllowed ? $processor->getPublicMerchantKey() : '');
             $this->assign('sumupBusinessName', $merchantProfile['business_name']);
             $this->assign(
                 'sumupMerchantCountryCode',
                 CRM_SumupPaymentProcessor_CheckoutMode::getMerchantCountryCode($merchantProfile['country'])
             );
+
+            $acceptedCardNames = [];
+            if (class_exists('CRM_Financial_BAO_PaymentProcessor')) {
+                $rawCards = (array) \CRM_Financial_BAO_PaymentProcessor::getCreditCards($params['processor_id']);
+                if (!empty($rawCards)) {
+                    $allOptionValues = \Civi\Api4\OptionValue::get(false)
+                        ->addSelect('value', 'name', 'label')
+                        ->addWhere('option_group_id:name', '=', 'accept_credit_cards')
+                        ->execute();
+                    $allTypes = [];
+                    foreach ($allOptionValues as $opt) {
+                        $allTypes[(string) $opt['value']] = (string) $opt['name'];
+                    }
+                    foreach ($rawCards as $cardKey) {
+                        $cardKeyStr = (string) $cardKey;
+                        if (isset($allTypes[$cardKeyStr])) {
+                            $acceptedCardNames[] = $allTypes[$cardKeyStr];
+                        } elseif (!is_numeric($cardKey)) {
+                            $acceptedCardNames[] = (string) $cardKey;
+                        }
+                    }
+                }
+            }
+            if (empty($acceptedCardNames)) {
+                $acceptedCardNames = ['Visa', 'MasterCard'];
+            }
+            $this->assign('sumupAcceptedCards', $acceptedCardNames);
 
             CRM_Core_Resources::singleton()->addVars(
                 'sumupSavedPayment',
@@ -143,6 +176,10 @@ class CRM_SumupPaymentProcessor_Page_Widget extends CRM_Core_Page
             );
 
             CRM_Core_Resources::singleton()->addStyleFile(E::LONG_NAME, 'ang/afSumUp/sumUp.css');
+            CRM_Core_Resources::singleton()->addScriptUrl('https://gateway.sumup.com/gateway/ecom/card/v2/sdk.js', 90);
+            if ($walletsAllowed) {
+                CRM_Core_Resources::singleton()->addScriptUrl('https://js.sumup.com/swift-checkout/v1/sdk.js', 95);
+            }
             CRM_Core_Resources::singleton()->addScriptFile(E::LONG_NAME, 'js/checkout.js', 110);
         } catch (Throwable $exception) {
             Civi::log()->warning(sprintf(

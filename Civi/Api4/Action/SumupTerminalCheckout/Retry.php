@@ -38,7 +38,7 @@ final class Retry extends AbstractAction
             $localReaderId <= 0
             || !CRM_SumupPaymentProcessor_CheckoutService::isValidCheckoutId($previousCheckoutId)
         ) {
-            throw new \CRM_Core_Exception(E::ts('This checkout is not linked to a SumUp Solo terminal.'));
+            throw new \CRM_Core_Exception(E::ts('This checkout is not linked to a SumUp card reader.'));
         }
 
         $checkout = CRM_SumupPaymentProcessor_CheckoutStore::getByCheckoutId($previousCheckoutId);

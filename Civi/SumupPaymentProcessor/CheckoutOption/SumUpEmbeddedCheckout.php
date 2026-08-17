@@ -35,12 +35,19 @@ if (
             ) {
                 return E::ts('%1 (Hosted Checkout)', [1 => $this->getConnectionLabel()]);
             }
-            return E::ts('%1 (Online card / Wallets)', [1 => $this->getConnectionLabel()]);
+            return E::ts('%1 (Credit Card / Wallets)', [1 => $this->getConnectionLabel()]);
         }
 
         public function getFrontendLabel(): string
         {
-            return E::ts('%1 (secure payment on this page)', [
+            if (
+                \CRM_SumupPaymentProcessor_CheckoutMode::usesHosted(
+                    \CRM_SumupPaymentProcessor_CheckoutMode::getConfiguredMode()
+                )
+            ) {
+                return E::ts('%1 (Online payment)', [1 => $this->getConnectionLabel()]);
+            }
+            return E::ts('%1 (Credit card, Apple Pay, Google Pay)', [
                 1 => $this->getConnectionLabel(),
             ]);
         }
@@ -87,7 +94,7 @@ if (
                     \CRM_SumupPaymentProcessor_CheckoutMode::getConfiguredMode()
                 )
             ) {
-                return ['description' => E::ts('You will be redirected to SumUp to complete your secure payment.')];
+                return ['description' => E::ts('You will be redirected to complete your payment.')];
             }
             return ['template' => '~/afSumUp/sumup_embedded_checkout.html'];
         }

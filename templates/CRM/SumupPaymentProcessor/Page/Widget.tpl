@@ -25,6 +25,7 @@
       data-business-name="{$sumupBusinessName|escape:'html'}"
       data-country-code="{$sumupMerchantCountryCode|escape:'html'}"
       data-wallets-allowed="{if $sumupWalletsAllowed}1{else}0{/if}"
+      data-accepted-cards="{$sumupAcceptedCards|@json_encode|escape:'html'}"
       data-browser-return-url="{$sumupBrowserReturnUrl|escape:'html'}"
     >
     </div>

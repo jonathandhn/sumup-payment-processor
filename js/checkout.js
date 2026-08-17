@@ -1,26 +1,29 @@
 (function (ts) {
   'use strict';
 
-  var scripts = {};
   var instance = 0;
 
-  function loadScript(url, isReady) {
-    if (isReady()) {
+  function whenReady(getter, maxWait) {
+    if (getter()) {
       return Promise.resolve();
     }
-    if (!scripts[url]) {
-      scripts[url] = new Promise(function (resolve, reject) {
-        var script = document.createElement('script');
-        script.src = url;
-        script.async = true;
-        script.onload = function () {
-          isReady() ? resolve() : reject(new Error('SDK unavailable'));
-        };
-        script.onerror = reject;
-        document.head.appendChild(script);
-      });
-    }
-    return scripts[url];
+    return new Promise(function (resolve, reject) {
+      var interval = 50;
+      var elapsed = 0;
+      var max = maxWait || 6000;
+      var timer = setInterval(function () {
+        if (getter()) {
+          clearInterval(timer);
+          resolve();
+        } else {
+          elapsed += interval;
+          if (elapsed >= max) {
+            clearInterval(timer);
+            reject(new Error('SDK timeout'));
+          }
+        }
+      }, interval);
+    });
   }
 
   function normaliseConfig(container, config) {
@@ -47,6 +50,8 @@
       onSuccess: typeof config.onSuccess === 'function' ? config.onSuccess : null,
       savedPaymentMethods: config.saved_payment_methods || savedConfig.saved_payment_methods || [],
       savedPaymentAction: config.saved_payment_action || savedConfig.saved_payment_action || null,
+      acceptedCards: config.accepted_cards
+        || (dataset.acceptedCards ? JSON.parse(dataset.acceptedCards) : ['Visa', 'MasterCard']),
     };
   }
 
@@ -57,7 +62,8 @@
 
     var config = normaliseConfig(container, suppliedConfig);
     var usesWidget = config.mode === 'widget' || config.mode === 'widget_wallet';
-    var usesWallet = config.walletsAllowed
+    var usesWallet = Boolean(config.walletsAllowed)
+      && Boolean(config.publicKey && config.publicKey.trim() !== '')
       && (config.mode === 'wallet' || config.mode === 'widget_wallet');
     var id = ++instance;
     var message = document.createElement('p');
@@ -156,31 +162,7 @@
 
     var tasks = [];
     var walletCardSeparator = null;
-    if (config.savedPaymentMethods.length) {
-      var savedCards = document.createElement('section');
-      savedCards.className = 'crm-sumup-saved-cards';
-      var savedTitle = document.createElement('h3');
-      savedTitle.textContent = ts('Pay with a saved card');
-      savedCards.appendChild(savedTitle);
-      config.savedPaymentMethods.forEach(function (method) {
-        var button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'button crm-button btn btn-secondary';
-        button.textContent = method.masked_account_number || ts('Saved card');
-        button.addEventListener('click', function () {
-          payWithSavedCard(method.payment_token_id, button);
-        });
-        var paragraph = document.createElement('p');
-        paragraph.className = 'crm-sumup-saved-card-action';
-        paragraph.appendChild(button);
-        savedCards.appendChild(paragraph);
-      });
-      container.insertBefore(savedCards, message);
-      var savedSeparator = document.createElement('p');
-      savedSeparator.className = 'crm-sumup-payment-separator';
-      savedSeparator.textContent = ts('Or use another payment method');
-      container.insertBefore(savedSeparator, message);
-    }
+
     if (usesWallet) {
       var wallet = document.createElement('div');
       wallet.id = 'sumup-wallet-' + id;
@@ -196,23 +178,44 @@
           walletCardSeparator = null;
         }
       };
+      var hasError = function () {
+        return Boolean(wallet.querySelector(
+          '[data-testid*="error"], [class*="error"], [data-testid="timeout-session-error-message"]'
+        ));
+      };
+
       var hasVisibleWalletControl = function () {
+        if (hasError()) {
+          return false;
+        }
         return Array.prototype.some.call(wallet.querySelectorAll(
           'button, iframe, [role="button"], [data-testid$="-pay-button"]'
         ), function (control) {
+          if (control.closest('[data-testid*="error"], [class*="error"]')) {
+            return false;
+          }
           var style = window.getComputedStyle(control);
           var rect = control.getBoundingClientRect();
           return style.display !== 'none'
             && style.visibility !== 'hidden'
             && style.opacity !== '0'
-            && rect.width > 1
-            && rect.height > 1;
+            && rect.width > 20
+            && rect.height > 20;
         });
       };
-      tasks.push(loadScript(
-        'https://js.sumup.com/swift-checkout/v1/sdk.js',
-        function () { return Boolean(window.SumUp && window.SumUp.SwiftCheckout); }
-      ).then(function () {
+
+      if (window.MutationObserver) {
+        var observer = new window.MutationObserver(function () {
+          if (hasError()) {
+            observer.disconnect();
+            removeWallet();
+          }
+        });
+        observer.observe(wallet, {childList: true, subtree: true});
+      }
+      tasks.push(whenReady(function () {
+        return Boolean(window.SumUp && window.SumUp.SwiftCheckout);
+      }).then(function () {
         var client = new window.SumUp.SwiftCheckout(config.publicKey);
         var request = client.paymentRequest({
           countryCode: config.countryCode,
@@ -312,31 +315,183 @@
         walletCardSeparator.style.display = 'none';
         container.insertBefore(walletCardSeparator, message);
       }
+
       var card = document.createElement('div');
       card.id = 'sumup-card-' + id;
-      container.insertBefore(card, message);
-      tasks.push(loadScript(
-        'https://gateway.sumup.com/gateway/ecom/card/v2/sdk.js',
-        function () { return Boolean(window.SumUpCard); }
-      ).then(function () {
-        window.SumUpCard.mount({
-          id: card.id,
-          checkoutId: config.checkoutId,
-          amount: config.amount,
-          currency: config.currency,
-          locale: config.locale,
-          onResponse: function (type) {
-            if (type === 'success') {
-              verifyOnServer();
+
+      if (config.savedPaymentMethods.length) {
+        var selector = document.createElement('div');
+        selector.className = 'crm-sumup-method-selector';
+
+        var radioGroupName = 'sumup_method_choice_' + id;
+        var choiceContainers = [];
+        var drawerContainers = [];
+
+        var selectChoice = function (index) {
+          choiceContainers.forEach(function (c, i) {
+            var r = c.querySelector('input[type="radio"]');
+            if (i === index) {
+              c.classList.add('crm-sumup-choice--selected');
+              if (r) {
+                r.checked = true;
+              }
+              drawerContainers[i].style.display = 'block';
+              if (i === newCardIndex) {
+                mountCardWidget();
+              }
+            } else {
+              c.classList.remove('crm-sumup-choice--selected');
+              if (r) {
+                r.checked = false;
+              }
+              drawerContainers[i].style.display = 'none';
             }
-            else if (type === 'fail' || type === 'error') {
-              showMessage(ts('The payment could not be confirmed. You can try again or cancel.'));
-            }
-          },
+          });
+        };
+
+        // 1. Saved card options (first one selected by default)
+        config.savedPaymentMethods.forEach(function (method, idx) {
+          var choice = document.createElement('div');
+          choice.className = 'crm-sumup-choice crm-sumup-choice--saved'
+            + (idx === 0 ? ' crm-sumup-choice--selected' : '');
+
+          var header = document.createElement('label');
+          header.className = 'crm-sumup-choice__header';
+
+          var radio = document.createElement('input');
+          radio.type = 'radio';
+          radio.name = radioGroupName;
+          radio.value = 'saved_' + method.payment_token_id;
+          radio.checked = (idx === 0);
+          radio.addEventListener('change', function () {
+            selectChoice(idx);
+          });
+          header.appendChild(radio);
+
+          var savedCardNorm = 'generic';
+          var textLower = String(method.masked_account_number || '').toLowerCase();
+          if (textLower.indexOf('visa') !== -1) {
+            savedCardNorm = 'visa';
+          } else if (textLower.indexOf('master') !== -1) {
+            savedCardNorm = 'mastercard';
+          } else if (textLower.indexOf('amex') !== -1 || textLower.indexOf('american') !== -1) {
+            savedCardNorm = 'amex';
+          } else if (textLower.indexOf('cb') !== -1 || textLower.indexOf('carte') !== -1) {
+            savedCardNorm = 'cb';
+          }
+
+          var savedIcon = document.createElement('span');
+          savedIcon.className = 'crm-sumup-card-icon crm-sumup-card-icon--' + savedCardNorm;
+          header.appendChild(savedIcon);
+
+          var labelText = document.createElement('span');
+          labelText.className = 'crm-sumup-choice__title';
+          labelText.textContent = method.masked_account_number || ts('Saved card');
+          header.appendChild(labelText);
+          choice.appendChild(header);
+
+          var drawer = document.createElement('div');
+          drawer.className = 'crm-sumup-choice__drawer';
+          drawer.style.display = (idx === 0) ? 'block' : 'none';
+
+          var payBtn = document.createElement('button');
+          payBtn.type = 'button';
+          payBtn.className = 'button crm-button btn btn-primary crm-sumup-btn-pay';
+          payBtn.textContent = ts('Pay %1 %2 with this card', {1: config.amount, 2: config.currency});
+          payBtn.addEventListener('click', function () {
+            payWithSavedCard(method.payment_token_id, payBtn);
+          });
+          drawer.appendChild(payBtn);
+          choice.appendChild(drawer);
+
+          selector.appendChild(choice);
+          choiceContainers.push(choice);
+          drawerContainers.push(drawer);
         });
-      }).catch(function () {
-        showMessage(ts('The card payment form could not be loaded.'));
-      }));
+
+        // 2. "Use another card" option (collapsed by default)
+        var newCardIndex = config.savedPaymentMethods.length;
+        var newChoice = document.createElement('div');
+        newChoice.className = 'crm-sumup-choice crm-sumup-choice--new';
+
+        var newHeader = document.createElement('label');
+        newHeader.className = 'crm-sumup-choice__header';
+
+        var newRadio = document.createElement('input');
+        newRadio.type = 'radio';
+        newRadio.name = radioGroupName;
+        newRadio.value = 'new_card';
+        newRadio.checked = false;
+        newRadio.addEventListener('change', function () {
+          selectChoice(newCardIndex);
+        });
+        newHeader.appendChild(newRadio);
+
+        var newLabelText = document.createElement('span');
+        newLabelText.className = 'crm-sumup-choice__title';
+        newLabelText.textContent = ts('Pay with another credit / debit card');
+        newHeader.appendChild(newLabelText);
+
+        var cardSchemes = document.createElement('span');
+        cardSchemes.className = 'crm-sumup-choice__schemes';
+        (config.acceptedCards || []).forEach(function (cardName) {
+          var norm = String(cardName).toLowerCase().replace(/[^a-z0-9]/g, '');
+          var icon = document.createElement('span');
+          icon.className = 'crm-sumup-card-icon crm-sumup-card-icon--' + norm;
+          icon.title = cardName;
+          cardSchemes.appendChild(icon);
+        });
+        newHeader.appendChild(cardSchemes);
+
+        newChoice.appendChild(newHeader);
+
+        var newDrawer = document.createElement('div');
+        newDrawer.className = 'crm-sumup-choice__drawer';
+        newDrawer.style.display = 'none';
+        newDrawer.appendChild(card);
+        newChoice.appendChild(newDrawer);
+
+        selector.appendChild(newChoice);
+        choiceContainers.push(newChoice);
+        drawerContainers.push(newDrawer);
+
+        container.insertBefore(selector, message);
+      } else {
+        container.insertBefore(card, message);
+      }
+
+      var cardMounted = false;
+      var mountCardWidget = function () {
+        if (cardMounted) {
+          return Promise.resolve();
+        }
+        cardMounted = true;
+        return whenReady(function () {
+          return Boolean(window.SumUpCard);
+        }).then(function () {
+          window.SumUpCard.mount({
+            id: card.id,
+            checkoutId: config.checkoutId,
+            showAmount: true,
+            locale: config.locale,
+            onResponse: function (type) {
+              if (type === 'success') {
+                verifyOnServer();
+              }
+              else if (type === 'fail' || type === 'error') {
+                showMessage(ts('The payment could not be confirmed. You can try again or cancel.'));
+              }
+            },
+          });
+        }).catch(function () {
+          showMessage(ts('The card payment form could not be loaded.'));
+        });
+      };
+
+      var hasSavedCards = Boolean(config.savedPaymentMethods && config.savedPaymentMethods.length);
+      if (!hasSavedCards) {
+        tasks.push(mountCardWidget());
+      }
     }
 
     if (config.cancelUrl) {

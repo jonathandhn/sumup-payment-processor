@@ -7,6 +7,8 @@ namespace Civi\SumupPaymentProcessor;
 use Civi\Core\Event\GenericHookEvent;
 use Civi\Core\Service\AutoService;
 use Civi\SumupPaymentProcessor\CheckoutOption\SumUpEmbeddedCheckout;
+use Civi\SumupPaymentProcessor\CheckoutOption\SumUpHybridCheckout;
+use Civi\SumupPaymentProcessor\CheckoutOption\SumUpQrCheckout;
 use Civi\SumupPaymentProcessor\CheckoutOption\SumUpSoloCheckout;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
@@ -42,6 +44,14 @@ class SumUpConnections extends AutoService implements EventSubscriberInterface
                 $pair['test'] ?? null
             );
             $e->options['sumup_solo_checkout_' . $name] = new SumUpSoloCheckout(
+                $pair['live'] ?? null,
+                $pair['test'] ?? null
+            );
+            $e->options['sumup_qr_checkout_' . $name] = new SumUpQrCheckout(
+                $pair['live'] ?? null,
+                $pair['test'] ?? null
+            );
+            $e->options['sumup_hybrid_checkout_' . $name] = new SumUpHybridCheckout(
                 $pair['live'] ?? null,
                 $pair['test'] ?? null
             );

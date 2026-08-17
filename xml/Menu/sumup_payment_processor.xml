@@ -15,4 +15,20 @@
     <is_public>true</is_public>
     <is_ssl>true</is_ssl>
   </item>
+  <item>
+    <path>.well-known/apple-developer-merchantid-domain-association</path>
+    <page_callback>CRM_SumupPaymentProcessor_Page_ApplePayDomainAssociation</page_callback>
+    <title>Apple Pay Domain Association</title>
+    <access_callback>1</access_callback>
+    <is_public>true</is_public>
+    <is_ssl>true</is_ssl>
+  </item>
+  <item>
+    <path>civicrm/sumup/apple-developer-merchantid-domain-association</path>
+    <page_callback>CRM_SumupPaymentProcessor_Page_ApplePayDomainAssociation</page_callback>
+    <title>Apple Pay Domain Association</title>
+    <access_callback>1</access_callback>
+    <is_public>true</is_public>
+    <is_ssl>true</is_ssl>
+  </item>
 </menu>

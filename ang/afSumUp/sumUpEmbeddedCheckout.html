@@ -1,3 +1,48 @@
 <div class="crm-sumup-embedded-checkout__error messages error" ng-if="$ctrl.error">
-  {{$ctrl.error}}
+  <span>{{$ctrl.error}}</span>
+  <button type="button" class="crm-sumup-btn-modify" ng-click="$ctrl.cancelAndUnlock()" style="margin-left: 0.75rem;">
+    <i class="crm-i fa-arrow-left"></i> {{ts('Go back / Edit')}}
+  </button>
+</div>
+
+<div class="crm-sumup-alma-container" ng-show="$ctrl.active">
+  <div class="crm-sumup-alma-success" ng-show="$ctrl.completed">
+    <div class="crm-sumup-alma-success__icon">
+      <i class="crm-i fa-check-circle"></i>
+    </div>
+    <h3>{{ts('Payment Confirmed!')}}</h3>
+    <p>{{ts('Thank you! Your payment has been approved and recorded successfully.')}}</p>
+    <div class="crm-sumup-alma-summary__badge">
+      <span>{{$ctrl.amount}} {{$ctrl.currency}}</span>
+    </div>
+  </div>
+
+  <div ng-hide="$ctrl.completed">
+    <div class="crm-sumup-compact-recap" ng-if="$ctrl.donorSummary">
+      <div class="crm-sumup-compact-recap__content">
+        <i class="crm-i fa-user-circle"></i>
+        <span class="crm-sumup-compact-recap__donor">{{$ctrl.donorSummary}}</span>
+      </div>
+      <button type="button" class="crm-sumup-compact-recap__edit-btn" ng-click="$ctrl.cancelAndUnlock()">
+        <i class="crm-i fa-pencil"></i> {{ts('Edit')}}
+      </button>
+    </div>
+
+    <div class="crm-sumup-alma-summary">
+      <div class="crm-sumup-alma-summary__row">
+        <span class="crm-sumup-alma-summary__label">{{ts('Total to pay')}}</span>
+        <span class="crm-sumup-alma-summary__amount">{{$ctrl.amount}} {{$ctrl.currency}}</span>
+      </div>
+    </div>
+
+    <div class="crm-sumup-alma-payment-frame">
+      <div class="crm-sumup-embedded-checkout" id="sumup-afform-mount-target"></div>
+    </div>
+
+    <div class="crm-sumup-alma-actions">
+      <button type="button" class="crm-sumup-btn-modify" ng-click="$ctrl.cancelAndUnlock()">
+        <i class="crm-i fa-arrow-left"></i> {{ts('Modify details / Cancel')}}
+      </button>
+    </div>
+  </div>
 </div>

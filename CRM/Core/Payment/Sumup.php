@@ -112,6 +112,44 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
     }
 
     /**
+     * @return list<int>
+     */
+    public function getRelatedProcessorIds(): array
+    {
+        $currentId = $this->getProcessorId();
+        if ($currentId <= 0) {
+            return [];
+        }
+
+        try {
+            $current = PaymentProcessor::get(false)
+                ->addSelect('name')
+                ->addWhere('id', '=', $currentId)
+                ->addWhere('is_test', 'IN', [true, false])
+                ->execute()
+                ->first();
+            if (!$current || empty($current['name'])) {
+                return [$currentId];
+            }
+
+            $matches = PaymentProcessor::get(false)
+                ->addSelect('id')
+                ->addWhere('class_name', '=', 'Payment_Sumup')
+                ->addWhere('name', '=', $current['name'])
+                ->addWhere('is_test', 'IN', [true, false])
+                ->execute();
+
+            $ids = [];
+            foreach ($matches as $match) {
+                $ids[] = (int) $match['id'];
+            }
+            return !empty($ids) ? $ids : [$currentId];
+        } catch (\Throwable) {
+            return [$currentId];
+        }
+    }
+
+    /**
      * Return the SumUp-authoritative profile for this processor's merchant account.
      *
      * @return array{
@@ -288,11 +326,8 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
                 ),
                 'weight' => 90,
             ]);
-            if (
-                !CRM_SumupPaymentProcessor_CheckoutMode::usesHosted(
-                    CRM_SumupPaymentProcessor_CheckoutMode::getConfiguredMode()
-                )
-            ) {
+            $configuredMode = CRM_SumupPaymentProcessor_CheckoutMode::getConfiguredMode();
+            if (!CRM_SumupPaymentProcessor_CheckoutMode::usesHosted($configuredMode)) {
                 CRM_Core_Region::instance('billing-block')->add([
                     'styleUrl' => CRM_Core_Resources::singleton()->getUrl(
                         E::LONG_NAME,
@@ -300,6 +335,16 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
                     ),
                     'weight' => -10,
                 ]);
+                CRM_Core_Region::instance('billing-block')->add([
+                    'scriptUrl' => 'https://gateway.sumup.com/gateway/ecom/card/v2/sdk.js',
+                    'weight' => 70,
+                ]);
+                if (CRM_SumupPaymentProcessor_CheckoutMode::usesWallet($configuredMode)) {
+                    CRM_Core_Region::instance('billing-block')->add([
+                        'scriptUrl' => 'https://js.sumup.com/swift-checkout/v1/sdk.js',
+                        'weight' => 75,
+                    ]);
+                }
                 CRM_Core_Region::instance('billing-block')->add([
                     'scriptUrl' => CRM_Core_Resources::singleton()->getUrl(
                         E::LONG_NAME,
@@ -328,8 +373,8 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
 
         if ($readerOptions === []) {
             CRM_Core_Session::setStatus(
-                E::ts('No paired and active SumUp Solo terminal is available for this processor.'),
-                E::ts('SumUp terminal'),
+                E::ts('No paired and active SumUp card reader is available for this processor.'),
+                E::ts('SumUp card reader'),
                 'warning'
             );
         }
@@ -349,7 +394,7 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
 
         $readerId = is_numeric($values['sumup_reader_id']) ? (int) $values['sumup_reader_id'] : 0;
         if ($readerId <= 0 || $this->getSoloReader($readerId) === null) {
-            $errors['sumup_reader_id'] = E::ts('Please select an available SumUp Solo terminal.');
+            $errors['sumup_reader_id'] = E::ts('Please select an available SumUp card reader.');
         }
     }
 
@@ -632,7 +677,7 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
         }
         $reader = $this->getSoloReader($localReaderId);
         if ($reader === null) {
-            throw new PaymentProcessorException(E::ts('The selected SumUp Solo terminal is unavailable.'));
+            throw new PaymentProcessorException(E::ts('The selected SumUp card reader is unavailable.'));
         }
 
         $readerService = CRM_SumupPaymentProcessor_ReaderService::fromPaymentProcessorId(
@@ -643,7 +688,7 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
         $deviceState = $this->enumValue($remoteStatus->data->state);
         if ($deviceStatus !== 'ONLINE' || $deviceState !== 'IDLE') {
             throw new PaymentProcessorException(E::ts(
-                'The selected SumUp terminal is not ready (%1 / %2).',
+                'The selected SumUp card reader is not ready (%1 / %2).',
                 [1 => $deviceStatus, 2 => $deviceState]
             ));
         }
@@ -933,14 +978,17 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             'currency' => $currency,
             'locale' => CRM_SumupPaymentProcessor_CheckoutMode::getLocale(),
             'mode' => $checkoutMode,
-            'public_key' => $this->getPublicMerchantKey(),
+            'public_key' => CRM_SumupPaymentProcessor_CheckoutMode::usesWallet($checkoutMode)
+                ? $this->getPublicMerchantKey()
+                : '',
             'merchant_code' => $this->getMerchantCode(),
             'business_name' => $merchantProfile['business_name'],
             'country_code' => CRM_SumupPaymentProcessor_CheckoutMode::getMerchantCountryCode(
                 $merchantProfile['country']
             ),
-            'wallets_allowed' => $contributionRecurId === 0,
-            'browser_return_url' => $browserReturnUrl,
+            'wallets_allowed' => ($contributionRecurId === 0)
+                && CRM_SumupPaymentProcessor_CheckoutMode::usesWallet($checkoutMode),
+            'browser_return_url' => $returnUrl !== '' ? $returnUrl : $browserReturnUrl,
             'cancel_url' => $cancelUrl,
             'hosted_checkout_url' => $checkout->hostedCheckoutUrl,
             'saved_payment_methods' => $savedCards,
@@ -1441,13 +1489,39 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
     }
 
     /**
+     * Check if the current browser/API session is authenticated to access this contact's saved cards.
+     */
+    public function isContactAuthorizedForSavedCards(int $contactId): bool
+    {
+        if ($contactId <= 0) {
+            return false;
+        }
+        $loggedInContactId = (int) CRM_Core_Session::getLoggedInContactID();
+        if ($loggedInContactId > 0 && $loggedInContactId === $contactId) {
+            return true;
+        }
+        if (
+            $loggedInContactId > 0
+            && \CRM_Core_Permission::check('access CiviContribute')
+            && \CRM_Core_Permission::check('edit contributions')
+        ) {
+            return true;
+        }
+        $cs = trim((string) ($_GET['cs'] ?? $_POST['cs'] ?? $_REQUEST['cs'] ?? ''));
+        if ($cs !== '' && strlen($cs) <= 255 && \CRM_Contact_BAO_Contact_Utils::validChecksum($contactId, $cs)) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
      * Return active SumUp cards which also belong to this contact in CiviCRM.
      *
      * @return list<array{payment_token_id: int, masked_account_number: string}>
      */
     public function getSavedCardsForContact(int $contactId): array
     {
-        if ($contactId <= 0) {
+        if ($contactId <= 0 || !$this->isContactAuthorizedForSavedCards($contactId)) {
             return [];
         }
         $localTokens = PaymentToken::get(false)
@@ -1653,11 +1727,36 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             )
             ->addWhere('id', '=', $contributionId)
             ->addWhere('contribution_recur_id', '=', $contributionRecurId)
+            ->addWhere('is_test', 'IN', [true, false])
             ->execute()
             ->single();
         $processorId = $this->getProcessorId();
-        if ((int) ($contribution['payment_processor_id'] ?? 0) !== $processorId) {
-            throw new PaymentProcessorException(E::ts('The recurring contribution uses another payment processor.'));
+        $relatedProcessorIds = $this->getRelatedProcessorIds();
+        $contributionProcessorId = (int) ($contribution['payment_processor_id'] ?? 0);
+        if ($contributionProcessorId <= 0 || in_array($contributionProcessorId, $relatedProcessorIds, true)) {
+            if ($contributionProcessorId !== $processorId) {
+                Contribution::update(false)
+                    ->addWhere('id', '=', $contributionId)
+                    ->addValue('payment_processor_id', $processorId)
+                    ->execute();
+            }
+        } else {
+            $isSumup = PaymentProcessor::get(false)
+                ->addWhere('id', '=', $contributionProcessorId)
+                ->addWhere('class_name', '=', 'Payment_Sumup')
+                ->addWhere('is_test', 'IN', [true, false])
+                ->execute()
+                ->first();
+            if ($isSumup) {
+                Contribution::update(false)
+                    ->addWhere('id', '=', $contributionId)
+                    ->addValue('payment_processor_id', $processorId)
+                    ->execute();
+            } else {
+                throw new PaymentProcessorException(
+                    E::ts('The recurring contribution uses another payment processor.')
+                );
+            }
         }
 
         $paymentToken = PaymentToken::get(false)
@@ -1667,9 +1766,16 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             ->single();
         $contactId = (int) $contribution['contact_id'];
         $token = trim((string) $paymentToken['token']);
+        $paymentTokenProcessorId = (int) ($paymentToken['payment_processor_id'] ?? 0);
+        $tokenProcessor = PaymentProcessor::get(false)
+            ->addSelect('class_name')
+            ->addWhere('id', '=', $paymentTokenProcessorId)
+            ->addWhere('is_test', 'IN', [true, false])
+            ->execute()
+            ->first();
         if (
             (int) $paymentToken['contact_id'] !== $contactId
-            || (int) $paymentToken['payment_processor_id'] !== $processorId
+            || ($tokenProcessor['class_name'] ?? '') !== 'Payment_Sumup'
             || !preg_match('/^[A-Za-z0-9_-]{8,255}$/', $token)
         ) {
             throw new PaymentProcessorException(E::ts('The recurring contribution has no valid SumUp card token.'));
@@ -2426,6 +2532,9 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             ->execute()
             ->single();
         $contactId = (int) $contribution['contact_id'];
+        if (!$this->isContactAuthorizedForSavedCards($contactId)) {
+            throw new PaymentProcessorException(E::ts('You are not authorised to use this saved card.'));
+        }
         $providerToken = trim((string) $paymentToken['token']);
         $customerId = $this->customerIdForPaymentToken($paymentTokenId);
         $registryCustomerId = trim((string) ($registry['customer_id'] ?? ''));
