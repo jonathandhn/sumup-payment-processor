@@ -340,6 +340,22 @@
           });
           header.appendChild(radio);
 
+          var savedCardNorm = 'generic';
+          var textLower = String(method.masked_account_number || '').toLowerCase();
+          if (textLower.indexOf('visa') !== -1) {
+            savedCardNorm = 'visa';
+          } else if (textLower.indexOf('master') !== -1) {
+            savedCardNorm = 'mastercard';
+          } else if (textLower.indexOf('amex') !== -1 || textLower.indexOf('american') !== -1) {
+            savedCardNorm = 'amex';
+          } else if (textLower.indexOf('cb') !== -1 || textLower.indexOf('carte') !== -1) {
+            savedCardNorm = 'cb';
+          }
+
+          var savedIcon = document.createElement('span');
+          savedIcon.className = 'crm-sumup-card-icon crm-sumup-card-icon--' + savedCardNorm;
+          header.appendChild(savedIcon);
+
           var labelText = document.createElement('span');
           labelText.className = 'crm-sumup-choice__title';
           labelText.textContent = method.masked_account_number || ts('Saved card');
@@ -392,10 +408,10 @@
         cardSchemes.className = 'crm-sumup-choice__schemes';
         (config.acceptedCards || []).forEach(function (cardName) {
           var norm = String(cardName).toLowerCase().replace(/[^a-z0-9]/g, '');
-          var badge = document.createElement('span');
-          badge.className = 'crm-sumup-badge crm-sumup-badge--' + norm;
-          badge.textContent = cardName;
-          cardSchemes.appendChild(badge);
+          var icon = document.createElement('span');
+          icon.className = 'crm-sumup-card-icon crm-sumup-card-icon--' + norm;
+          icon.title = cardName;
+          cardSchemes.appendChild(icon);
         });
         newHeader.appendChild(cardSchemes);
 
