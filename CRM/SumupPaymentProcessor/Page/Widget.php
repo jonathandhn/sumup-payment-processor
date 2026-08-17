@@ -118,18 +118,14 @@ class CRM_SumupPaymentProcessor_Page_Widget extends CRM_Core_Page
             $this->assign('sumupCurrency', strtoupper((string) $contribution['currency']));
             $this->assign('sumupLocale', CRM_SumupPaymentProcessor_CheckoutMode::getLocale());
             $configuredMode = CRM_SumupPaymentProcessor_CheckoutMode::getConfiguredMode();
-            $effectiveMode = CRM_SumupPaymentProcessor_CheckoutMode::isValidAttemptMode($checkoutMode)
-                ? $checkoutMode
-                : $configuredMode;
             $walletsAllowed = ($checkoutRecord['purpose'] === 'PAYMENT')
-                && CRM_SumupPaymentProcessor_CheckoutMode::usesWallet($effectiveMode)
                 && CRM_SumupPaymentProcessor_CheckoutMode::usesWallet($configuredMode);
 
-            $this->assign('sumupCheckoutMode', $effectiveMode);
+            $this->assign('sumupCheckoutMode', $configuredMode);
             $this->assign('sumupWalletsAllowed', $walletsAllowed);
             $this->assign(
                 'sumupUsesWidget',
-                CRM_SumupPaymentProcessor_CheckoutMode::usesWidget($effectiveMode)
+                CRM_SumupPaymentProcessor_CheckoutMode::usesWidget($configuredMode)
             );
             $this->assign(
                 'sumupUsesWallet',

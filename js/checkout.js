@@ -201,7 +201,17 @@
         return request.canMakePayment().then(function (available) {
           return available ? request.availablePaymentMethods() : [];
         }).then(function (methods) {
-          if (methods.length) {
+          var isApple = /Macintosh|iPhone|iPad|iPod/.test(navigator.userAgent)
+            && !/Android/.test(navigator.userAgent);
+          var filteredMethods = methods.filter(function (m) {
+            var name = String(m && m.name || m || '').toLowerCase();
+            if (name.indexOf('apple') !== -1 && !isApple) {
+              return false;
+            }
+            return true;
+          });
+
+          if (filteredMethods.length) {
             var walletBusy = false;
             var buttons = client.elements({label: 'pay'});
             buttons.onSubmit(function (event) {
@@ -233,11 +243,17 @@
             wallet.style.maxHeight = '0';
             wallet.style.overflow = 'hidden';
             wallet.style.visibility = 'hidden';
-            buttons.mount({paymentMethods: methods, container: wallet});
+            buttons.mount({paymentMethods: filteredMethods, container: wallet});
             return new Promise(function (resolve) {
               var checksRemaining = 16;
               var visibleChecks = 0;
               var revealWhenRendered = function () {
+                if (!isApple) {
+                  var ap = wallet.querySelector('[data-testid*="apple-pay"]');
+                  if (ap) {
+                    ap.remove();
+                  }
+                }
                 visibleChecks = hasVisibleWalletControl() ? visibleChecks + 1 : 0;
                 if (visibleChecks >= 2) {
                   wallet.style.removeProperty('max-height');
