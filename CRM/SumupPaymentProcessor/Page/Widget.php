@@ -131,7 +131,7 @@ class CRM_SumupPaymentProcessor_Page_Widget extends CRM_Core_Page
                 'sumupUsesWallet',
                 $walletsAllowed
             );
-            $this->assign('sumupPublicMerchantKey', $processor->getPublicMerchantKey());
+            $this->assign('sumupPublicMerchantKey', $walletsAllowed ? $processor->getPublicMerchantKey() : '');
             $this->assign('sumupBusinessName', $merchantProfile['business_name']);
             $this->assign(
                 'sumupMerchantCountryCode',

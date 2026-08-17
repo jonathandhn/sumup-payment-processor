@@ -971,7 +971,9 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             'currency' => $currency,
             'locale' => CRM_SumupPaymentProcessor_CheckoutMode::getLocale(),
             'mode' => $checkoutMode,
-            'public_key' => $this->getPublicMerchantKey(),
+            'public_key' => CRM_SumupPaymentProcessor_CheckoutMode::usesWallet($checkoutMode)
+                ? $this->getPublicMerchantKey()
+                : '',
             'merchant_code' => $this->getMerchantCode(),
             'business_name' => $merchantProfile['business_name'],
             'country_code' => CRM_SumupPaymentProcessor_CheckoutMode::getMerchantCountryCode(

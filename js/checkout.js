@@ -59,7 +59,8 @@
 
     var config = normaliseConfig(container, suppliedConfig);
     var usesWidget = config.mode === 'widget' || config.mode === 'widget_wallet';
-    var usesWallet = config.walletsAllowed
+    var usesWallet = Boolean(config.walletsAllowed)
+      && Boolean(config.publicKey && config.publicKey.trim() !== '')
       && (config.mode === 'wallet' || config.mode === 'widget_wallet');
     var id = ++instance;
     var message = document.createElement('p');
