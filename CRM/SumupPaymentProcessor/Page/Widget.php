@@ -50,7 +50,9 @@ class CRM_SumupPaymentProcessor_Page_Widget extends CRM_Core_Page
                     parent::run();
                     return;
                 }
+                CRM_Core_Config::singleton()->userSystem->prePostRedirect();
                 CRM_Utils_System::redirect($params['return_url']);
+                return;
             }
             if (($contribution['contribution_status_id:name'] ?? '') !== 'Pending') {
                 throw new PaymentProcessorException(E::ts(

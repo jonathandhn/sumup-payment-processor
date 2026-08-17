@@ -988,7 +988,7 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             ),
             'wallets_allowed' => ($contributionRecurId === 0)
                 && CRM_SumupPaymentProcessor_CheckoutMode::usesWallet($checkoutMode),
-            'browser_return_url' => $browserReturnUrl,
+            'browser_return_url' => $returnUrl !== '' ? $returnUrl : $browserReturnUrl,
             'cancel_url' => $cancelUrl,
             'hosted_checkout_url' => $checkout->hostedCheckoutUrl,
             'saved_payment_methods' => $savedCards,
