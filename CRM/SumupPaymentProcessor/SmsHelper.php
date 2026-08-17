@@ -55,19 +55,52 @@ class CRM_SumupPaymentProcessor_SmsHelper
             throw new \CRM_Core_Exception(E::ts('No active CiviCRM SMS Provider is configured or selected.'));
         }
 
+        // Normalize phone number (E.164 without internal spaces/dashes)
+        $cleanPhone = (string) preg_replace('/[^0-9+]/', '', trim($toPhone));
+        if (str_starts_with($cleanPhone, '00')) {
+            $cleanPhone = '+' . substr($cleanPhone, 2);
+        } elseif (
+            !str_starts_with($cleanPhone, '+')
+            && strlen($cleanPhone) === 10
+            && str_starts_with($cleanPhone, '0')
+        ) {
+            // French standard mobile (06 / 07) -> +336 / +337
+            $cleanPhone = '+33' . substr($cleanPhone, 1);
+        }
+
         $recipients = [
             [
-                'to' => $toPhone,
-                'phone' => $toPhone,
+                'to' => $cleanPhone,
+                'phone' => $cleanPhone,
+                'number' => $cleanPhone,
             ],
         ];
-        $header = ['From' => 'SumUp'];
+        $header = ['From' => 'SumUp', 'from' => 'SumUp'];
 
         if (class_exists('CRM_SMS_Provider')) {
             try {
-                $provider = \CRM_SMS_Provider::singleton(['provider_id' => $providerId]);
+                $providerParams = ['id' => $providerId, 'provider_id' => $providerId];
+                if (class_exists('\Civi\Api4\SmsProvider')) {
+                    $providerData = \Civi\Api4\SmsProvider::get(false)
+                        ->addWhere('id', '=', $providerId)
+                        ->execute()
+                        ->first();
+                    if (!empty($providerData)) {
+                        $providerParams = array_merge($providerData, $providerParams);
+                    }
+                }
+
+                $provider = \CRM_SMS_Provider::singleton($providerParams);
                 if (is_object($provider) && method_exists($provider, 'send')) {
-                    $provider->send($recipients, $header, $messageText);
+                    try {
+                        $provider->send($recipients, $header, $messageText);
+                    } catch (\Throwable $e1) {
+                        try {
+                            $provider->send($recipients, $messageText);
+                        } catch (\Throwable $e2) {
+                            $provider->send($cleanPhone, $messageText);
+                        }
+                    }
                     return;
                 }
             } catch (\Throwable $e) {

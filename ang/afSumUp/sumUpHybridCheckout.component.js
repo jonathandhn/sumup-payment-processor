@@ -151,7 +151,9 @@
           var result = res[0] || {};
           this.sendLink.success = result.message || ts('Payment link sent!');
         }).catch((err) => {
-          this.sendLink.error = err.error_message || ts('Failed to send payment link.');
+          this.sendLink.error = (err && (err.error_message || err.message || (err.responseJSON && err.responseJSON.error_message)))
+            ? (err.error_message || err.message || err.responseJSON.error_message)
+            : ts('Failed to send payment link.');
         }).finally(() => {
           this.sendLink.sending = false;
           $scope.$applyAsync();
