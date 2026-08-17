@@ -728,7 +728,8 @@
   padding: 0.4rem 0.75rem;
 }
 
-.crm-sumup-qr-kiosk {
+.crm-sumup-qr-kiosk,
+.crm-sumup-card-reader-kiosk {
   max-width: 32rem;
 }
 

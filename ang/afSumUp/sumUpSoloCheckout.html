@@ -1,4 +1,4 @@
-<div class="crm-sumup-kiosk" ng-if="$ctrl.active">
+<div class="crm-sumup-kiosk crm-sumup-card-reader-kiosk" ng-if="$ctrl.active">
   <!-- Active / In-progress Kiosk View -->
   <div class="crm-sumup-kiosk__body" ng-if="$ctrl.waiting">
     <div class="crm-sumup-kiosk__header">
@@ -14,8 +14,8 @@
       </div>
     </div>
 
-    <div class="crm-sumup-kiosk__grid">
-      <!-- Left Column: Terminal Solo Visual & Instructions -->
+    <div class="crm-sumup-kiosk__grid crm-sumup-kiosk__grid--single">
+      <!-- Card Reader Visual & Instructions -->
       <div class="crm-sumup-kiosk__card crm-sumup-kiosk__card--solo">
         <div ng-if="!$ctrl.terminalExpired">
           <div class="crm-sumup-solo-product" ng-if="$ctrl.soloImageUrl">
@@ -38,7 +38,7 @@
             {{:: ts('Card reader session timed out') }}
           </h3>
           <p style="color: #5f6368; font-size: 0.9rem; margin-bottom: 1.25rem;">
-            {{:: ts('No card detected. You can retry on the card reader or pay by QR code.') }}
+            {{:: ts('No card detected. You can retry on the card reader or cancel.') }}
           </p>
           <button class="button btn btn-primary" type="button"
                   ng-click="$ctrl.retryTerminal()" ng-disabled="$ctrl.retryingTerminal">
@@ -47,18 +47,6 @@
           <p class="messages error" ng-if="$ctrl.terminalRetryError">
             {{$ctrl.terminalRetryError}}
           </p>
-        </div>
-      </div>
-
-      <!-- Right Column: Instant QR Code Mobile Payment -->
-      <div class="crm-sumup-kiosk__card crm-sumup-kiosk__card--qr" ng-if="$ctrl.qrSvgTrusted">
-        <div class="crm-sumup-qr-container">
-          <div class="crm-sumup-qr-canvas" ng-bind-html="$ctrl.qrSvgTrusted"></div>
-        </div>
-
-        <div class="crm-sumup-kiosk__card-info">
-          <h3>{{:: ts('Pay with phone') }}</h3>
-          <p>{{:: ts('Scan this QR code to pay with Apple Pay, Google Pay, or Card.') }}</p>
         </div>
       </div>
     </div>

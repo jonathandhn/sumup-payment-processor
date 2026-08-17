@@ -143,32 +143,6 @@ if (
             );
             $session->setCheckoutParam('sumup_reader_checkout_id', $clientTransactionId);
 
-            $returnUrl = $session->getLandingUrl();
-            $cancelUrl = $session->getLandingUrl();
-
-            try {
-                $processor->startEmbeddedCheckoutForContribution(
-                    $session->getContributionId(),
-                    $returnUrl,
-                    $cancelUrl
-                );
-            } catch (\Throwable $e) {
-                \Civi::log()->warning('Unable to pre-create online checkout for QR: ' . $e->getMessage());
-            }
-
-            $contributionId = $session->getContributionId();
-            $processorId = (int) $processor->getProcessorId();
-            $key = \CRM_Core_Payment_Sumup::getBrowserReturnSigningKey();
-            $sig = substr(hash_hmac('sha256', $contributionId . ':' . $processorId, $key), 0, 12);
-            $qrUrl = \CRM_Utils_System::url(
-                'civicrm/sumup/widget',
-                ['c' => $contributionId, 'p' => $processorId, 's' => $sig],
-                true,
-                null,
-                false,
-                true
-            );
-
             $session->setResponseItem(
                 'sumup_solo_checkout',
                 [
@@ -179,11 +153,9 @@ if (
                     'solo_image_url' => E::url('images/sumup-solo.png'),
                     'amount' => number_format((float) $contribution['total_amount'], 2, '.', ''),
                     'currency' => (string) $contribution['currency'],
-                    'qr_url' => $qrUrl,
-                    'qr_svg' => $this->generateQrSvg($qrUrl),
                     'client_transaction_id' => $clientTransactionId,
                     'message' => E::ts(
-                        'Payment of %1 %2 sent to terminal %3.',
+                        'Payment of %1 %2 sent to card reader %3.',
                         [
                             1 => number_format((float) $contribution['total_amount'], 2, '.', ''),
                             2 => (string) $contribution['currency'],
@@ -292,45 +264,6 @@ if (
         private function getConnectionLabel(): string
         {
             return (string) ($this->getDisplayConnection()['title'] ?? 'SumUp');
-        }
-
-        private function generateQrSvg(string $url): string
-        {
-            if (!class_exists('QRcode')) {
-                throw new \CRM_Core_Exception(E::ts('The local QR code encoder is unavailable.'));
-            }
-
-            $matrix = (new \QRcode($url, 'M'))->getBarcodeArray();
-            $rows = (int) ($matrix['num_rows'] ?? 0);
-            $columns = (int) ($matrix['num_cols'] ?? 0);
-            $modules = $matrix['bcode'] ?? null;
-            if ($rows <= 0 || $columns <= 0 || !is_array($modules)) {
-                throw new \CRM_Core_Exception(E::ts('Unable to generate the local QR code.'));
-            }
-
-            $quietZone = 4;
-            $size = max($rows, $columns) + (2 * $quietZone);
-            $path = [];
-            foreach ($modules as $rowIndex => $row) {
-                if (!is_array($row)) {
-                    continue;
-                }
-                foreach ($row as $columnIndex => $module) {
-                    if ((int) $module === 1) {
-                        $x = (int) $columnIndex + $quietZone;
-                        $y = (int) $rowIndex + $quietZone;
-                        $path[] = sprintf('M%d %dh1v1h-1z', $x, $y);
-                    }
-                }
-            }
-
-            return sprintf(
-                '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 %1$d %1$d" role="img" '
-                . 'aria-label="QR code"><rect width="100%%" height="100%%" fill="#fff"/>'
-                . '<path d="%2$s" fill="#000"/></svg>',
-                $size,
-                implode('', $path)
-            );
         }
     }
 }
