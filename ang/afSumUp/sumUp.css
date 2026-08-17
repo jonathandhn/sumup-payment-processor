@@ -405,16 +405,6 @@
   background: #fafaf9;
 }
 
-/* Remove duplicate internal header and brand logos rendered by SumUp Card Widget inside the accordion drawer */
-.crm-sumup-choice__drawer [id^="sumup-card-"] header,
-.crm-sumup-choice__drawer [id^="sumup-card-"] h1,
-.crm-sumup-choice__drawer [id^="sumup-card-"] h2,
-.crm-sumup-choice__drawer [id^="sumup-card-"] h3,
-.crm-sumup-choice__drawer [id^="sumup-card-"] h4,
-.crm-sumup-choice__drawer [id^="sumup-card-"] > div > div:first-child:not(:has(input)) {
-  display: none !important;
-}
-
 .crm-sumup-btn-pay {
   align-items: center;
   background: #101010 !important;
