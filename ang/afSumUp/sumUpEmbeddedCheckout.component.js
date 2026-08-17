@@ -53,7 +53,19 @@
         }
 
         var form = this.getFormElement();
-        form.find('button[type="submit"]').not($element.find('*')).hide();
+        var nameParts = [];
+        var firstName = form.find('input[name*="first_name"]').val();
+        var lastName = form.find('input[name*="last_name"]').val();
+        var email = form.find('input[name*="email"], input[type="email"]').val();
+        if (firstName || lastName) {
+          nameParts.push([firstName, lastName].filter(Boolean).join(' '));
+        }
+        if (email) {
+          nameParts.push(email);
+        }
+        this.donorSummary = nameParts.join(' · ');
+
+        form.addClass('crm-sumup-form--compact');
 
         this.active = true;
         this.completed = false;
@@ -86,9 +98,11 @@
 
       this.cancelAndUnlock = () => {
         var form = this.getFormElement();
+        form.removeClass('crm-sumup-form--compact');
         form.find('button[type="submit"]').not($element.find('*')).show();
         this.active = false;
         this.completed = false;
+        this.donorSummary = '';
         this.error = '';
         var container = $element[0].querySelector('#sumup-afform-mount-target');
         if (container) {

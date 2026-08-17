@@ -1164,17 +1164,69 @@
 }
 
 /* Alma-Style Inline Checkout Container for Afform */
+.crm-sumup-form--compact > *:not(af-sum-up-embedded-checkout):not(.crm-sumup-compact-recap) {
+  display: none !important;
+}
+
+.crm-sumup-compact-recap {
+  align-items: center;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+  padding: 0.75rem 1.15rem;
+}
+
+.crm-sumup-compact-recap__content {
+  align-items: center;
+  color: #334155;
+  display: flex;
+  font-size: 0.95rem;
+  font-weight: 500;
+  gap: 0.5rem;
+}
+
+.crm-sumup-compact-recap__content .crm-i {
+  color: #64748b;
+  font-size: 1.15rem;
+}
+
+.crm-sumup-compact-recap__edit-btn {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.5rem;
+  color: #475569;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 0.82rem;
+  font-weight: 600;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  transition: all 0.15s ease;
+}
+
+.crm-sumup-compact-recap__edit-btn:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
 .crm-sumup-alma-container {
   animation: crmSumUpFadeSlideIn 0.35s ease-out;
   background: #ffffff;
   border: 1.5px solid #e2e8f0;
-  border-radius: 1rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
-  margin: 1.75rem auto 1rem;
-  max-width: 600px;
-  padding: 1.5rem 1.75rem;
+  border-radius: 1.15rem;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.07);
+  box-sizing: border-box;
+  margin: 1.5rem auto 1rem;
+  max-width: 720px;
+  padding: 1.75rem 2rem;
   pointer-events: auto !important;
   position: relative;
+  width: 100%;
   z-index: 10;
 }
 
