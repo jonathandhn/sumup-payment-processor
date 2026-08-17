@@ -344,18 +344,60 @@
 }
 
 .crm-sumup-choice__schemes {
+  align-items: center;
   display: inline-flex;
   gap: 0.35rem;
 }
 
-.crm-sumup-choice__schemes span {
+.crm-sumup-badge {
   background: #f1f5f9;
   border: 1px solid #e2e8f0;
-  border-radius: 0.25rem;
+  border-radius: 0.3rem;
   color: #475569;
-  font-size: 0.65rem;
+  font-size: 0.68rem;
   font-weight: 800;
-  padding: 0.15rem 0.35rem;
+  letter-spacing: 0.02em;
+  padding: 0.2rem 0.4rem;
+  text-transform: uppercase;
+}
+
+.crm-sumup-badge--visa {
+  background: #ebf0f7;
+  border-color: #c7d7ed;
+  color: #1a1f71;
+  font-style: italic;
+  font-weight: 900;
+}
+
+.crm-sumup-badge--mastercard {
+  background: #fff5f5;
+  border-color: #fed7d7;
+  color: #eb001b;
+  font-weight: 800;
+}
+
+.crm-sumup-badge--cb,
+.crm-sumup-badge--cartebancaire,
+.crm-sumup-badge--cartebancaires {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+  color: #008559;
+  font-weight: 800;
+}
+
+.crm-sumup-badge--amex,
+.crm-sumup-badge--americanexpress {
+  background: #edf9ff;
+  border-color: #bee3f8;
+  color: #0077a6;
+  font-weight: 800;
+}
+
+.crm-sumup-badge--discover {
+  background: #fffaf0;
+  border-color: #feebc8;
+  color: #f76b1c;
+  font-weight: 800;
 }
 
 .crm-sumup-choice__drawer {

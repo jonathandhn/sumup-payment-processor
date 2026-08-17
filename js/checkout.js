@@ -47,6 +47,8 @@
       onSuccess: typeof config.onSuccess === 'function' ? config.onSuccess : null,
       savedPaymentMethods: config.saved_payment_methods || savedConfig.saved_payment_methods || [],
       savedPaymentAction: config.saved_payment_action || savedConfig.saved_payment_action || null,
+      acceptedCards: config.accepted_cards
+        || (dataset.acceptedCards ? JSON.parse(dataset.acceptedCards) : ['Visa', 'MasterCard']),
     };
   }
 
@@ -388,9 +390,13 @@
 
         var cardSchemes = document.createElement('span');
         cardSchemes.className = 'crm-sumup-choice__schemes';
-        cardSchemes.innerHTML = '<span class="crm-sumup-badge-visa">VISA</span>'
-          + '<span class="crm-sumup-badge-mc">MC</span>'
-          + '<span class="crm-sumup-badge-cb">CB</span>';
+        (config.acceptedCards || []).forEach(function (cardName) {
+          var norm = String(cardName).toLowerCase().replace(/[^a-z0-9]/g, '');
+          var badge = document.createElement('span');
+          badge.className = 'crm-sumup-badge crm-sumup-badge--' + norm;
+          badge.textContent = cardName;
+          cardSchemes.appendChild(badge);
+        });
         newHeader.appendChild(cardSchemes);
 
         newChoice.appendChild(newHeader);

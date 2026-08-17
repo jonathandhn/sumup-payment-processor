@@ -138,6 +138,33 @@ class CRM_SumupPaymentProcessor_Page_Widget extends CRM_Core_Page
                 CRM_SumupPaymentProcessor_CheckoutMode::getMerchantCountryCode($merchantProfile['country'])
             );
 
+            $acceptedCardNames = [];
+            if (class_exists('CRM_Financial_BAO_PaymentProcessor')) {
+                $rawCards = (array) \CRM_Financial_BAO_PaymentProcessor::getCreditCards($params['processor_id']);
+                if (!empty($rawCards)) {
+                    $allOptionValues = \Civi\Api4\OptionValue::get(false)
+                        ->addSelect('value', 'name', 'label')
+                        ->addWhere('option_group_id:name', '=', 'accept_credit_cards')
+                        ->execute();
+                    $allTypes = [];
+                    foreach ($allOptionValues as $opt) {
+                        $allTypes[(string) $opt['value']] = (string) $opt['name'];
+                    }
+                    foreach ($rawCards as $cardKey) {
+                        $cardKeyStr = (string) $cardKey;
+                        if (isset($allTypes[$cardKeyStr])) {
+                            $acceptedCardNames[] = $allTypes[$cardKeyStr];
+                        } elseif (!is_numeric($cardKey)) {
+                            $acceptedCardNames[] = (string) $cardKey;
+                        }
+                    }
+                }
+            }
+            if (empty($acceptedCardNames)) {
+                $acceptedCardNames = ['Visa', 'MasterCard'];
+            }
+            $this->assign('sumupAcceptedCards', $acceptedCardNames);
+
             CRM_Core_Resources::singleton()->addVars(
                 'sumupSavedPayment',
                 ['checkout_id' => $checkoutId] + $processor->getSavedCardCheckoutConfig(
