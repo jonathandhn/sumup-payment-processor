@@ -2,8 +2,8 @@
   {{$ctrl.error}}
 </div>
 
-<div class="crm-sumup-alma-container" ng-if="$ctrl.active">
-  <div class="crm-sumup-alma-success" ng-if="$ctrl.completed">
+<div class="crm-sumup-alma-container" ng-show="$ctrl.active">
+  <div class="crm-sumup-alma-success" ng-show="$ctrl.completed">
     <div class="crm-sumup-alma-success__icon">
       <i class="crm-i fa-check-circle"></i>
     </div>
@@ -14,7 +14,7 @@
     </div>
   </div>
 
-  <div ng-if="!$ctrl.completed">
+  <div ng-hide="$ctrl.completed">
     <div class="crm-sumup-alma-summary">
       <div class="crm-sumup-alma-summary__row">
         <span class="crm-sumup-alma-summary__label">{{ts('Total to pay')}}</span>
