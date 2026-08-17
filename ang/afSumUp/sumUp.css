@@ -1163,8 +1163,12 @@
   color: #c62828;
 }
 
-/* Alma-Style Inline Checkout Container for Afform */
-.crm-sumup-form--compact > *:not(af-sum-up-embedded-checkout):not(.crm-sumup-compact-recap) {
+/* Alma-Style Compact Mode: Hide non-checkout fields, tax disclaimers, and submit button */
+.crm-sumup-form--compact fieldset:not(:has(af-sum-up-embedded-checkout)),
+.crm-sumup-form--compact af-field:not([name="checkout_params"]),
+.crm-sumup-form--compact crm-tax-reduction,
+.crm-sumup-form--compact .af-title,
+.crm-sumup-form--compact button.af-button {
   display: none !important;
 }
 
