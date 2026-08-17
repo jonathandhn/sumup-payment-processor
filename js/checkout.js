@@ -457,6 +457,25 @@
         container.insertBefore(card, message);
       }
 
+      var cleanCardWallets = function () {
+        var elements = card.querySelectorAll(
+          '[data-testid="apple-pay-button"], [data-testid="timeout-session-error-message"], [data-testid="google-pay-button"], .sumup-payment-r44k6v'
+        );
+        Array.prototype.forEach.call(elements, function (el) {
+          var wrapper = el.closest('.sumup-payment-r44k6v') || el;
+          if (wrapper && wrapper.isConnected) {
+            wrapper.remove();
+          }
+        });
+      };
+
+      if (!usesWallet && window.MutationObserver) {
+        var cardObserver = new window.MutationObserver(function () {
+          cleanCardWallets();
+        });
+        cardObserver.observe(card, {childList: true, subtree: true});
+      }
+
       tasks.push(whenReady(function () {
         return Boolean(window.SumUpCard);
       }).then(function () {
@@ -467,6 +486,9 @@
           currency: config.currency,
           locale: config.locale,
           onResponse: function (type) {
+            if (!usesWallet) {
+              cleanCardWallets();
+            }
             if (type === 'success') {
               verifyOnServer();
             }
@@ -475,6 +497,11 @@
             }
           },
         });
+        if (!usesWallet) {
+          for (var t = 100; t <= 3000; t += 250) {
+            window.setTimeout(cleanCardWallets, t);
+          }
+        }
       }).catch(function () {
         showMessage(ts('The card payment form could not be loaded.'));
       }));
