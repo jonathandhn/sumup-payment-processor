@@ -1164,12 +1164,19 @@
 }
 
 /* Alma-Style Compact Mode: Hide non-checkout fields, tax disclaimers, and submit button */
-.crm-sumup-form--compact fieldset:not(:has(af-sum-up-embedded-checkout)),
+.crm-sumup-form--compact fieldset[af-fieldset]:not(:has(af-sum-up-embedded-checkout)),
 .crm-sumup-form--compact af-field:not([name="checkout_params"]),
 .crm-sumup-form--compact crm-tax-reduction,
-.crm-sumup-form--compact .af-title,
+.crm-sumup-form--compact legend.af-title,
 .crm-sumup-form--compact button.af-button {
   display: none !important;
+}
+
+/* Ensure SumUp's internal fieldsets and elements are ALWAYS visible */
+.crm-sumup-alma-container fieldset,
+.crm-sumup-alma-container [data-testid="form-fieldset"],
+.crm-sumup-alma-container [data-testid="card"] {
+  display: block !important;
 }
 
 .crm-sumup-compact-recap {

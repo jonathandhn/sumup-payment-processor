@@ -472,8 +472,7 @@
           window.SumUpCard.mount({
             id: card.id,
             checkoutId: config.checkoutId,
-            amount: config.amount,
-            currency: config.currency,
+            showAmount: true,
             locale: config.locale,
             onResponse: function (type) {
               if (type === 'success') {
