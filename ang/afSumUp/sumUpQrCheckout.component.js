@@ -177,7 +177,7 @@
         }
 
         $.ajax({
-          url: CRM.url('civicrm/checkout/continue', {token: this.token}),
+          url: CRM.url('civicrm/checkout/continue', {session: this.token}),
           type: 'POST',
           dataType: 'json',
         }).done((res) => {

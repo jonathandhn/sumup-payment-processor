@@ -9,6 +9,16 @@ namespace Civi\Api4;
  */
 class SumupCheckout extends Generic\DAOEntity
 {
+    /** @return array<string, list<string>> */
+    public static function permissions(): array
+    {
+        return [
+            'sendPaymentLink' => ['make online contributions'],
+            'get' => ['access CiviContribute'],
+            'default' => ['administer CiviCRM'],
+        ];
+    }
+
     /**
      * @param bool $checkPermissions
      * @return Action\SumupCheckout\SendPaymentLink
