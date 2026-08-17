@@ -336,6 +336,9 @@
                 r.checked = true;
               }
               drawerContainers[i].style.display = 'block';
+              if (i === newCardIndex) {
+                mountCardWidget();
+              }
             } else {
               c.classList.remove('crm-sumup-choice--selected');
               if (r) {
@@ -457,54 +460,38 @@
         container.insertBefore(card, message);
       }
 
-      var cleanCardWallets = function () {
-        var elements = card.querySelectorAll(
-          '[data-testid="apple-pay-button"], [data-testid="timeout-session-error-message"], [data-testid="google-pay-button"], .sumup-payment-r44k6v'
-        );
-        Array.prototype.forEach.call(elements, function (el) {
-          var wrapper = el.closest('.sumup-payment-r44k6v') || el;
-          if (wrapper && wrapper.isConnected) {
-            wrapper.remove();
-          }
+      var cardMounted = false;
+      var mountCardWidget = function () {
+        if (cardMounted) {
+          return Promise.resolve();
+        }
+        cardMounted = true;
+        return whenReady(function () {
+          return Boolean(window.SumUpCard);
+        }).then(function () {
+          window.SumUpCard.mount({
+            id: card.id,
+            checkoutId: config.checkoutId,
+            amount: config.amount,
+            currency: config.currency,
+            locale: config.locale,
+            onResponse: function (type) {
+              if (type === 'success') {
+                verifyOnServer();
+              }
+              else if (type === 'fail' || type === 'error') {
+                showMessage(ts('The payment could not be confirmed. You can try again or cancel.'));
+              }
+            },
+          });
+        }).catch(function () {
+          showMessage(ts('The card payment form could not be loaded.'));
         });
       };
 
-      if (!usesWallet && window.MutationObserver) {
-        var cardObserver = new window.MutationObserver(function () {
-          cleanCardWallets();
-        });
-        cardObserver.observe(card, {childList: true, subtree: true});
+      if (!hasSavedCards) {
+        tasks.push(mountCardWidget());
       }
-
-      tasks.push(whenReady(function () {
-        return Boolean(window.SumUpCard);
-      }).then(function () {
-        window.SumUpCard.mount({
-          id: card.id,
-          checkoutId: config.checkoutId,
-          amount: config.amount,
-          currency: config.currency,
-          locale: config.locale,
-          onResponse: function (type) {
-            if (!usesWallet) {
-              cleanCardWallets();
-            }
-            if (type === 'success') {
-              verifyOnServer();
-            }
-            else if (type === 'fail' || type === 'error') {
-              showMessage(ts('The payment could not be confirmed. You can try again or cancel.'));
-            }
-          },
-        });
-        if (!usesWallet) {
-          for (var t = 100; t <= 3000; t += 250) {
-            window.setTimeout(cleanCardWallets, t);
-          }
-        }
-      }).catch(function () {
-        showMessage(ts('The card payment form could not be loaded.'));
-      }));
     }
 
     if (config.cancelUrl) {

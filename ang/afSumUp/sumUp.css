@@ -1340,3 +1340,17 @@
   font-weight: 700;
   padding: 0.5rem 1.25rem;
 }
+
+/* Suppress ghost Apple Pay button and session timeout errors with zero CPU cost */
+[id^="sumup-card-"] [data-testid="apple-pay-button"],
+[id^="sumup-card-"] [data-testid="timeout-session-error-message"],
+[id^="sumup-card-"] .sumup-payment-r44k6v {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  max-height: 0 !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
