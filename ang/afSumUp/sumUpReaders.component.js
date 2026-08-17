@@ -144,14 +144,14 @@
           pairingCode: pairingCode,
         }).then((res) => {
           var reader = res[0] || {};
-          this.pairing.success = ts('Terminal %1 successfully paired with site %2.', {
+          this.pairing.success = ts('Card reader %1 successfully paired with site %2.', {
             1: reader.canonical_name || reader.name || pairingCode,
             2: siteCode,
           });
           this.pairing.pairingCode = '';
           this.loadReaders();
         }).catch((err) => {
-          this.pairing.error = err.error_message || ts('Failed to pair the SumUp Solo terminal.');
+          this.pairing.error = err.error_message || ts('Failed to pair the SumUp card reader.');
         }).finally(() => {
           this.pairing.submitting = false;
           $scope.$applyAsync();

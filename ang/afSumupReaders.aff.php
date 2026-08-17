@@ -6,7 +6,7 @@ use CRM_SumupPaymentProcessor_ExtensionUtil as E;
 
 return [
     'type' => 'form',
-    'title' => E::ts('SumUp Solo terminals'),
+    'title' => E::ts('SumUp card readers'),
     'requires' => ['afSumUp'],
     'server_route' => 'civicrm/admin/sumup-readers',
     'placement' => [],

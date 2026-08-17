@@ -55,8 +55,8 @@ return [
         'params' => [
             'version' => 4,
             'values' => [
-                'label' => E::ts('Solo terminals'),
-                'name' => 'SumUp Solo terminals',
+                'label' => E::ts('Card readers'),
+                'name' => 'SumUp card readers',
                 'url' => 'civicrm/admin/sumup-readers?reset=1',
                 'permission' => ['administer CiviCRM system', 'access CiviContribute'],
                 'permission_operator' => 'OR',

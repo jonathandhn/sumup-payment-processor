@@ -30,12 +30,12 @@ if (
 
         public function getLabel(): string
         {
-            return E::ts('%1 (Solo terminal / Kiosk)', [1 => $this->getConnectionLabel()]);
+            return E::ts('%1 (Card reader / Kiosk)', [1 => $this->getConnectionLabel()]);
         }
 
         public function getFrontendLabel(): string
         {
-            return E::ts('%1 (Payment on Solo terminal)', [
+            return E::ts('%1 (Card reader)', [
                 1 => $this->getConnectionLabel(),
             ]);
         }
@@ -78,7 +78,7 @@ if (
         public function getAfformSettings(bool $testMode): array
         {
             return [
-                'description' => E::ts('In-person payment via SumUp Solo terminal (one-time only).'),
+                'description' => E::ts('In-person payment on card reader.'),
                 'template' => '~/afSumUp/sumup_solo_checkout.html',
             ];
         }
@@ -107,7 +107,7 @@ if (
             }
 
             if ($readerId <= 0) {
-                throw new \CRM_Core_Exception(E::ts('No paired SumUp Solo terminal is available.'));
+                throw new \CRM_Core_Exception(E::ts('No paired SumUp card reader is available.'));
             }
             $session->setCheckoutParam('sumup_reader_id', $readerId);
 
@@ -120,7 +120,7 @@ if (
                 ->execute()
                 ->first();
             if (!$reader) {
-                throw new \CRM_Core_Exception(E::ts('The selected SumUp terminal is unavailable.'));
+                throw new \CRM_Core_Exception(E::ts('The selected SumUp card reader is unavailable.'));
             }
 
             $contribution = \Civi\Api4\Contribution::get(false)
@@ -131,7 +131,7 @@ if (
 
             if (!empty($contribution['contribution_recur_id'])) {
                 throw new \CRM_Core_Exception(E::ts(
-                    'SumUp Solo terminals only support one-time payments.'
+                    'SumUp card readers only support one-time payments.'
                     . ' Recurring contributions require online card checkout.'
                 ));
             }

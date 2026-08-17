@@ -10,7 +10,7 @@
     <header class="crm-sumup-panel__header">
       <div>
         <p class="crm-sumup-eyebrow">SumUp Cloud API</p>
-        <h2>{{:: ts('Solo terminal fleet') }}</h2>
+        <h2>{{:: ts('Card reader fleet') }}</h2>
       </div>
       <div class="crm-sumup-actions crm-sumup-toolbar">
         <button class="button btn btn-secondary" type="button"
@@ -36,14 +36,14 @@
   <section class="crm-sumup-panel">
     <header class="crm-sumup-panel__header">
       <div>
-        <p class="crm-sumup-eyebrow">{{:: ts('Site Terminals') }}</p>
-        <h2>{{:: ts('Paired terminals') }}</h2>
+        <p class="crm-sumup-eyebrow">{{:: ts('Site Readers') }}</p>
+        <h2>{{:: ts('Paired card readers') }}</h2>
       </div>
       <span class="crm-sumup-count" ng-if="$ctrl.pairedReaders.length">{{$ctrl.pairedReaders.length}}</span>
     </header>
 
     <div class="messages status no-popup" ng-if="!$ctrl.pairedReaders.length && !$ctrl.loading">
-      {{:: ts('No SumUp Solo terminal is currently paired with this CiviCRM site.') }}
+      {{:: ts('No SumUp card reader is currently paired with this CiviCRM site.') }}
     </div>
 
     <ul class="crm-sumup-card-list crm-sumup-reader-list" ng-if="$ctrl.pairedReaders.length">
@@ -101,8 +101,8 @@
   <section class="crm-sumup-panel">
     <header class="crm-sumup-panel__header">
       <div>
-        <p class="crm-sumup-eyebrow">{{:: ts('Add Terminal') }}</p>
-        <h2>{{:: ts('Pair a new Solo terminal') }}</h2>
+        <p class="crm-sumup-eyebrow">{{:: ts('Add Card Reader') }}</p>
+        <h2>{{:: ts('Pair a new card reader') }}</h2>
       </div>
     </header>
 
@@ -128,7 +128,7 @@
                  maxlength="15"
                  ng-model="$ctrl.pairing.pairingCode"
                  required />
-          <small class="crm-sumup-help">{{:: ts('8-9 characters code displayed on the Solo screen.') }}</small>
+          <small class="crm-sumup-help">{{:: ts('8-9 characters code displayed on the screen.') }}</small>
         </div>
       </div>
 
@@ -136,7 +136,7 @@
         <button class="button btn btn-primary" type="submit"
                 ng-disabled="$ctrl.pairing.submitting || !$ctrl.pairing.siteCode || !$ctrl.pairing.pairingCode">
           <i class="crm-i fa-plus" aria-hidden="true"></i>
-          {{$ctrl.pairing.submitting ? ts('Pairing…') : ts('Pair terminal') }}
+          {{$ctrl.pairing.submitting ? ts('Pairing…') : ts('Pair card reader') }}
         </button>
       </div>
     </form>
@@ -147,13 +147,13 @@
     <header class="crm-sumup-panel__header">
       <div>
         <p class="crm-sumup-eyebrow">{{:: ts('Cloud Discovery') }}</p>
-        <h2>{{:: ts('Other terminals on this SumUp account') }}</h2>
+        <h2>{{:: ts('Other card readers on this SumUp account') }}</h2>
       </div>
       <span class="crm-sumup-count">{{$ctrl.discoveredReaders.length}}</span>
     </header>
 
     <p class="crm-sumup-help">
-      {{:: ts('These Solo terminals are linked to your SumUp merchant account but not attached to a site code in this CiviCRM.') }}
+      {{:: ts('These card readers are linked to your SumUp merchant account but not attached to a site code in this CiviCRM.') }}
     </p>
 
     <ul class="crm-sumup-card-list crm-sumup-discovered-list">
@@ -163,20 +163,18 @@
           <div class="crm-sumup-reader-title">
             <strong>{{discovered.name || discovered.reader_id}}</strong>
             <span class="crm-sumup-badge crm-sumup-badge--active" ng-if="discovered.status === 'paired'">
-              {{:: ts('Paired') }}
+              {{:: ts('Paired in SumUp') }}
             </span>
           </div>
-          <div class="crm-sumup-reader-meta">
-            <small><span>{{:: ts('Reader ID:') }}</span> <code>{{discovered.reader_id}}</code></small>
-            <small ng-if="discovered.device_identifier"><span>{{:: ts('Device:') }}</span> <code>{{discovered.device_identifier}}</code></small>
-            <small ng-if="discovered.site_code"><span>{{:: ts('Site code:') }}</span> {{discovered.site_code}}</small>
-          </div>
+          <p class="crm-sumup-reader-meta">
+            <span>{{:: ts('Reader ID:') }} <code>{{discovered.reader_id}}</code></span>
+          </p>
         </div>
 
         <div class="crm-sumup-reader-actions">
-          <button class="button btn btn-primary btn-sm" type="button"
+          <button class="button btn btn-secondary btn-sm" type="button"
                   ng-click="$ctrl.openAdoptModal(discovered)">
-            <i class="crm-i fa-link" aria-hidden="true"></i> {{:: ts('Adopt') }}
+            <i class="crm-i fa-link" aria-hidden="true"></i> {{:: ts('Adopt for site…') }}
           </button>
         </div>
       </li>
@@ -188,7 +186,7 @@
     <div class="crm-sumup-modal crm-sumup-panel">
       <header class="crm-sumup-panel__header">
         <div>
-          <p class="crm-sumup-eyebrow">{{:: ts('Adopt terminal') }}</p>
+          <p class="crm-sumup-eyebrow">{{:: ts('Adopt card reader') }}</p>
           <h2>{{$ctrl.adoptModal.reader.name || $ctrl.adoptModal.reader.reader_id}}</h2>
         </div>
         <button class="crm-sumup-modal-close" type="button" ng-click="$ctrl.closeAdoptModal()">&times;</button>
@@ -197,7 +195,7 @@
       <div class="messages error" ng-if="$ctrl.adoptModal.error">{{$ctrl.adoptModal.error}}</div>
 
       <form ng-submit="$ctrl.adoptReader()">
-        <p>{{:: ts('Assign this existing SumUp Solo terminal to a CiviCRM site code:') }}</p>
+        <p>{{:: ts('Assign this existing SumUp card reader to a CiviCRM site code:') }}</p>
         <div class="crm-sumup-form-group">
           <label for="sumup-adopt-site-code"><strong>{{:: ts('Site code') }}</strong></label>
           <input type="text" id="sumup-adopt-site-code" class="crm-form-text"

@@ -366,8 +366,8 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
 
         if ($readerOptions === []) {
             CRM_Core_Session::setStatus(
-                E::ts('No paired and active SumUp Solo terminal is available for this processor.'),
-                E::ts('SumUp terminal'),
+                E::ts('No paired and active SumUp card reader is available for this processor.'),
+                E::ts('SumUp card reader'),
                 'warning'
             );
         }
@@ -387,7 +387,7 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
 
         $readerId = is_numeric($values['sumup_reader_id']) ? (int) $values['sumup_reader_id'] : 0;
         if ($readerId <= 0 || $this->getSoloReader($readerId) === null) {
-            $errors['sumup_reader_id'] = E::ts('Please select an available SumUp Solo terminal.');
+            $errors['sumup_reader_id'] = E::ts('Please select an available SumUp card reader.');
         }
     }
 
@@ -670,7 +670,7 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
         }
         $reader = $this->getSoloReader($localReaderId);
         if ($reader === null) {
-            throw new PaymentProcessorException(E::ts('The selected SumUp Solo terminal is unavailable.'));
+            throw new PaymentProcessorException(E::ts('The selected SumUp card reader is unavailable.'));
         }
 
         $readerService = CRM_SumupPaymentProcessor_ReaderService::fromPaymentProcessorId(
@@ -681,7 +681,7 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
         $deviceState = $this->enumValue($remoteStatus->data->state);
         if ($deviceStatus !== 'ONLINE' || $deviceState !== 'IDLE') {
             throw new PaymentProcessorException(E::ts(
-                'The selected SumUp terminal is not ready (%1 / %2).',
+                'The selected SumUp card reader is not ready (%1 / %2).',
                 [1 => $deviceStatus, 2 => $deviceState]
             ));
         }
