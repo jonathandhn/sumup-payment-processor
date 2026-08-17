@@ -810,57 +810,22 @@
 .crm-sumup-qr-poster__brand {
   align-items: center;
   display: inline-flex;
-  gap: 0.35rem;
+  justify-content: center;
   margin-bottom: 0.25rem;
 }
 
-.crm-sumup-qr-brand-logo {
-  background: #101010;
-  border-radius: 0.25rem;
-  display: inline-block;
-  height: 1.15rem;
-  position: relative;
-  width: 1.15rem;
-}
-
-.crm-sumup-qr-brand-logo::before,
-.crm-sumup-qr-brand-logo::after {
-  background: #fff;
-  border-radius: 0.15rem;
-  content: '';
-  height: 0.55rem;
-  position: absolute;
-  top: 0.3rem;
-  transform: rotate(-30deg);
-  width: 0.22rem;
-}
-
-.crm-sumup-qr-brand-logo::before {
-  left: 0.28rem;
-}
-
-.crm-sumup-qr-brand-logo::after {
-  right: 0.28rem;
-}
-
-.crm-sumup-qr-brand-name {
-  color: #101010;
-  font-size: 1.15rem;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-}
-
-.crm-sumup-qr-brand-name sup {
-  font-size: 0.6rem;
-  font-weight: normal;
-  top: -0.5em;
+.crm-sumup-qr-brand-svg {
+  display: block;
+  height: 2.2rem;
+  max-width: 100%;
+  width: auto;
 }
 
 .crm-sumup-qr-poster__title {
   color: #101010;
   font-size: 1.45rem;
   line-height: 1.15;
-  margin: 0.25rem 0 0;
+  margin: 0.35rem 0 0;
 }
 
 .crm-sumup-qr-poster__title-bold {
@@ -876,22 +841,35 @@
   letter-spacing: -0.02em;
 }
 
-/* QR Stage & White QR Card */
+/* QR Stage & White QR Card on top of official Organic Blob */
 .crm-sumup-qr-stage {
   align-items: center;
   display: flex;
+  height: 16.5rem;
   justify-content: center;
-  margin: 0.75rem auto 1rem;
+  margin: 0.25rem auto 0.75rem;
+  position: relative;
+  width: 16.5rem;
+}
+
+.crm-sumup-qr-blob {
+  height: 100%;
+  left: 0;
+  pointer-events: none;
+  position: absolute;
+  top: 0;
   width: 100%;
+  z-index: 1;
 }
 
 .crm-sumup-qr-card-white {
   background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 1rem;
-  box-shadow: 0 6px 20px rgb(0 0 0 / 6%);
+  border-radius: 1.1rem;
+  box-shadow: 0 10px 28px rgb(0 0 0 / 18%);
   display: inline-block;
   padding: 0.85rem;
+  position: relative;
+  z-index: 2;
 }
 
 .crm-sumup-qr-canvas svg {
@@ -899,9 +877,7 @@
   display: block;
   height: auto;
   max-width: 100%;
-  width: 11.5rem;
-}
-
+  width: 10.5rem;
 }
 
 .crm-sumup-kiosk__footer {

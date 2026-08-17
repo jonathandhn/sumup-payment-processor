@@ -55,15 +55,19 @@ class CRM_SumupPaymentProcessor_SmsHelper
             throw new \CRM_Core_Exception(E::ts('No active CiviCRM SMS Provider is configured or selected.'));
         }
 
+        $recipients = [
+            [
+                'to' => $toPhone,
+                'phone' => $toPhone,
+            ],
+        ];
+        $header = ['From' => 'SumUp'];
+
         if (class_exists('CRM_SMS_Provider')) {
             try {
                 $provider = \CRM_SMS_Provider::singleton(['provider_id' => $providerId]);
                 if (is_object($provider) && method_exists($provider, 'send')) {
-                    try {
-                        $provider->send($toPhone, $messageText);
-                    } catch (\Throwable $e) {
-                        $provider->send([$toPhone], [], $messageText);
-                    }
+                    $provider->send($recipients, $header, $messageText);
                     return;
                 }
             } catch (\Throwable $e) {

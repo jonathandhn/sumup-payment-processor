@@ -268,57 +268,47 @@ if (
                 }
             }
 
-            // SumUp center logo overlay (22% of QR size)
-            $logoBoxSize = (float) max(7.0, round($size * 0.22));
+            // Authentic SumUp center logo overlay (23% of QR size)
+            $officialIconPath = 'M 59.058594 54.925781 L 49.589844 64.335938 C 49.414062 64.5 49.140625 64.496094'
+                . ' 48.96875 64.328125 C 46.492188 61.539062 46.59375 57.28125 49.273438 54.613281'
+                . ' C 51.941406 51.960938 56.195312 51.847656 59 54.273438 C 59.015625 54.28125 59.03125 54.296875'
+                . ' 59.046875 54.3125 C 59.214844 54.480469 59.21875 54.753906 59.058594 54.925781'
+                . ' M 57.085938 69.964844 C 54.417969 72.617188 50.164062 72.734375 47.359375 70.308594'
+                . ' C 47.34375 70.296875 47.328125 70.285156 47.3125 70.269531 C 47.144531 70.101562'
+                . ' 47.140625 69.828125 47.304688 69.652344 L 56.769531 60.242188 C 56.945312 60.078125'
+                . ' 57.21875 60.082031 57.390625 60.25 C 59.871094 63.039062 59.769531 67.300781'
+                . ' 57.085938 69.964844 M 66.261719 47.117188 L 40.097656 47.117188 C 38.890625 47.117188'
+                . ' 37.914062 48.085938 37.914062 49.285156 L 37.914062 75.292969 C 37.914062 76.492188'
+                . ' 38.890625 77.460938 40.097656 77.460938 L 66.261719 77.460938 C 67.46875 77.460938'
+                . ' 68.445312 76.492188 68.445312 75.292969 L 68.445312 49.285156 C 68.445312 48.085938'
+                . ' 67.46875 47.117188 66.261719 47.117188';
+
+            $logoBoxSize = (float) max(7.0, round($size * 0.23));
             if ((int) $logoBoxSize % 2 === 0) {
                 $logoBoxSize += 1.0;
             }
             $logoBoxPos = ($size - $logoBoxSize) / 2.0;
-            $innerPadding = $logoBoxSize * 0.12;
-            $innerSize = $logoBoxSize - (2.0 * $innerPadding);
-            $innerPos = $logoBoxPos + $innerPadding;
-            $cornerOuter = max(1.0, $logoBoxSize * 0.18);
-            $cornerInner = max(0.8, $innerSize * 0.20);
-
-            $pillW = $innerSize * 0.22;
-            $pillH = $innerSize * 0.48;
-            $pillR = $pillW / 2.0;
-            $cx1 = $innerPos + ($innerSize * 0.38);
-            $cy1 = $innerPos + ($innerSize * 0.50);
-            $cx2 = $innerPos + ($innerSize * 0.62);
-            $cy2 = $innerPos + ($innerSize * 0.50);
+            $cornerOuter = max(1.0, $logoBoxSize * 0.20);
+            $innerSize = $logoBoxSize * 0.82;
+            $scale = $innerSize / 30.53125;
+            $cx = $size / 2.0;
+            $cy = $size / 2.0;
+            $tx = $cx - (53.179688 * $scale);
+            $ty = $cy - (62.289062 * $scale);
 
             $logoSvg = sprintf(
                 '<rect x="%.2f" y="%.2f" width="%.2f" height="%.2f" rx="%.2f" fill="#ffffff"/>'
-                . '<rect x="%.2f" y="%.2f" width="%.2f" height="%.2f" rx="%.2f" fill="#101010"/>'
-                . '<rect x="%.2f" y="%.2f" width="%.2f" height="%.2f" rx="%.2f"'
-                . ' transform="rotate(-30 %.2f %.2f)" fill="#ffffff"/>'
-                . '<rect x="%.2f" y="%.2f" width="%.2f" height="%.2f" rx="%.2f"'
-                . ' transform="rotate(-30 %.2f %.2f)" fill="#ffffff"/>',
+                . '<g transform="translate(%.4f, %.4f) scale(%.6f)">'
+                . '<path fill="#101010" fill-rule="nonzero" d="%s"/></g>',
                 $logoBoxPos,
                 $logoBoxPos,
                 $logoBoxSize,
                 $logoBoxSize,
                 $cornerOuter,
-                $innerPos,
-                $innerPos,
-                $innerSize,
-                $innerSize,
-                $cornerInner,
-                $cx1 - ($pillW / 2.0),
-                $cy1 - ($pillH / 2.0),
-                $pillW,
-                $pillH,
-                $pillR,
-                $cx1,
-                $cy1,
-                $cx2 - ($pillW / 2.0),
-                $cy2 - ($pillH / 2.0),
-                $pillW,
-                $pillH,
-                $pillR,
-                $cx2,
-                $cy2
+                $tx,
+                $ty,
+                $scale,
+                $officialIconPath
             );
 
             return sprintf(
