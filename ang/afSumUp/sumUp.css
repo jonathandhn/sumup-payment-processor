@@ -1164,13 +1164,6 @@
 }
 
 /* Alma-Style Inline Checkout Container for Afform */
-.crm-sumup-form--locked {
-  filter: grayscale(15%);
-  opacity: 0.7;
-  pointer-events: none;
-  transition: opacity 0.3s ease, filter 0.3s ease;
-}
-
 .crm-sumup-alma-container {
   animation: crmSumUpFadeSlideIn 0.35s ease-out;
   background: #ffffff;
@@ -1180,6 +1173,13 @@
   margin: 1.75rem auto 1rem;
   max-width: 600px;
   padding: 1.5rem 1.75rem;
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 10;
+}
+
+.crm-sumup-alma-container .crm-sumup-checkout__cancel {
+  display: none !important;
 }
 
 @keyframes crmSumUpFadeSlideIn {

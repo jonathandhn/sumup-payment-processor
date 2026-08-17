@@ -53,8 +53,7 @@
         }
 
         var form = this.getFormElement();
-        form.find('input, select, textarea, button[type="submit"]').prop('disabled', true);
-        form.addClass('crm-sumup-form--locked');
+        form.find('button[type="submit"]').not($element.find('*')).hide();
 
         this.active = true;
         this.completed = false;
@@ -87,8 +86,7 @@
 
       this.cancelAndUnlock = () => {
         var form = this.getFormElement();
-        form.find('input, select, textarea, button[type="submit"]').prop('disabled', false);
-        form.removeClass('crm-sumup-form--locked');
+        form.find('button[type="submit"]').not($element.find('*')).show();
         this.active = false;
         this.completed = false;
         this.error = '';
