@@ -440,6 +440,11 @@
   text-align: center;
 }
 
+[data-testid="timeout-session-error-message"],
+[class*="timeout-session-error"] {
+  display: none !important;
+}
+
 .crm-sumup-payment-separator::before,
 .crm-sumup-payment-separator::after {
   border-top: 1px solid var(--sumup-border, #dededb);

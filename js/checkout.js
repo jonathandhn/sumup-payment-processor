@@ -174,10 +174,22 @@
           walletCardSeparator = null;
         }
       };
+      var hasError = function () {
+        return Boolean(wallet.querySelector(
+          '[data-testid*="error"], [class*="error"], [data-testid="timeout-session-error-message"]'
+        ));
+      };
+
       var hasVisibleWalletControl = function () {
+        if (hasError()) {
+          return false;
+        }
         return Array.prototype.some.call(wallet.querySelectorAll(
           'button, iframe, [role="button"], [data-testid$="-pay-button"]'
         ), function (control) {
+          if (control.closest('[data-testid*="error"], [class*="error"]')) {
+            return false;
+          }
           var style = window.getComputedStyle(control);
           var rect = control.getBoundingClientRect();
           return style.display !== 'none'
@@ -187,6 +199,16 @@
             && rect.height > 20;
         });
       };
+
+      if (window.MutationObserver) {
+        var observer = new window.MutationObserver(function () {
+          if (hasError()) {
+            observer.disconnect();
+            removeWallet();
+          }
+        });
+        observer.observe(wallet, {childList: true, subtree: true});
+      }
       tasks.push(loadScript(
         'https://js.sumup.com/swift-checkout/v1/sdk.js',
         function () { return Boolean(window.SumUp && window.SumUp.SwiftCheckout); }
