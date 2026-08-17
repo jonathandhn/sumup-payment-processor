@@ -25,6 +25,54 @@
           <h3>{{:: ts('Pay with your phone') }}</h3>
           <p>{{:: ts('Scan this QR code to pay with Apple Pay, Google Pay, or Card.') }}</p>
         </div>
+
+        <!-- Send link by Email / SMS Panel -->
+        <div class="crm-sumup-send-link-section" ng-if="$ctrl.allowSendEmail || $ctrl.allowSendSms">
+          <div class="crm-sumup-send-link-toggle" ng-if="!$ctrl.sendLink.open">
+            <button class="button btn btn-secondary btn-sm" type="button" ng-click="$ctrl.toggleSendLink(true)">
+              <i class="crm-i fa-paper-plane" aria-hidden="true"></i> {{:: ts('Send link by SMS or Email…') }}
+            </button>
+          </div>
+
+          <div class="crm-sumup-send-link-form" ng-if="$ctrl.sendLink.open">
+            <div class="crm-sumup-send-link-tabs" ng-if="$ctrl.allowSendEmail && $ctrl.allowSendSms">
+              <button type="button" class="crm-sumup-tab-btn" ng-class="{'active': $ctrl.sendLink.channel === 'sms'}" ng-click="$ctrl.setSendChannel('sms')">
+                <i class="crm-i fa-mobile"></i> {{:: ts('SMS') }}
+              </button>
+              <button type="button" class="crm-sumup-tab-btn" ng-class="{'active': $ctrl.sendLink.channel === 'email'}" ng-click="$ctrl.setSendChannel('email')">
+                <i class="crm-i fa-envelope-o"></i> {{:: ts('Email') }}
+              </button>
+            </div>
+
+            <div class="crm-sumup-send-link-input-group">
+              <input type="text" class="crm-form-text"
+                     ng-if="$ctrl.sendLink.channel === 'sms'"
+                     placeholder="{{:: ts('e.g. +33 6 12 34 56 78') }}"
+                     ng-model="$ctrl.sendLink.recipient"
+                     ng-disabled="$ctrl.sendLink.sending" />
+              <input type="email" class="crm-form-text"
+                     ng-if="$ctrl.sendLink.channel === 'email'"
+                     placeholder="{{:: ts('e.g. name@example.com') }}"
+                     ng-model="$ctrl.sendLink.recipient"
+                     ng-disabled="$ctrl.sendLink.sending" />
+              <button class="button btn btn-primary btn-sm" type="button"
+                      ng-click="$ctrl.sendPaymentLink()"
+                      ng-disabled="$ctrl.sendLink.sending || !$ctrl.sendLink.recipient">
+                <i class="crm-i fa-paper-plane" ng-if="!$ctrl.sendLink.sending"></i>
+                <i class="crm-i fa-spinner fa-spin" ng-if="$ctrl.sendLink.sending"></i>
+                {{$ctrl.sendLink.sending ? ts('Sending…') : ts('Send') }}
+              </button>
+              <button class="crm-sumup-modal-close" type="button" ng-click="$ctrl.toggleSendLink(false)">&times;</button>
+            </div>
+
+            <p class="messages status no-popup crm-sumup-send-link-msg" ng-if="$ctrl.sendLink.success">
+              {{$ctrl.sendLink.success}}
+            </p>
+            <p class="messages error crm-sumup-send-link-msg" ng-if="$ctrl.sendLink.error">
+              {{$ctrl.sendLink.error}}
+            </p>
+          </div>
+        </div>
       </div>
     </div>
 

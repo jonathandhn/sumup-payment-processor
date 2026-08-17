@@ -31,6 +31,18 @@
       this.qrSvgTrusted = null;
       this.remainingSeconds = 60;
       this.receiptRef = '';
+      this.allowSendEmail = false;
+      this.allowSendSms = false;
+      this.contactEmail = '';
+      this.contactPhone = '';
+      this.sendLink = {
+        open: false,
+        channel: 'sms',
+        recipient: '',
+        sending: false,
+        success: '',
+        error: '',
+      };
 
       this.$onInit = () => this.getFormElement().on('crmFormSuccess', listener);
 
@@ -80,6 +92,21 @@
         this.soloImageUrl = checkout.solo_image_url || '';
         this.qrUrl = checkout.qr_url || '';
         this.receiptRef = checkout.client_transaction_id || '';
+        this.allowSendEmail = !!checkout.allow_send_email;
+        this.allowSendSms = !!checkout.allow_send_sms;
+        this.contactEmail = checkout.contact_email || '';
+        this.contactPhone = checkout.contact_phone || '';
+
+        var defaultChannel = this.allowSendSms ? 'sms' : 'email';
+        var defaultRecipient = (defaultChannel === 'sms') ? this.contactPhone : this.contactEmail;
+        this.sendLink = {
+          open: false,
+          channel: defaultChannel,
+          recipient: defaultRecipient,
+          sending: false,
+          success: '',
+          error: '',
+        };
 
         if (checkout.qr_svg) {
           this.qrSvgTrusted = $sce.trustAsHtml(checkout.qr_svg);
@@ -90,6 +117,45 @@
         this.startCountdown();
         this.schedulePoll(1500);
         $scope.$applyAsync();
+      };
+
+      this.toggleSendLink = (open) => {
+        this.sendLink.open = open;
+        this.sendLink.error = '';
+        this.sendLink.success = '';
+        if (open && !this.sendLink.recipient) {
+          this.sendLink.recipient = (this.sendLink.channel === 'sms') ? this.contactPhone : this.contactEmail;
+        }
+      };
+
+      this.setSendChannel = (channel) => {
+        this.sendLink.channel = channel;
+        this.sendLink.recipient = (channel === 'sms') ? this.contactPhone : this.contactEmail;
+        this.sendLink.error = '';
+        this.sendLink.success = '';
+      };
+
+      this.sendPaymentLink = () => {
+        if (!this.sendLink.recipient || this.sendLink.sending || !this.token) {
+          return;
+        }
+        this.sendLink.sending = true;
+        this.sendLink.error = '';
+        this.sendLink.success = '';
+
+        CRM.api4('SumupCheckout', 'sendPaymentLink', {
+          token: this.token,
+          channel: this.sendLink.channel,
+          recipient: this.sendLink.recipient,
+        }).then((res) => {
+          var result = res[0] || {};
+          this.sendLink.success = result.message || ts('Payment link sent!');
+        }).catch((err) => {
+          this.sendLink.error = err.error_message || ts('Failed to send payment link.');
+        }).finally(() => {
+          this.sendLink.sending = false;
+          $scope.$applyAsync();
+        });
       };
 
       this.startCountdown = () => {

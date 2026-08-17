@@ -93,7 +93,7 @@ if (
         public function startCheckout(CheckoutSession $session): void
         {
             $contribution = \Civi\Api4\Contribution::get(false)
-                ->addSelect('id', 'total_amount', 'currency', 'contribution_recur_id')
+                ->addSelect('id', 'total_amount', 'currency', 'contribution_recur_id', 'contact_id')
                 ->addWhere('id', '=', $session->getContributionId())
                 ->execute()
                 ->single();
@@ -119,6 +119,19 @@ if (
                 true
             );
 
+            $contactId = (int) ($contribution['contact_id'] ?? 0);
+            $contactEmail = '';
+            $contactPhone = '';
+            if ($contactId > 0) {
+                $contact = \Civi\Api4\Contact::get(false)
+                    ->addSelect('email_primary.email', 'phone_primary.phone')
+                    ->addWhere('id', '=', $contactId)
+                    ->execute()
+                    ->first();
+                $contactEmail = (string) ($contact['email_primary.email'] ?? '');
+                $contactPhone = (string) ($contact['phone_primary.phone'] ?? '');
+            }
+
             $session->setResponseItem(
                 'sumup_qr_checkout',
                 [
@@ -127,6 +140,10 @@ if (
                     'currency' => (string) $contribution['currency'],
                     'qr_url' => $qrUrl,
                     'qr_svg' => $this->generateQrSvg($qrUrl),
+                    'allow_send_email' => (bool) \Civi::settings()->get('sumup_qr_allow_send_email'),
+                    'allow_send_sms' => (bool) \Civi::settings()->get('sumup_qr_allow_send_sms'),
+                    'contact_email' => $contactEmail,
+                    'contact_phone' => $contactPhone,
                     'message' => E::ts(
                         'Please scan the QR code to complete your payment of %1 %2.',
                         [

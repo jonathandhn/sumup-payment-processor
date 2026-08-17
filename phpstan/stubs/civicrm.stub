@@ -111,6 +111,14 @@ namespace {
             mixed $method = null
         ): mixed { return null; }
     }
+    class CRM_Utils_Mail {
+        public static function send(array $params): bool { return true; }
+    }
+    class CRM_SMS_BAO_SmsProvider {
+        public static function getProvider(array $params): mixed { return new class { public function send(string $to, string $msg): void {} }; }
+        /** @return array<int, string> */
+        public static function activeProviders(): array { return []; }
+    }
     class CRM_Utils_JSON {
         public static function output(mixed $input): never { exit; }
     }
@@ -405,6 +413,12 @@ namespace Civi\Api4 {
         public static function get(bool $checkPermissions = true): self { return new self(); }
     }
     class OptionValue extends Query {
+        public static function get(bool $checkPermissions = true): self { return new self(); }
+    }
+    class Contact extends Query {
+        public static function get(bool $checkPermissions = true): self { return new self(); }
+    }
+    class SmsProvider extends Query {
         public static function get(bool $checkPermissions = true): self { return new self(); }
     }
     class Navigation extends Query {
