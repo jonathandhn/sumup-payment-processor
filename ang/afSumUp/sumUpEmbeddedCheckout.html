@@ -1,3 +1,35 @@
 <div class="crm-sumup-embedded-checkout__error messages error" ng-if="$ctrl.error">
   {{$ctrl.error}}
 </div>
+
+<div class="crm-sumup-alma-container" ng-if="$ctrl.active">
+  <div class="crm-sumup-alma-success" ng-if="$ctrl.completed">
+    <div class="crm-sumup-alma-success__icon">
+      <i class="crm-i fa-check-circle"></i>
+    </div>
+    <h3>{{ts('Payment Confirmed!')}}</h3>
+    <p>{{ts('Thank you! Your payment has been approved and recorded successfully.')}}</p>
+    <div class="crm-sumup-alma-summary__badge">
+      <span>{{$ctrl.amount}} {{$ctrl.currency}}</span>
+    </div>
+  </div>
+
+  <div ng-if="!$ctrl.completed">
+    <div class="crm-sumup-alma-summary">
+      <div class="crm-sumup-alma-summary__row">
+        <span class="crm-sumup-alma-summary__label">{{ts('Total to pay')}}</span>
+        <span class="crm-sumup-alma-summary__amount">{{$ctrl.amount}} {{$ctrl.currency}}</span>
+      </div>
+    </div>
+
+    <div class="crm-sumup-alma-payment-frame">
+      <div class="crm-sumup-embedded-checkout" id="sumup-afform-mount-target"></div>
+    </div>
+
+    <div class="crm-sumup-alma-actions">
+      <button type="button" class="crm-sumup-btn-modify" ng-click="$ctrl.cancelAndUnlock()">
+        <i class="crm-i fa-arrow-left"></i> {{ts('Modify details / Cancel')}}
+      </button>
+    </div>
+  </div>
+</div>

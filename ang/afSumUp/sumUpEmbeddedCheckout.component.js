@@ -26,6 +26,12 @@
         return Promise.all(tasks);
       }
 
+      this.active = false;
+      this.completed = false;
+      this.amount = '';
+      this.currency = 'EUR';
+      this.checkout = null;
+
       this.onAfformSuccess = (data) => {
         var response = data.submissionResponse;
         var checkout = response && response[0] && response[0].sumup_embedded_checkout;
@@ -35,19 +41,54 @@
         }
 
         var form = this.getFormElement();
-        var container = document.createElement('div');
-        container.className = 'crm-sumup-embedded-checkout';
-        form.hide();
-        form.after(container);
-        ensureCheckoutSdk().then(() => {
-          if (!window.CiviSumUpCheckout || typeof window.CiviSumUpCheckout.mount !== 'function') {
-            throw new Error('SumUp checkout SDK unavailable');
+        form.find('input, select, textarea, button[type="submit"]').prop('disabled', true);
+        form.addClass('crm-sumup-form--locked');
+
+        this.active = true;
+        this.completed = false;
+        this.amount = checkout.amount || '';
+        this.currency = checkout.currency || 'EUR';
+        this.checkout = checkout;
+        this.error = '';
+
+        $scope.$applyAsync(() => {
+          var container = $element[0].querySelector('#sumup-afform-mount-target');
+          if (!container) {
+            return;
           }
-          return window.CiviSumUpCheckout.mount(container, checkout);
-        }).catch(() => {
-          this.error = ts('Unable to start the secure payment form. Please try again.');
-          $scope.$applyAsync();
+          container.innerHTML = '';
+          ensureCheckoutSdk().then(() => {
+            if (!window.CiviSumUpCheckout || typeof window.CiviSumUpCheckout.mount !== 'function') {
+              throw new Error('SumUp checkout SDK unavailable');
+            }
+            return window.CiviSumUpCheckout.mount(container, Object.assign({}, checkout, {
+              onSuccess: () => {
+                this.completed = true;
+                $scope.$applyAsync();
+              },
+            }));
+          }).then(() => {
+            if (typeof container.scrollIntoView === 'function') {
+              container.scrollIntoView({behavior: 'smooth', block: 'nearest'});
+            }
+          }).catch(() => {
+            this.error = ts('Unable to start the secure payment form. Please try again.');
+            $scope.$applyAsync();
+          });
         });
+      };
+
+      this.cancelAndUnlock = () => {
+        var form = this.getFormElement();
+        form.find('input, select, textarea, button[type="submit"]').prop('disabled', false);
+        form.removeClass('crm-sumup-form--locked');
+        this.active = false;
+        this.completed = false;
+        this.error = '';
+        var container = $element[0].querySelector('#sumup-afform-mount-target');
+        if (container) {
+          container.innerHTML = '';
+        }
       };
     },
   });

@@ -1162,3 +1162,125 @@
   border: 1px solid #ffcdd2;
   color: #c62828;
 }
+
+/* Alma-Style Inline Checkout Container for Afform */
+.crm-sumup-form--locked {
+  filter: grayscale(15%);
+  opacity: 0.7;
+  pointer-events: none;
+  transition: opacity 0.3s ease, filter 0.3s ease;
+}
+
+.crm-sumup-alma-container {
+  animation: crmSumUpFadeSlideIn 0.35s ease-out;
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 1rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  margin: 1.75rem auto 1rem;
+  max-width: 600px;
+  padding: 1.5rem 1.75rem;
+}
+
+@keyframes crmSumUpFadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.crm-sumup-alma-summary {
+  border-bottom: 1.5px solid #f1f5f9;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+}
+
+.crm-sumup-alma-summary__row {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.crm-sumup-alma-summary__label {
+  color: #475569;
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.crm-sumup-alma-summary__amount {
+  color: #101010;
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.crm-sumup-alma-payment-frame {
+  margin-bottom: 1rem;
+}
+
+.crm-sumup-alma-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.crm-sumup-btn-modify {
+  align-items: center;
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 0.88rem;
+  font-weight: 600;
+  gap: 0.4rem;
+  padding: 0.4rem 0.8rem;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.crm-sumup-btn-modify:hover {
+  color: #101010;
+  text-decoration: underline;
+}
+
+.crm-sumup-alma-success {
+  padding: 1.5rem 1rem;
+  text-align: center;
+}
+
+.crm-sumup-alma-success__icon {
+  color: #16a34a;
+  font-size: 3.5rem;
+  line-height: 1;
+  margin-bottom: 1rem;
+}
+
+.crm-sumup-alma-success h3 {
+  color: #101010;
+  font-size: 1.4rem;
+  font-weight: 800;
+  margin: 0 0 0.5rem;
+}
+
+.crm-sumup-alma-success p {
+  color: #64748b;
+  font-size: 0.95rem;
+  margin: 0 0 1.25rem;
+}
+
+.crm-sumup-alma-summary__badge {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 999px;
+  color: #166534;
+  display: inline-block;
+  font-size: 1.15rem;
+  font-weight: 700;
+  padding: 0.5rem 1.25rem;
+}
