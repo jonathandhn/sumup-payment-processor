@@ -156,31 +156,7 @@
 
     var tasks = [];
     var walletCardSeparator = null;
-    if (config.savedPaymentMethods.length) {
-      var savedCards = document.createElement('section');
-      savedCards.className = 'crm-sumup-saved-cards';
-      var savedTitle = document.createElement('h3');
-      savedTitle.textContent = ts('Pay with a saved card');
-      savedCards.appendChild(savedTitle);
-      config.savedPaymentMethods.forEach(function (method) {
-        var button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'button crm-button btn btn-secondary';
-        button.textContent = method.masked_account_number || ts('Saved card');
-        button.addEventListener('click', function () {
-          payWithSavedCard(method.payment_token_id, button);
-        });
-        var paragraph = document.createElement('p');
-        paragraph.className = 'crm-sumup-saved-card-action';
-        paragraph.appendChild(button);
-        savedCards.appendChild(paragraph);
-      });
-      container.insertBefore(savedCards, message);
-      var savedSeparator = document.createElement('p');
-      savedSeparator.className = 'crm-sumup-payment-separator';
-      savedSeparator.textContent = ts('Or use another payment method');
-      container.insertBefore(savedSeparator, message);
-    }
+
     if (usesWallet) {
       var wallet = document.createElement('div');
       wallet.id = 'sumup-wallet-' + id;
@@ -312,9 +288,128 @@
         walletCardSeparator.style.display = 'none';
         container.insertBefore(walletCardSeparator, message);
       }
+
       var card = document.createElement('div');
       card.id = 'sumup-card-' + id;
-      container.insertBefore(card, message);
+
+      if (config.savedPaymentMethods.length) {
+        var selector = document.createElement('div');
+        selector.className = 'crm-sumup-method-selector';
+
+        var radioGroupName = 'sumup_method_choice_' + id;
+        var choiceContainers = [];
+        var drawerContainers = [];
+
+        var selectChoice = function (index) {
+          choiceContainers.forEach(function (c, i) {
+            var r = c.querySelector('input[type="radio"]');
+            if (i === index) {
+              c.classList.add('crm-sumup-choice--selected');
+              if (r) {
+                r.checked = true;
+              }
+              drawerContainers[i].style.display = 'block';
+            } else {
+              c.classList.remove('crm-sumup-choice--selected');
+              if (r) {
+                r.checked = false;
+              }
+              drawerContainers[i].style.display = 'none';
+            }
+          });
+        };
+
+        // 1. Saved card options (first one selected by default)
+        config.savedPaymentMethods.forEach(function (method, idx) {
+          var choice = document.createElement('div');
+          choice.className = 'crm-sumup-choice crm-sumup-choice--saved'
+            + (idx === 0 ? ' crm-sumup-choice--selected' : '');
+
+          var header = document.createElement('label');
+          header.className = 'crm-sumup-choice__header';
+
+          var radio = document.createElement('input');
+          radio.type = 'radio';
+          radio.name = radioGroupName;
+          radio.value = 'saved_' + method.payment_token_id;
+          radio.checked = (idx === 0);
+          radio.addEventListener('change', function () {
+            selectChoice(idx);
+          });
+          header.appendChild(radio);
+
+          var labelText = document.createElement('span');
+          labelText.className = 'crm-sumup-choice__title';
+          labelText.textContent = method.masked_account_number || ts('Saved card');
+          header.appendChild(labelText);
+          choice.appendChild(header);
+
+          var drawer = document.createElement('div');
+          drawer.className = 'crm-sumup-choice__drawer';
+          drawer.style.display = (idx === 0) ? 'block' : 'none';
+
+          var payBtn = document.createElement('button');
+          payBtn.type = 'button';
+          payBtn.className = 'button crm-button btn btn-primary crm-sumup-btn-pay';
+          payBtn.textContent = ts('Pay %1 %2 with this card', {1: config.amount, 2: config.currency});
+          payBtn.addEventListener('click', function () {
+            payWithSavedCard(method.payment_token_id, payBtn);
+          });
+          drawer.appendChild(payBtn);
+          choice.appendChild(drawer);
+
+          selector.appendChild(choice);
+          choiceContainers.push(choice);
+          drawerContainers.push(drawer);
+        });
+
+        // 2. "Use another card" option (collapsed by default)
+        var newCardIndex = config.savedPaymentMethods.length;
+        var newChoice = document.createElement('div');
+        newChoice.className = 'crm-sumup-choice crm-sumup-choice--new';
+
+        var newHeader = document.createElement('label');
+        newHeader.className = 'crm-sumup-choice__header';
+
+        var newRadio = document.createElement('input');
+        newRadio.type = 'radio';
+        newRadio.name = radioGroupName;
+        newRadio.value = 'new_card';
+        newRadio.checked = false;
+        newRadio.addEventListener('change', function () {
+          selectChoice(newCardIndex);
+        });
+        newHeader.appendChild(newRadio);
+
+        var newLabelText = document.createElement('span');
+        newLabelText.className = 'crm-sumup-choice__title';
+        newLabelText.textContent = ts('Pay with another credit / debit card');
+        newHeader.appendChild(newLabelText);
+
+        var cardSchemes = document.createElement('span');
+        cardSchemes.className = 'crm-sumup-choice__schemes';
+        cardSchemes.innerHTML = '<span class="crm-sumup-badge-visa">VISA</span>'
+          + '<span class="crm-sumup-badge-mc">MC</span>'
+          + '<span class="crm-sumup-badge-cb">CB</span>';
+        newHeader.appendChild(cardSchemes);
+
+        newChoice.appendChild(newHeader);
+
+        var newDrawer = document.createElement('div');
+        newDrawer.className = 'crm-sumup-choice__drawer';
+        newDrawer.style.display = 'none';
+        newDrawer.appendChild(card);
+        newChoice.appendChild(newDrawer);
+
+        selector.appendChild(newChoice);
+        choiceContainers.push(newChoice);
+        drawerContainers.push(newDrawer);
+
+        container.insertBefore(selector, message);
+      } else {
+        container.insertBefore(card, message);
+      }
+
       tasks.push(loadScript(
         'https://gateway.sumup.com/gateway/ecom/card/v2/sdk.js',
         function () { return Boolean(window.SumUpCard); }

@@ -289,31 +289,104 @@
   outline-offset: 2px;
 }
 
-.crm-sumup-saved-cards {
-  background: var(--sumup-surface-muted, #f7f7f5);
-  border: 1px solid var(--sumup-border, #dededb);
-  border-radius: 0.75rem;
-  margin-bottom: 1rem;
-  padding: 1rem;
+/* Payment Method Selector & Collapsible Card Choices */
+.crm-sumup-method-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  width: 100%;
 }
 
-.crm-sumup-checkout-block .crm-sumup-saved-cards h3,
-.crm-sumup-embedded-checkout .crm-sumup-saved-cards h3 {
-  background: none;
-  border: 0;
-  color: var(--sumup-text, #101010);
-  margin: 0 0 0.75rem;
-  padding: 0;
+.crm-sumup-choice {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 0.85rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.crm-sumup-saved-card-action {
-  display: inline-block;
-  margin: 0 0.5rem 0.5rem 0;
+.crm-sumup-choice:hover {
+  border-color: #cbd5e1;
 }
 
-.crm-sumup-checkout-block .crm-sumup-saved-card-action .button,
-.crm-sumup-embedded-checkout .crm-sumup-saved-card-action .button {
-  border-radius: 999px;
+.crm-sumup-choice.crm-sumup-choice--selected {
+  border-color: #101010;
+  box-shadow: 0 0 0 1px #101010, 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.crm-sumup-choice__header {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0.9rem 1.1rem;
+  user-select: none;
+  width: 100%;
+}
+
+.crm-sumup-choice__header input[type="radio"] {
+  accent-color: #101010;
+  cursor: pointer;
+  height: 1.15rem;
+  margin: 0;
+  width: 1.15rem;
+}
+
+.crm-sumup-choice__title {
+  color: #101010;
+  flex: 1;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.crm-sumup-choice__schemes {
+  display: inline-flex;
+  gap: 0.35rem;
+}
+
+.crm-sumup-choice__schemes span {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.25rem;
+  color: #475569;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 0.15rem 0.35rem;
+}
+
+.crm-sumup-choice__drawer {
+  border-top: 1px solid #f1f5f9;
+  padding: 1rem 1.1rem;
+  background: #fafaf9;
+}
+
+.crm-sumup-btn-pay {
+  align-items: center;
+  background: #101010 !important;
+  border: 1px solid #101010 !important;
+  border-radius: 0.6rem !important;
+  color: #ffffff !important;
+  display: inline-flex;
+  font-size: 1rem !important;
+  font-weight: 700 !important;
+  gap: 0.5rem;
+  justify-content: center;
+  padding: 0.75rem 1.5rem !important;
+  width: 100%;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.crm-sumup-btn-pay:hover {
+  background: #262626 !important;
+  border-color: #262626 !important;
+}
+
+.crm-sumup-btn-pay:active {
+  transform: scale(0.99);
 }
 
 .crm-sumup-payment-separator {

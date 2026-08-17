@@ -117,15 +117,23 @@ class CRM_SumupPaymentProcessor_Page_Widget extends CRM_Core_Page
             $this->assign('sumupAmount', number_format((float) $contribution['total_amount'], 2, '.', ''));
             $this->assign('sumupCurrency', strtoupper((string) $contribution['currency']));
             $this->assign('sumupLocale', CRM_SumupPaymentProcessor_CheckoutMode::getLocale());
-            $this->assign('sumupCheckoutMode', $checkoutMode);
-            $this->assign('sumupWalletsAllowed', $checkoutRecord['purpose'] === 'PAYMENT');
+            $configuredMode = CRM_SumupPaymentProcessor_CheckoutMode::getConfiguredMode();
+            $effectiveMode = CRM_SumupPaymentProcessor_CheckoutMode::isValidAttemptMode($checkoutMode)
+                ? $checkoutMode
+                : $configuredMode;
+            $walletsAllowed = ($checkoutRecord['purpose'] === 'PAYMENT')
+                && CRM_SumupPaymentProcessor_CheckoutMode::usesWallet($effectiveMode)
+                && CRM_SumupPaymentProcessor_CheckoutMode::usesWallet($configuredMode);
+
+            $this->assign('sumupCheckoutMode', $effectiveMode);
+            $this->assign('sumupWalletsAllowed', $walletsAllowed);
             $this->assign(
                 'sumupUsesWidget',
-                CRM_SumupPaymentProcessor_CheckoutMode::usesWidget($checkoutMode)
+                CRM_SumupPaymentProcessor_CheckoutMode::usesWidget($effectiveMode)
             );
             $this->assign(
                 'sumupUsesWallet',
-                CRM_SumupPaymentProcessor_CheckoutMode::usesWallet($checkoutMode)
+                $walletsAllowed
             );
             $this->assign('sumupPublicMerchantKey', $processor->getPublicMerchantKey());
             $this->assign('sumupBusinessName', $merchantProfile['business_name']);
