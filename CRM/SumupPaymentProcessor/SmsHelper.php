@@ -44,26 +44,26 @@ class CRM_SumupPaymentProcessor_SmsHelper
         }
 
         $providerId = (int) Civi::settings()->get('sumup_qr_sms_provider_id');
-        $providerParams = [];
-        if ($providerId > 0) {
-            $providerParams['provider_id'] = $providerId;
+        if ($providerId <= 0 && class_exists('CRM_SMS_BAO_SmsProvider')) {
+            $active = \CRM_SMS_BAO_SmsProvider::activeProviders();
+            if (!empty($active)) {
+                $providerId = (int) array_key_first($active);
+            }
         }
 
-        if (class_exists('CRM_SMS_BAO_SmsProvider')) {
-            try {
-                $provider = null;
-                if ($providerId > 0) {
-                    $provider = \CRM_SMS_BAO_SmsProvider::getProvider($providerParams);
-                } else {
-                    $active = \CRM_SMS_BAO_SmsProvider::activeProviders();
-                    if (!empty($active)) {
-                        $firstId = (int) array_key_first($active);
-                        $provider = \CRM_SMS_BAO_SmsProvider::getProvider(['provider_id' => $firstId]);
-                    }
-                }
+        if ($providerId <= 0) {
+            throw new \CRM_Core_Exception(E::ts('No active CiviCRM SMS Provider is configured or selected.'));
+        }
 
+        if (class_exists('CRM_SMS_Provider')) {
+            try {
+                $provider = \CRM_SMS_Provider::singleton(['provider_id' => $providerId]);
                 if (is_object($provider) && method_exists($provider, 'send')) {
-                    $provider->send($toPhone, $messageText);
+                    try {
+                        $provider->send($toPhone, $messageText);
+                    } catch (\Throwable $e) {
+                        $provider->send([$toPhone], [], $messageText);
+                    }
                     return;
                 }
             } catch (\Throwable $e) {

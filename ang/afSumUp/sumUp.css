@@ -876,89 +876,32 @@
   letter-spacing: -0.02em;
 }
 
-/* Organic Blob Stage & White QR Card */
+/* QR Stage & White QR Card */
 .crm-sumup-qr-stage {
   align-items: center;
   display: flex;
-  height: 16rem;
   justify-content: center;
-  margin: 0.25rem auto 0.75rem;
-  position: relative;
-  width: 16rem;
-}
-
-.crm-sumup-qr-blob {
-  height: 100%;
-  left: 0;
-  pointer-events: none;
-  position: absolute;
-  top: 0;
+  margin: 0.75rem auto 1rem;
   width: 100%;
-  z-index: 1;
 }
 
 .crm-sumup-qr-card-white {
   background: #fff;
+  border: 1px solid #e2e8f0;
   border-radius: 1rem;
-  box-shadow: 0 8px 24px rgb(0 0 0 / 18%);
-  padding: 0.75rem;
-  position: relative;
-  z-index: 2;
+  box-shadow: 0 6px 20px rgb(0 0 0 / 6%);
+  display: inline-block;
+  padding: 0.85rem;
 }
 
 .crm-sumup-qr-canvas svg {
-  border-radius: 0.4rem;
+  border-radius: 0.35rem;
   display: block;
   height: auto;
   max-width: 100%;
-  width: 10.5rem;
+  width: 11.5rem;
 }
 
-/* Payment Scheme Badges Footer */
-.crm-sumup-qr-schemes {
-  align-items: center;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-  justify-content: center;
-  margin-top: 0.4rem;
-}
-
-.crm-sumup-badge-logo {
-  background-color: #fff;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: contain;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.25rem;
-  display: inline-block;
-  height: 1.35rem;
-  width: 2.2rem;
-}
-
-.crm-sumup-badge-logo--mc {
-  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 24"><rect width="36" height="24" rx="3" fill="%23fff"/><circle cx="14" cy="12" r="7" fill="%23EB001B"/><circle cx="22" cy="12" r="7" fill="%23F79E1B"/><path d="M18 6.8a7 7 0 0 0 0 10.4 7 7 0 0 0 0-10.4z" fill="%23FF5F00"/></svg>');
-}
-
-.crm-sumup-badge-logo--visa {
-  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 24"><rect width="36" height="24" rx="3" fill="%23fff"/><text x="5" y="16" font-family="sans-serif" font-weight="900" font-size="12" fill="%231A1F71" font-style="italic">VISA</text></svg>');
-}
-
-.crm-sumup-badge-logo--amex {
-  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 24"><rect width="36" height="24" rx="3" fill="%23006FCF"/><text x="4" y="15" font-family="sans-serif" font-weight="bold" font-size="8" fill="%23fff">AMEX</text></svg>');
-}
-
-.crm-sumup-badge-pill {
-  align-items: center;
-  background: #101010;
-  border-radius: 0.25rem;
-  color: #fff;
-  display: inline-flex;
-  font-size: 0.72rem;
-  font-weight: 600;
-  gap: 0.2rem;
-  height: 1.35rem;
-  padding: 0 0.45rem;
 }
 
 .crm-sumup-kiosk__footer {
@@ -1001,8 +944,8 @@
 .crm-sumup-kiosk__failed-msg {
   color: #616161;
   font-size: 1rem;
-  max-width: 28rem;
   margin: 0 auto;
+  max-width: 28rem;
 }
 
 .crm-sumup-kiosk__receipt-box {
@@ -1022,8 +965,9 @@
   }
 }
 
+/* Send Link Panel */
 .crm-sumup-send-link-section {
-  margin-top: 1rem;
+  margin-top: 0.75rem;
   width: 100%;
 }
 
@@ -1032,28 +976,35 @@
 }
 
 .crm-sumup-send-link-form {
-  background: #fbfbfb;
+  background: #fff;
   border: 1px solid #e2e8f0;
-  border-radius: 0.5rem;
-  padding: 0.75rem;
+  border-radius: 0.6rem;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 4%);
   margin-top: 0.5rem;
+  padding: 0.85rem;
+}
+
+.crm-sumup-send-link-header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.6rem;
 }
 
 .crm-sumup-send-link-tabs {
   display: flex;
-  gap: 0.25rem;
-  margin-bottom: 0.5rem;
-  justify-content: center;
+  gap: 0.35rem;
 }
 
 .crm-sumup-tab-btn {
-  background: transparent;
+  background: #f1f5f9;
   border: 1px solid #cbd5e1;
-  border-radius: 0.3rem;
+  border-radius: 0.35rem;
   color: #475569;
   cursor: pointer;
   font-size: 0.8rem;
-  padding: 0.25rem 0.6rem;
+  font-weight: 500;
+  padding: 0.3rem 0.75rem;
   transition: all 0.15s ease;
 }
 
@@ -1067,13 +1018,19 @@
 .crm-sumup-send-link-input-group {
   display: flex;
   gap: 0.4rem;
-  align-items: center;
+  width: 100%;
 }
 
 .crm-sumup-send-link-input-group input.crm-form-text {
+  border: 1px solid #cbd5e1;
+  border-radius: 0.35rem;
   flex: 1;
   font-size: 0.85rem;
-  padding: 0.35rem 0.5rem;
+  padding: 0.4rem 0.6rem;
+}
+
+.crm-sumup-send-link-input-group button.btn {
+  white-space: nowrap;
 }
 
 .crm-sumup-modal-close {
@@ -1081,15 +1038,32 @@
   border: none;
   color: #94a3b8;
   cursor: pointer;
-  font-size: 1.2rem;
+  font-size: 1.3rem;
   line-height: 1;
-  padding: 0 0.25rem;
+  padding: 0 0.3rem;
 }
 
-.crm-sumup-send-link-msg {
-  font-size: 0.8rem;
-  margin-top: 0.4rem;
-  margin-bottom: 0;
-  padding: 0.3rem 0.6rem;
+.crm-sumup-modal-close:hover {
+  color: #475569;
 }
 
+.crm-sumup-send-link-alert {
+  border-radius: 0.35rem;
+  font-size: 0.82rem;
+  margin-top: 0.5rem;
+  padding: 0.4rem 0.65rem;
+  text-align: center;
+}
+
+.crm-sumup-send-link-alert--success {
+  background: #e8f5e9;
+  border: 1px solid #c8e6c9;
+  color: #2e7d32;
+  font-weight: 500;
+}
+
+.crm-sumup-send-link-alert--error {
+  background: #ffebee;
+  border: 1px solid #ffcdd2;
+  color: #c62828;
+}

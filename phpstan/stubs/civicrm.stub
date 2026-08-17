@@ -115,9 +115,11 @@ namespace {
         public static function send(array $params): bool { return true; }
     }
     class CRM_SMS_BAO_SmsProvider {
-        public static function getProvider(array $params): mixed { return new class { public function send(string $to, string $msg): void {} }; }
         /** @return array<int, string> */
         public static function activeProviders(): array { return []; }
+    }
+    class CRM_SMS_Provider {
+        public static function singleton(array $params = []): mixed { return new class { public function send(mixed ...$args): void {} }; }
     }
     class CRM_Utils_JSON {
         public static function output(mixed $input): never { exit; }
