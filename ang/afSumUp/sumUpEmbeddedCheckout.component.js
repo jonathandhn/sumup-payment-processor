@@ -61,12 +61,7 @@
             if (!window.CiviSumUpCheckout || typeof window.CiviSumUpCheckout.mount !== 'function') {
               throw new Error('SumUp checkout SDK unavailable');
             }
-            return window.CiviSumUpCheckout.mount(container, Object.assign({}, checkout, {
-              onSuccess: () => {
-                this.completed = true;
-                $scope.$applyAsync();
-              },
-            }));
+            return window.CiviSumUpCheckout.mount(container, checkout);
           }).then(() => {
             if (typeof container.scrollIntoView === 'function') {
               container.scrollIntoView({behavior: 'smooth', block: 'nearest'});
