@@ -8,7 +8,10 @@
       var ts = $scope.ts = CRM.ts('sumup-payment-processor');
       var listener = (event, data) => this.onAfformSuccess(data);
 
-      this.$onInit = () => this.getFormElement().on('crmFormSuccess', listener);
+      this.$onInit = () => {
+        loadSdkScript('https://gateway.sumup.com/gateway/ecom/card/v2/sdk.js');
+        this.getFormElement().on('crmFormSuccess', listener);
+      };
       this.$onDestroy = () => this.getFormElement().off('crmFormSuccess', listener);
       this.getFormElement = () => $element.closest('af-form');
 
@@ -28,17 +31,10 @@
       }
 
       function ensureCheckoutSdk() {
-        var tasks = [];
         if (!window.SumUpCard) {
-          tasks.push(loadSdkScript('https://gateway.sumup.com/gateway/ecom/card/v2/sdk.js'));
+          return loadSdkScript('https://gateway.sumup.com/gateway/ecom/card/v2/sdk.js');
         }
-        if (!window.CiviSumUpCheckout) {
-          var url = CRM.resources ? CRM.resources.getUrl('sumup-payment-processor', 'js/checkout.js') : null;
-          if (url) {
-            tasks.push(loadSdkScript(url));
-          }
-        }
-        return Promise.all(tasks);
+        return Promise.resolve();
       }
 
       this.active = false;
