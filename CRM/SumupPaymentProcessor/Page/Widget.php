@@ -66,12 +66,12 @@ class CRM_SumupPaymentProcessor_Page_Widget extends CRM_Core_Page
                 ));
             }
 
-            $checkoutRecord = CRM_SumupPaymentProcessor_CheckoutStore::getLatestOnlineByContributionId(
+            $checkoutRecord = CRM_SumupPaymentProcessor_CheckoutStore::findLatestOnlineByContributionId(
                 $params['contribution_id'],
                 $params['processor_id']
             );
 
-            if ($checkoutRecord['checkout_mode'] === CRM_SumupPaymentProcessor_CheckoutMode::SOLO) {
+            if ($checkoutRecord === null || $checkoutRecord['state'] === 'EXPIRED') {
                 $processor->startEmbeddedCheckoutForContribution(
                     $params['contribution_id'],
                     $params['return_url'],

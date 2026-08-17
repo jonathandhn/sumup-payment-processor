@@ -106,19 +106,6 @@ if (
             }
 
             $processor = $this->getProcessor($session);
-            $returnUrl = $session->getLandingUrl();
-            $cancelUrl = $session->getLandingUrl();
-
-            try {
-                $processor->startEmbeddedCheckoutForContribution(
-                    $session->getContributionId(),
-                    $returnUrl,
-                    $cancelUrl
-                );
-            } catch (\Throwable $e) {
-                \Civi::log()->warning('Unable to pre-create online checkout for QR: ' . $e->getMessage());
-            }
-
             $contributionId = $session->getContributionId();
             $processorId = (int) $processor->getProcessorId();
             $key = \CRM_Core_Payment_Sumup::getBrowserReturnSigningKey();
