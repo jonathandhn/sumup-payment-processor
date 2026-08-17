@@ -183,8 +183,8 @@
           return style.display !== 'none'
             && style.visibility !== 'hidden'
             && style.opacity !== '0'
-            && rect.width > 1
-            && rect.height > 1;
+            && rect.width > 20
+            && rect.height > 20;
         });
       };
       tasks.push(loadScript(

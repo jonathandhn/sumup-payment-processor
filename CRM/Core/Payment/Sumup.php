@@ -977,7 +977,8 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             'country_code' => CRM_SumupPaymentProcessor_CheckoutMode::getMerchantCountryCode(
                 $merchantProfile['country']
             ),
-            'wallets_allowed' => $contributionRecurId === 0,
+            'wallets_allowed' => ($contributionRecurId === 0)
+                && CRM_SumupPaymentProcessor_CheckoutMode::usesWallet($checkoutMode),
             'browser_return_url' => $browserReturnUrl,
             'cancel_url' => $cancelUrl,
             'hosted_checkout_url' => $checkout->hostedCheckoutUrl,
