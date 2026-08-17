@@ -25,8 +25,8 @@
           </div>
 
           <div class="crm-sumup-kiosk__card-info">
-            <h3>{{:: ts('On terminal: %1', {1: $ctrl.readerName}) }}</h3>
-            <p>{{:: ts('Follow the instructions on the SumUp Solo screen (contactless, chip & PIN).') }}</p>
+            <h3>{{:: ts('Card reader: %1', {1: $ctrl.readerName}) }}</h3>
+            <p>{{:: ts('Follow instructions on the card reader (contactless, chip & PIN).') }}</p>
           </div>
         </div>
 
@@ -35,14 +35,14 @@
             <i class="crm-i fa-clock-o"></i>
           </div>
           <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 0.5rem;">
-            {{:: ts('Terminal session timed out') }}
+            {{:: ts('Card reader session timed out') }}
           </h3>
           <p style="color: #5f6368; font-size: 0.9rem; margin-bottom: 1.25rem;">
-            {{:: ts('No card was tapped. You can wake up the terminal again or pay by QR code.') }}
+            {{:: ts('No card detected. You can retry on the card reader or pay by QR code.') }}
           </p>
           <button class="button btn btn-primary" type="button"
                   ng-click="$ctrl.retryTerminal()" ng-disabled="$ctrl.retryingTerminal">
-            <i class="crm-i fa-refresh" aria-hidden="true"></i> {{:: ts('Resend to terminal') }}
+            <i class="crm-i fa-refresh" aria-hidden="true"></i> {{:: ts('Retry on card reader') }}
           </button>
           <p class="messages error" ng-if="$ctrl.terminalRetryError">
             {{$ctrl.terminalRetryError}}
@@ -57,8 +57,8 @@
         </div>
 
         <div class="crm-sumup-kiosk__card-info">
-          <h3>{{:: ts('Or pay on your phone') }}</h3>
-          <p>{{:: ts('Scan this QR code with your camera for instant mobile payment.') }}</p>
+          <h3>{{:: ts('Pay with phone') }}</h3>
+          <p>{{:: ts('Scan this QR code to pay with Apple Pay, Google Pay, or Card.') }}</p>
         </div>
       </div>
     </div>
@@ -100,7 +100,7 @@
     </div>
     <h2>{{:: ts('Payment Not Completed') }}</h2>
     <p class="crm-sumup-kiosk__failed-msg">
-      {{$ctrl.errorMessage || ts('The payment timed out or was cancelled on the terminal.')}}
+      {{$ctrl.errorMessage || ts('The payment timed out or was cancelled on the card reader.')}}
     </p>
 
     <div class="crm-sumup-kiosk__footer" style="margin-top: 1.5rem; display: flex; gap: 1rem; justify-content: center;">
