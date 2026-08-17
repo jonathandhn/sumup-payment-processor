@@ -244,7 +244,7 @@ if (
                 throw new \CRM_Core_Exception(E::ts('The local QR code encoder is unavailable.'));
             }
 
-            $matrix = (new \QRcode($url, 'M'))->getBarcodeArray();
+            $matrix = (new \QRcode($url, 'H'))->getBarcodeArray();
             $rows = (int) ($matrix['num_rows'] ?? 0);
             $columns = (int) ($matrix['num_cols'] ?? 0);
             $modules = $matrix['bcode'] ?? null;
@@ -268,12 +268,66 @@ if (
                 }
             }
 
+            // SumUp center logo overlay (22% of QR size)
+            $logoBoxSize = (float) max(7.0, round($size * 0.22));
+            if ((int) $logoBoxSize % 2 === 0) {
+                $logoBoxSize += 1.0;
+            }
+            $logoBoxPos = ($size - $logoBoxSize) / 2.0;
+            $innerPadding = $logoBoxSize * 0.12;
+            $innerSize = $logoBoxSize - (2.0 * $innerPadding);
+            $innerPos = $logoBoxPos + $innerPadding;
+            $cornerOuter = max(1.0, $logoBoxSize * 0.18);
+            $cornerInner = max(0.8, $innerSize * 0.20);
+
+            $pillW = $innerSize * 0.22;
+            $pillH = $innerSize * 0.48;
+            $pillR = $pillW / 2.0;
+            $cx1 = $innerPos + ($innerSize * 0.38);
+            $cy1 = $innerPos + ($innerSize * 0.50);
+            $cx2 = $innerPos + ($innerSize * 0.62);
+            $cy2 = $innerPos + ($innerSize * 0.50);
+
+            $logoSvg = sprintf(
+                '<rect x="%.2f" y="%.2f" width="%.2f" height="%.2f" rx="%.2f" fill="#ffffff"/>'
+                . '<rect x="%.2f" y="%.2f" width="%.2f" height="%.2f" rx="%.2f" fill="#101010"/>'
+                . '<rect x="%.2f" y="%.2f" width="%.2f" height="%.2f" rx="%.2f"'
+                . ' transform="rotate(-30 %.2f %.2f)" fill="#ffffff"/>'
+                . '<rect x="%.2f" y="%.2f" width="%.2f" height="%.2f" rx="%.2f"'
+                . ' transform="rotate(-30 %.2f %.2f)" fill="#ffffff"/>',
+                $logoBoxPos,
+                $logoBoxPos,
+                $logoBoxSize,
+                $logoBoxSize,
+                $cornerOuter,
+                $innerPos,
+                $innerPos,
+                $innerSize,
+                $innerSize,
+                $cornerInner,
+                $cx1 - ($pillW / 2.0),
+                $cy1 - ($pillH / 2.0),
+                $pillW,
+                $pillH,
+                $pillR,
+                $cx1,
+                $cy1,
+                $cx2 - ($pillW / 2.0),
+                $cy2 - ($pillH / 2.0),
+                $pillW,
+                $pillH,
+                $pillR,
+                $cx2,
+                $cy2
+            );
+
             return sprintf(
                 '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 %1$d %1$d" role="img" '
-                . 'aria-label="QR code"><rect width="100%%" height="100%%" fill="#fff"/>'
-                . '<path d="%2$s" fill="#000"/></svg>',
+                . 'aria-label="SumUp QR code"><rect width="100%%" height="100%%" fill="#fff"/>'
+                . '<path d="%2$s" fill="#000"/>%3$s</svg>',
                 $size,
-                implode('', $path)
+                implode('', $path),
+                $logoSvg
             );
         }
     }

@@ -51,15 +51,38 @@
         </div>
       </div>
 
-      <!-- Right Column: Instant QR Code Mobile Payment -->
+      <!-- Right Column: Instant QR Code Mobile Payment (SumUp Poster Style) -->
       <div class="crm-sumup-kiosk__card crm-sumup-kiosk__card--qr" ng-if="$ctrl.qrSvgTrusted">
-        <div class="crm-sumup-qr-container">
-          <div class="crm-sumup-qr-canvas" ng-bind-html="$ctrl.qrSvgTrusted"></div>
-        </div>
+        <div class="crm-sumup-qr-poster">
+          <div class="crm-sumup-qr-poster__header">
+            <div class="crm-sumup-qr-poster__brand">
+              <span class="crm-sumup-qr-brand-logo"></span>
+              <span class="crm-sumup-qr-brand-name">sumup<sup>&reg;</sup></span>
+            </div>
+            <h3 class="crm-sumup-qr-poster__title">
+              <span class="crm-sumup-qr-poster__title-bold">{{:: ts('Scan') }}</span>
+              <span class="crm-sumup-qr-poster__title-sub">{{:: ts('to pay') }}</span>
+            </h3>
+          </div>
 
-        <div class="crm-sumup-kiosk__card-info">
-          <h3>{{:: ts('Pay with phone') }}</h3>
-          <p>{{:: ts('Scan this QR code to pay with Apple Pay, Google Pay, or Card.') }}</p>
+          <div class="crm-sumup-qr-stage">
+            <!-- Iconic SumUp Organic Blob Background -->
+            <svg class="crm-sumup-qr-blob" viewBox="0 0 300 300" aria-hidden="true">
+              <path d="M 60,150 C 40,80 90,35 160,35 C 230,35 270,75 275,145 C 280,215 245,260 185,265 C 135,270 120,290 95,292 C 75,294 65,270 55,245 C 40,210 50,180 60,150 Z" fill="#101010" />
+            </svg>
+            <div class="crm-sumup-qr-card-white">
+              <div class="crm-sumup-qr-canvas" ng-bind-html="$ctrl.qrSvgTrusted"></div>
+            </div>
+          </div>
+
+          <!-- Payment Scheme Badges Footer -->
+          <div class="crm-sumup-qr-schemes">
+            <span class="crm-sumup-badge-logo crm-sumup-badge-logo--mc" title="Mastercard"></span>
+            <span class="crm-sumup-badge-logo crm-sumup-badge-logo--visa" title="Visa"></span>
+            <span class="crm-sumup-badge-logo crm-sumup-badge-logo--amex" title="American Express"></span>
+            <span class="crm-sumup-badge-pill crm-sumup-badge-pill--applepay"><i class="crm-i fa-apple"></i> Pay</span>
+            <span class="crm-sumup-badge-pill crm-sumup-badge-pill--gpay"><i class="crm-i fa-google"></i> Pay</span>
+          </div>
         </div>
 
         <!-- Send link by Email / SMS Panel -->
