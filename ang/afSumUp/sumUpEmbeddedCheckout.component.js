@@ -108,6 +108,7 @@
         if (container) {
           container.innerHTML = '';
         }
+        $scope.$applyAsync();
       };
     },
   });

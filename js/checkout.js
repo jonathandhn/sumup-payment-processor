@@ -489,6 +489,7 @@
         });
       };
 
+      var hasSavedCards = Boolean(config.savedPaymentMethods && config.savedPaymentMethods.length);
       if (!hasSavedCards) {
         tasks.push(mountCardWidget());
       }

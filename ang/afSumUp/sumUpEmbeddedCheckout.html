@@ -1,5 +1,8 @@
 <div class="crm-sumup-embedded-checkout__error messages error" ng-if="$ctrl.error">
-  {{$ctrl.error}}
+  <span>{{$ctrl.error}}</span>
+  <button type="button" class="crm-sumup-btn-modify" ng-click="$ctrl.cancelAndUnlock()" style="margin-left: 0.75rem;">
+    <i class="crm-i fa-arrow-left"></i> {{ts('Go back / Edit')}}
+  </button>
 </div>
 
 <div class="crm-sumup-alma-container" ng-show="$ctrl.active">
