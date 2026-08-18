@@ -1256,12 +1256,26 @@
   top: 1.5rem;
 }
 
-/* In 2-column Bento layout: hide Synthèse recap bar (left column already visible) */
+/* In 2-column Bento layout: Synthèse → show only the Modifier button, hide the info text */
 .crm-sumup-bento-col--payment .crm-sumup-accordion-item--collapsed {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  margin: 0 0 0.5rem !important;
+}
+
+.crm-sumup-bento-col--payment .crm-sumup-accordion-item--collapsed .crm-sumup-accordion-header {
+  justify-content: flex-end !important;
+  padding: 0.5rem 0 !important;
+}
+
+.crm-sumup-bento-col--payment .crm-sumup-accordion-item--collapsed .crm-sumup-accordion-header__left {
   display: none !important;
 }
 
-/* Form panels — flat, no card effect, sections separated by spacing only */
+/* Continue button — stays inside the left column card */
 .crm-sumup-bento-panel {
   background: transparent;
   border: none;
@@ -1369,9 +1383,11 @@
   border-radius: 0.65rem !important;
   font-size: 1rem !important;
   font-weight: 600 !important;
+  margin: 1rem 0 1.25rem !important;
   padding: 0.75rem 1.5rem !important;
   width: 100%;
 }
+
 
 /* Payment fieldset wrapper (right column) — strip browser default fieldset style */
 .crm-sumup-payment-fieldset {
