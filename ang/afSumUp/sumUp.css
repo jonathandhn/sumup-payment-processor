@@ -1256,6 +1256,11 @@
   top: 1.5rem;
 }
 
+/* In 2-column Bento layout: hide Synthèse recap bar (left column already visible) */
+.crm-sumup-bento-col--payment .crm-sumup-accordion-item--collapsed {
+  display: none !important;
+}
+
 /* Form panels — flat, no card effect, sections separated by spacing only */
 .crm-sumup-bento-panel {
   background: transparent;

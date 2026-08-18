@@ -6,20 +6,17 @@
   <div class="crm-sumup-recap-lines">
     <div class="crm-sumup-recap-line">
       <span class="crm-sumup-recap-line__label">{{ts('Donation')}}</span>
-      <span class="crm-sumup-recap-line__amount" ng-if="$ctrl.amount">{{$ctrl.amount}} {{$ctrl.currency}}</span>
-      <span class="crm-sumup-recap-line__amount crm-sumup-recap-line__amount--pending" ng-if="!$ctrl.amount">—</span>
+      <span class="crm-sumup-recap-line__amount" ng-if="$ctrl.amount || $ctrl.pendingAmount">{{$ctrl.amount || $ctrl.pendingAmount}} {{$ctrl.currency}}</span>
+      <span class="crm-sumup-recap-line__amount crm-sumup-recap-line__amount--pending" ng-if="!$ctrl.amount && !$ctrl.pendingAmount">—</span>
     </div>
   </div>
   <div class="crm-sumup-recap-divider"></div>
   <div class="crm-sumup-recap-total">
     <strong class="crm-sumup-recap-total__label">{{ts('Total')}}</strong>
-    <strong class="crm-sumup-recap-total__amount" ng-if="$ctrl.amount">{{$ctrl.amount}} {{$ctrl.currency}}</strong>
-    <strong class="crm-sumup-recap-total__amount crm-sumup-recap-line__amount--pending" ng-if="!$ctrl.amount">—</strong>
+    <strong class="crm-sumup-recap-total__amount" ng-if="$ctrl.amount || $ctrl.pendingAmount">{{$ctrl.amount || $ctrl.pendingAmount}} {{$ctrl.currency}}</strong>
+    <strong class="crm-sumup-recap-total__amount crm-sumup-recap-line__amount--pending" ng-if="!$ctrl.amount && !$ctrl.pendingAmount">—</strong>
   </div>
-  <div class="crm-sumup-recap-secure">
-    <i class="crm-i fa-lock" aria-hidden="true"></i>
-    <span>{{ts('Secure payment')}}</span>
-  </div>
+
 </div>
 
 <div class="crm-sumup-embedded-checkout__error messages error" ng-if="$ctrl.error">

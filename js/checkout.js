@@ -484,15 +484,7 @@
       }
     }
 
-    if (config.businessName) {
-      var merchantTrust = document.createElement('p');
-      merchantTrust.className = 'crm-sumup-merchant-trust';
-      merchantTrust.appendChild(document.createTextNode(ts('Secure payment to') + ' '));
-      var merchantName = document.createElement('strong');
-      merchantName.textContent = config.businessName;
-      merchantTrust.appendChild(merchantName);
-      container.appendChild(merchantTrust);
-    }
+
 
     if (config.cancelUrl) {
       var cancel = document.createElement('a');
