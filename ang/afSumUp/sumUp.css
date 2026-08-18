@@ -1264,19 +1264,91 @@
   border-radius: 0;
   box-sizing: border-box;
   margin-bottom: 0;
-  padding: 1.5rem 0;
+  padding: 1.25rem 0;
 }
 
 .crm-sumup-bento-panel:last-of-type {
   border-bottom: none;
+  padding-bottom: 1.5rem;
 }
 
+/* Strip CiviCRM's default af-container fieldset card styling inside our layout */
+.crm-sumup-bento-layout fieldset.af-container {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* The outer left column card — ONE single white card */
 .crm-sumup-bento-col--form {
   background: #ffffff;
   border: 1px solid #e5e7eb;
   border-radius: 0.5rem;
   padding: 0 1.5rem;
 }
+
+/* Legend (section titles) */
+.crm-sumup-bento-panel legend.af-title,
+.crm-sumup-bento-layout fieldset legend {
+  color: #111827;
+  float: none !important;
+  font-size: 0.95rem !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.01em;
+  margin-bottom: 1rem;
+  padding: 0 !important;
+  width: 100%;
+}
+
+/* Input fields — clean, modern, Adyen-style */
+.crm-sumup-bento-layout input[type="text"],
+.crm-sumup-bento-layout input[type="email"],
+.crm-sumup-bento-layout input[type="number"],
+.crm-sumup-bento-layout input[type="tel"],
+.crm-sumup-bento-layout select {
+  background: #ffffff !important;
+  border: 1px solid #d1d5db !important;
+  border-radius: 0.375rem !important;
+  box-shadow: none !important;
+  font-size: 0.95rem !important;
+  height: 2.625rem !important;
+  padding: 0 0.75rem !important;
+  transition: border-color 0.15s ease !important;
+  width: 100% !important;
+}
+
+.crm-sumup-bento-layout input:focus,
+.crm-sumup-bento-layout select:focus {
+  border-color: #006f69 !important;
+  box-shadow: 0 0 0 2px rgba(0, 111, 105, 0.1) !important;
+  outline: none !important;
+}
+
+/* Labels */
+.crm-sumup-bento-layout label {
+  color: #374151 !important;
+  font-size: 0.85rem !important;
+  font-weight: 500 !important;
+}
+
+/* Remove CiviCRM's default .crm-form-block and af-field extra wrappers padding */
+.crm-sumup-bento-layout .crm-section,
+.crm-sumup-bento-layout .crm-form-block {
+  margin-bottom: 0 !important;
+}
+
+.crm-sumup-bento-layout af-field {
+  display: block;
+  margin-bottom: 0.85rem;
+}
+
+.crm-sumup-bento-layout af-field:last-child {
+  margin-bottom: 0;
+}
+
 
 
 .crm-sumup-bento-panel legend.af-title {
