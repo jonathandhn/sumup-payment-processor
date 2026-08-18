@@ -1259,15 +1259,28 @@
   top: 1.5rem;
 }
 
-/* Form panels (Individual1, Contribution1 amount) */
+/* Form panels — flat, no card effect, sections separated by spacing only */
 .crm-sumup-bento-panel {
-  background: #ffffff;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 0.85rem;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #f1f5f9;
+  border-radius: 0;
   box-sizing: border-box;
-  margin-bottom: 1rem;
-  padding: 1.25rem 1.5rem;
+  margin-bottom: 0;
+  padding: 1.5rem 0;
 }
+
+.crm-sumup-bento-panel:last-of-type {
+  border-bottom: none;
+}
+
+.crm-sumup-bento-col--form {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  padding: 0 1.5rem;
+}
+
 
 .crm-sumup-bento-panel legend.af-title {
   color: #0f172a;
@@ -1304,10 +1317,10 @@
 
 .crm-sumup-recap-panel {
   background: #ffffff;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 0.85rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
   box-sizing: border-box;
-  margin-bottom: 1rem;
+  margin-bottom: 0.65rem;
   padding: 1.25rem 1.5rem;
 }
 
@@ -1407,29 +1420,29 @@
 
 .crm-sumup-accordion-item {
   background: #ffffff;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 0.85rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
   box-sizing: border-box;
-  margin-bottom: 0.85rem;
+  margin-bottom: 0.65rem;
   overflow: hidden;
-  transition: all 0.2s ease-in-out;
+  transition: border-color 0.15s ease;
 }
 
 .crm-sumup-accordion-item--collapsed {
-  background: #f8fafc;
-  border-color: #e2e8f0;
+  background: #ffffff;
+  border-color: #e5e7eb;
   cursor: pointer;
 }
 
 .crm-sumup-accordion-item--collapsed:hover {
-  background: #f1f5f9;
-  border-color: #cbd5e1;
+  background: #fafafa;
+  border-color: #d1d5db;
 }
 
 .crm-sumup-accordion-item--active {
   background: #ffffff;
   border-color: #006f69;
-  box-shadow: 0 4px 16px rgba(0, 111, 105, 0.08);
+  box-shadow: none;
 }
 
 .crm-sumup-accordion-header {
