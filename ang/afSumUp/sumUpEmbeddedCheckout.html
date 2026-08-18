@@ -19,8 +19,8 @@
 
   <div ng-hide="$ctrl.completed">
     <!-- Accordion Step 1: Récapitulatif -->
-    <div class="crm-sumup-accordion-item crm-sumup-accordion-item--collapsed">
-      <div class="crm-sumup-accordion-header" ng-click="$ctrl.cancelAndUnlock()">
+    <div class="crm-sumup-accordion-item crm-sumup-accordion-item--collapsed" ng-click="$ctrl.cancelAndUnlock()">
+      <div class="crm-sumup-accordion-header">
         <div class="crm-sumup-accordion-header__left">
           <span class="crm-sumup-step-badge crm-sumup-step-badge--done"><i class="crm-i fa-check"></i></span>
           <div class="crm-sumup-step-info">
@@ -53,12 +53,6 @@
       <div class="crm-sumup-accordion-body">
         <div class="crm-sumup-payment-frame">
           <div class="crm-sumup-embedded-checkout" id="sumup-afform-mount-target"></div>
-        </div>
-
-        <div class="crm-sumup-accordion-actions">
-          <button type="button" class="crm-sumup-btn-modify" ng-click="$ctrl.cancelAndUnlock()">
-            <i class="crm-i fa-arrow-left"></i> {{ts('Modifier mes informations')}}
-          </button>
         </div>
       </div>
     </div>
