@@ -37,27 +37,8 @@
     </div>
   </div>
 
-  <!-- State 3: Active Payment (After Step 1 submitted) -->
+  <!-- State 3: Active Payment (Bento Open / Live SumUp Checkout) -->
   <div ng-if="$ctrl.active && !$ctrl.completed">
-    <!-- Accordion Step 1: Summary Recap Line (Adyen Bento Style) -->
-    <div class="crm-sumup-accordion-item crm-sumup-accordion-item--collapsed" ng-click="$ctrl.cancelAndUnlock()">
-      <div class="crm-sumup-accordion-header">
-        <div class="crm-sumup-accordion-header__left">
-          <span class="crm-sumup-step-badge crm-sumup-step-badge--done"><i class="crm-i fa-check"></i></span>
-          <div class="crm-sumup-step-info">
-            <span class="crm-sumup-step-title">{{ts('Summary')}}</span>
-            <span class="crm-sumup-step-subtitle" ng-if="$ctrl.donorSummary">{{$ctrl.donorSummary}}</span>
-          </div>
-        </div>
-        <div class="crm-sumup-accordion-header__right">
-          <button type="button" class="crm-sumup-accordion-edit-btn" ng-click="$ctrl.cancelAndUnlock(); $event.stopPropagation();">
-            <i class="crm-i fa-pencil"></i> {{ts('Edit')}}
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Accordion Step 2: Choose a payment method (Active with Card SDK mounted) -->
     <div class="crm-sumup-accordion-item crm-sumup-accordion-item--active">
       <div class="crm-sumup-accordion-header">
         <div class="crm-sumup-accordion-header__left">
@@ -68,6 +49,9 @@
         </div>
         <div class="crm-sumup-accordion-header__right">
           <span class="crm-sumup-total-amount">{{$ctrl.amount}} {{$ctrl.currency}}</span>
+          <button type="button" class="crm-sumup-accordion-edit-btn" ng-click="$ctrl.cancelAndUnlock(); $event.stopPropagation();" title="{{ts('Edit form details')}}">
+            <i class="crm-i fa-pencil"></i> {{ts('Edit')}}
+          </button>
         </div>
       </div>
 

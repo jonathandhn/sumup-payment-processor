@@ -1168,12 +1168,17 @@
   color: #c62828;
 }
 
-/* Compact Mode for Afform: Hide input fields & submit button while Bento payment is active */
-.crm-sumup-form--compact fieldset[af-fieldset]:not(:has(af-sum-up-embedded-checkout)),
-.crm-sumup-form--compact af-field:not([name="checkout_params"]),
-.crm-sumup-form--compact crm-tax-reduction,
-.crm-sumup-form--compact legend.af-title,
-.crm-sumup-form--compact button.af-button {
+/* Locked Form State (2-column continuous flow): lock inputs while payment is active */
+.crm-sumup-form--locked input,
+.crm-sumup-form--locked select,
+.crm-sumup-form--locked textarea {
+  background-color: #f8fafc !important;
+  color: #64748b !important;
+  cursor: not-allowed;
+}
+
+.crm-sumup-form--locked button[type="submit"],
+.crm-sumup-form--locked button.af-button {
   display: none !important;
 }
 
@@ -1182,6 +1187,38 @@
 .crm-sumup-accordion-checkout [data-testid="form-fieldset"],
 .crm-sumup-accordion-checkout [data-testid="card"] {
   display: block !important;
+}
+
+/* Bento 2-Column Grid on Desktop, Vertical Stack on Mobile */
+@media (min-width: 992px) {
+  af-form.af-form {
+    align-items: start !important;
+    display: grid !important;
+    gap: 1.5rem !important;
+    grid-template-columns: minmax(320px, 1.15fr) minmax(340px, 1fr) !important;
+  }
+
+  af-form.af-form fieldset[af-fieldset="Individual1"] {
+    grid-column: 1 !important;
+    margin-bottom: 0 !important;
+  }
+
+  af-form.af-form fieldset[af-fieldset="Contribution1"] {
+    grid-column: 1 !important;
+    margin-bottom: 0 !important;
+  }
+
+  af-form.af-form button.af-button {
+    grid-column: 1 !important;
+  }
+
+  af-form.af-form .crm-sumup-accordion-checkout {
+    grid-column: 2 !important;
+    grid-row: 1 / span 4 !important;
+    margin: 0 !important;
+    position: sticky;
+    top: 1.5rem;
+  }
 }
 
 /* Adyen-Style Accordion Checkout Container & Items */
