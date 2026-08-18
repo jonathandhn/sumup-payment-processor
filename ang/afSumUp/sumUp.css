@@ -1168,27 +1168,20 @@
   color: #c62828;
 }
 
-/* Locked Form State (Page 1 continuous flow): lock inputs while payment is active */
-.crm-sumup-form--locked input,
-.crm-sumup-form--locked select,
-.crm-sumup-form--locked textarea {
-  background-color: #f8fafc !important;
-  color: #64748b !important;
-  cursor: not-allowed;
-}
-
-.crm-sumup-form--locked button[type="submit"],
-.crm-sumup-form--locked button.af-button {
+/* Compact Mode for Afform: Hide input fields & submit button while Bento payment is active */
+.crm-sumup-form--compact fieldset[af-fieldset]:not(:has(af-sum-up-embedded-checkout)),
+.crm-sumup-form--compact af-field:not([name="checkout_params"]),
+.crm-sumup-form--compact crm-tax-reduction,
+.crm-sumup-form--compact legend.af-title,
+.crm-sumup-form--compact button.af-button {
   display: none !important;
 }
 
-.crm-sumup-inline-checkout {
-  animation: crmSumUpFadeSlideIn 0.35s ease-out;
-  box-sizing: border-box;
-  margin: 1.25rem auto 0.5rem;
-  max-width: 100%;
-  position: relative;
-  width: 100%;
+/* Ensure SumUp's internal fieldsets and elements are ALWAYS visible */
+.crm-sumup-accordion-checkout fieldset,
+.crm-sumup-accordion-checkout [data-testid="form-fieldset"],
+.crm-sumup-accordion-checkout [data-testid="card"] {
+  display: block !important;
 }
 
 /* Adyen-Style Accordion Checkout Container & Items */

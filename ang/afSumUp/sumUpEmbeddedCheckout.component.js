@@ -42,6 +42,7 @@
       this.amount = '';
       this.currency = 'EUR';
       this.checkout = null;
+      this.donorSummary = '';
 
       this.onAfformSuccess = (data) => {
         var response = data.submissionResponse;
@@ -53,8 +54,19 @@
         }
 
         var form = this.getFormElement();
-        form.find('input, select, textarea, button[type="submit"]').prop('disabled', true);
-        form.addClass('crm-sumup-form--locked');
+        var nameParts = [];
+        var firstName = form.find('input[name*="first_name"]').val();
+        var lastName = form.find('input[name*="last_name"]').val();
+        var email = form.find('input[name*="email"], input[type="email"]').val();
+        if (firstName || lastName) {
+          nameParts.push([firstName, lastName].filter(Boolean).join(' '));
+        }
+        if (email) {
+          nameParts.push(email);
+        }
+        this.donorSummary = nameParts.join(' · ') || email || '';
+
+        form.addClass('crm-sumup-form--compact');
 
         this.active = true;
         this.completed = false;
@@ -87,10 +99,11 @@
 
       this.cancelAndUnlock = () => {
         var form = this.getFormElement();
-        form.find('input, select, textarea, button[type="submit"]').prop('disabled', false);
-        form.removeClass('crm-sumup-form--locked');
+        form.removeClass('crm-sumup-form--compact');
+        form.find('button[type="submit"]').not($element.find('*')).show();
         this.active = false;
         this.completed = false;
+        this.donorSummary = '';
         this.error = '';
         var container = $element[0].querySelector('#sumup-afform-mount-target');
         if (container) {
