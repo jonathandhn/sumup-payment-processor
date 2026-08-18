@@ -1168,14 +1168,39 @@
   color: #c62828;
 }
 
-/* Compact Mode for Afform: Hide input fields & submit button while Bento payment is active */
-.crm-sumup-form--compact fieldset[af-fieldset]:not(:has(af-sum-up-embedded-checkout)),
+/* Compact Mode for Afform (single-column layout only):
+   Hide input fields & submit button while Bento payment is active.
+   NOT applied inside .crm-sumup-bento-layout (2-column template). */
+.crm-sumup-form--compact fieldset[af-fieldset]:not(:has(af-sum-up-embedded-checkout)):not(.crm-sumup-bento-panel):not(.crm-sumup-amount-panel),
 .crm-sumup-form--compact af-field:not([name="checkout_params"]),
 .crm-sumup-form--compact crm-tax-reduction,
 .crm-sumup-form--compact legend.af-title,
-.crm-sumup-form--compact button.af-button {
+.crm-sumup-form--compact button.af-button:not(.crm-sumup-continue-btn) {
   display: none !important;
 }
+
+/* Bento 2-column layout: NEVER hide fieldsets — keep left column as summary */
+.crm-sumup-bento-layout fieldset[af-fieldset],
+.crm-sumup-bento-layout fieldset[af-fieldset] * {
+  display: revert !important;
+}
+
+/* In Bento layout compact mode: lock inputs instead of hiding them */
+.crm-sumup-form--compact .crm-sumup-bento-col--form input,
+.crm-sumup-form--compact .crm-sumup-bento-col--form select,
+.crm-sumup-form--compact .crm-sumup-bento-col--form textarea {
+  background-color: #f8fafc !important;
+  color: #64748b !important;
+  cursor: not-allowed !important;
+  opacity: 0.7 !important;
+  pointer-events: none !important;
+}
+
+/* In Bento layout compact mode: hide submit button only */
+.crm-sumup-form--compact .crm-sumup-continue-btn {
+  display: none !important;
+}
+
 
 /* Ensure SumUp submit button and internal card SDK elements are ALWAYS visible */
 .crm-sumup-embedded-checkout [data-sumup-id="submit_button"],
