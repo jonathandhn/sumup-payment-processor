@@ -5,44 +5,62 @@
   </button>
 </div>
 
-<div class="crm-sumup-alma-container" ng-show="$ctrl.active">
-  <div class="crm-sumup-alma-success" ng-show="$ctrl.completed">
-    <div class="crm-sumup-alma-success__icon">
+<div class="crm-sumup-accordion-checkout" ng-show="$ctrl.active">
+  <div class="crm-sumup-accordion-success" ng-show="$ctrl.completed">
+    <div class="crm-sumup-accordion-success__icon">
       <i class="crm-i fa-check-circle"></i>
     </div>
     <h3>{{ts('Payment Confirmed!')}}</h3>
     <p>{{ts('Thank you! Your payment has been approved and recorded successfully.')}}</p>
-    <div class="crm-sumup-alma-summary__badge">
+    <div class="crm-sumup-accordion-summary__badge">
       <span>{{$ctrl.amount}} {{$ctrl.currency}}</span>
     </div>
   </div>
 
   <div ng-hide="$ctrl.completed">
-    <div class="crm-sumup-compact-recap" ng-if="$ctrl.donorSummary">
-      <div class="crm-sumup-compact-recap__content">
-        <i class="crm-i fa-user-circle"></i>
-        <span class="crm-sumup-compact-recap__donor">{{$ctrl.donorSummary}}</span>
+    <!-- Accordion Step 1: Récapitulatif -->
+    <div class="crm-sumup-accordion-item crm-sumup-accordion-item--collapsed">
+      <div class="crm-sumup-accordion-header" ng-click="$ctrl.cancelAndUnlock()">
+        <div class="crm-sumup-accordion-header__left">
+          <span class="crm-sumup-step-badge crm-sumup-step-badge--done"><i class="crm-i fa-check"></i></span>
+          <div class="crm-sumup-step-info">
+            <span class="crm-sumup-step-title">{{ts('Récapitulatif')}}</span>
+            <span class="crm-sumup-step-subtitle" ng-if="$ctrl.donorSummary">{{$ctrl.donorSummary}}</span>
+          </div>
+        </div>
+        <div class="crm-sumup-accordion-header__right">
+          <button type="button" class="crm-sumup-accordion-edit-btn" ng-click="$ctrl.cancelAndUnlock(); $event.stopPropagation();">
+            <i class="crm-i fa-pencil"></i> {{ts('Modifier')}}
+          </button>
+        </div>
       </div>
-      <button type="button" class="crm-sumup-compact-recap__edit-btn" ng-click="$ctrl.cancelAndUnlock()">
-        <i class="crm-i fa-pencil"></i> {{ts('Edit')}}
-      </button>
     </div>
 
-    <div class="crm-sumup-alma-summary">
-      <div class="crm-sumup-alma-summary__row">
-        <span class="crm-sumup-alma-summary__label">{{ts('Total to pay')}}</span>
-        <span class="crm-sumup-alma-summary__amount">{{$ctrl.amount}} {{$ctrl.currency}}</span>
+    <!-- Accordion Step 2: Choisissez un moyen de paiement -->
+    <div class="crm-sumup-accordion-item crm-sumup-accordion-item--active">
+      <div class="crm-sumup-accordion-header">
+        <div class="crm-sumup-accordion-header__left">
+          <span class="crm-sumup-step-badge crm-sumup-step-badge--active">2</span>
+          <div class="crm-sumup-step-info">
+            <span class="crm-sumup-step-title">{{ts('Choisissez un moyen de paiement')}}</span>
+          </div>
+        </div>
+        <div class="crm-sumup-accordion-header__right">
+          <span class="crm-sumup-total-amount">{{$ctrl.amount}} {{$ctrl.currency}}</span>
+        </div>
       </div>
-    </div>
 
-    <div class="crm-sumup-alma-payment-frame">
-      <div class="crm-sumup-embedded-checkout" id="sumup-afform-mount-target"></div>
-    </div>
+      <div class="crm-sumup-accordion-body">
+        <div class="crm-sumup-payment-frame">
+          <div class="crm-sumup-embedded-checkout" id="sumup-afform-mount-target"></div>
+        </div>
 
-    <div class="crm-sumup-alma-actions">
-      <button type="button" class="crm-sumup-btn-modify" ng-click="$ctrl.cancelAndUnlock()">
-        <i class="crm-i fa-arrow-left"></i> {{ts('Modify details / Cancel')}}
-      </button>
+        <div class="crm-sumup-accordion-actions">
+          <button type="button" class="crm-sumup-btn-modify" ng-click="$ctrl.cancelAndUnlock()">
+            <i class="crm-i fa-arrow-left"></i> {{ts('Modifier mes informations')}}
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </div>

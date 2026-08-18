@@ -1172,39 +1172,116 @@
   display: none !important;
 }
 
-/* Ensure SumUp's internal fieldsets and elements are ALWAYS visible */
-.crm-sumup-alma-container fieldset,
-.crm-sumup-alma-container [data-testid="form-fieldset"],
-.crm-sumup-alma-container [data-testid="card"] {
-  display: block !important;
+/* Adyen-Style Accordion Checkout Container & Items */
+.crm-sumup-accordion-checkout {
+  animation: crmSumUpFadeSlideIn 0.35s ease-out;
+  box-sizing: border-box;
+  margin: 1rem auto;
+  max-width: 680px;
+  pointer-events: auto !important;
+  position: relative;
+  width: 100%;
+  z-index: 10;
 }
 
-.crm-sumup-compact-recap {
-  align-items: center;
+.crm-sumup-accordion-item {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 0.85rem;
+  box-sizing: border-box;
+  margin-bottom: 0.85rem;
+  overflow: hidden;
+  transition: all 0.2s ease-in-out;
+}
+
+.crm-sumup-accordion-item--collapsed {
   background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.75rem;
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 1.25rem;
-  padding: 0.75rem 1.15rem;
+  border-color: #e2e8f0;
+  cursor: pointer;
 }
 
-.crm-sumup-compact-recap__content {
+.crm-sumup-accordion-item--collapsed:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.crm-sumup-accordion-item--active {
+  background: #ffffff;
+  border-color: #006f69;
+  box-shadow: 0 4px 16px rgba(0, 111, 105, 0.08);
+}
+
+.crm-sumup-accordion-header {
   align-items: center;
-  color: #334155;
+  box-sizing: border-box;
   display: flex;
-  font-size: 0.95rem;
-  font-weight: 500;
+  gap: 1rem;
+  justify-content: space-between;
+  padding: 0.9rem 1.25rem;
+  user-select: none;
+}
+
+.crm-sumup-accordion-header__left {
+  align-items: center;
+  display: flex;
+  flex: 1;
+  gap: 0.85rem;
+  min-width: 0;
+}
+
+.crm-sumup-accordion-header__right {
+  align-items: center;
+  display: flex;
+  flex-shrink: 0;
   gap: 0.5rem;
 }
 
-.crm-sumup-compact-recap__content .crm-i {
-  color: #64748b;
-  font-size: 1.15rem;
+.crm-sumup-step-badge {
+  align-items: center;
+  border-radius: 999px;
+  display: inline-flex;
+  flex-shrink: 0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  height: 26px;
+  justify-content: center;
+  width: 26px;
 }
 
-.crm-sumup-compact-recap__edit-btn {
+.crm-sumup-step-badge--done {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.crm-sumup-step-badge--active {
+  background: #006f69;
+  color: #ffffff;
+}
+
+.crm-sumup-step-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.crm-sumup-step-title {
+  color: #0f172a;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+.crm-sumup-step-subtitle {
+  color: #64748b;
+  font-size: 0.85rem;
+  line-height: 1.3;
+  margin-top: 0.15rem;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.crm-sumup-accordion-edit-btn {
   align-items: center;
   background: #ffffff;
   border: 1px solid #cbd5e1;
@@ -1219,10 +1296,78 @@
   transition: all 0.15s ease;
 }
 
-.crm-sumup-compact-recap__edit-btn:hover {
+.crm-sumup-accordion-edit-btn:hover {
   background: #f1f5f9;
   border-color: #94a3b8;
   color: #0f172a;
+}
+
+.crm-sumup-total-amount {
+  color: #0f172a;
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.crm-sumup-accordion-body {
+  border-top: 1px solid #f1f5f9;
+  padding: 0.75rem 1.25rem 1.25rem;
+}
+
+.crm-sumup-accordion-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.crm-sumup-accordion-success {
+  background: #ffffff;
+  border: 1.5px solid #bbf7d0;
+  border-radius: 0.85rem;
+  box-shadow: 0 4px 16px rgba(22, 101, 52, 0.08);
+  padding: 2rem 1.25rem;
+  text-align: center;
+}
+
+.crm-sumup-accordion-success__icon {
+  color: #16a34a;
+  font-size: 3.5rem;
+  line-height: 1;
+  margin-bottom: 1rem;
+}
+
+.crm-sumup-accordion-success h3 {
+  color: #0f172a;
+  font-size: 1.4rem;
+  font-weight: 800;
+  margin: 0 0 0.5rem;
+}
+
+.crm-sumup-accordion-success p {
+  color: #64748b;
+  font-size: 0.95rem;
+  margin: 0 0 1.25rem;
+}
+
+.crm-sumup-accordion-summary__badge {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 999px;
+  color: #166534;
+  display: inline-block;
+  font-size: 1.15rem;
+  font-weight: 700;
+  padding: 0.5rem 1.25rem;
+}
+
+/* Ensure SumUp's internal fieldsets and elements are ALWAYS visible */
+.crm-sumup-accordion-checkout fieldset,
+.crm-sumup-accordion-checkout [data-testid="form-fieldset"],
+.crm-sumup-accordion-checkout [data-testid="card"],
+.crm-sumup-alma-container fieldset,
+.crm-sumup-alma-container [data-testid="form-fieldset"],
+.crm-sumup-alma-container [data-testid="card"] {
+  display: block !important;
 }
 
 .crm-sumup-alma-container {
@@ -1256,42 +1401,6 @@
   }
 }
 
-.crm-sumup-alma-summary {
-  border-bottom: 1.5px solid #f1f5f9;
-  margin-bottom: 1.25rem;
-  padding-bottom: 1rem;
-}
-
-.crm-sumup-alma-summary__row {
-  align-items: center;
-  display: flex;
-  justify-content: space-between;
-}
-
-.crm-sumup-alma-summary__label {
-  color: #475569;
-  font-size: 1.05rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-}
-
-.crm-sumup-alma-summary__amount {
-  color: #101010;
-  font-size: 1.4rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-}
-
-.crm-sumup-alma-payment-frame {
-  margin-bottom: 1rem;
-}
-
-.crm-sumup-alma-actions {
-  display: flex;
-  justify-content: center;
-  margin-top: 1rem;
-}
-
 .crm-sumup-btn-modify {
   align-items: center;
   background: none;
@@ -1312,71 +1421,26 @@
   text-decoration: underline;
 }
 
-.crm-sumup-alma-success {
-  padding: 1.5rem 1rem;
-  text-align: center;
-}
-
-.crm-sumup-alma-success__icon {
-  color: #16a34a;
-  font-size: 3.5rem;
-  line-height: 1;
-  margin-bottom: 1rem;
-}
-
-.crm-sumup-alma-success h3 {
-  color: #101010;
-  font-size: 1.4rem;
-  font-weight: 800;
-  margin: 0 0 0.5rem;
-}
-
-.crm-sumup-alma-success p {
-  color: #64748b;
-  font-size: 0.95rem;
-  margin: 0 0 1.25rem;
-}
-
-.crm-sumup-alma-summary__badge {
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
-  border-radius: 999px;
-  color: #166534;
-  display: inline-block;
-  font-size: 1.15rem;
-  font-weight: 700;
-  padding: 0.5rem 1.25rem;
-}
-
 @media (max-width: 640px) {
+  .crm-sumup-accordion-checkout,
   .crm-sumup-alma-container {
     border-radius: 0.85rem;
     box-sizing: border-box;
     margin: 0.5rem auto;
     max-width: 100%;
-    padding: 0.85rem 0.65rem;
     width: 100%;
   }
 
-  .crm-sumup-compact-recap {
-    align-items: center;
-    box-sizing: border-box;
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    padding: 0.6rem 0.75rem;
+  .crm-sumup-accordion-header {
+    padding: 0.75rem 0.85rem;
   }
 
-  .crm-sumup-compact-recap__content {
-    flex: 1 1 auto;
-    font-size: 0.88rem;
-    min-width: 0;
+  .crm-sumup-accordion-body {
+    padding: 0.65rem 0.65rem 1rem;
   }
 
-  .crm-sumup-compact-recap__donor {
-    hyphens: none;
-    overflow-wrap: anywhere;
-    word-break: break-word;
+  .crm-sumup-total-amount {
+    font-size: 1.1rem;
   }
 
   .crm-sumup-choice__header {
@@ -1385,10 +1449,6 @@
 
   .crm-sumup-choice__drawer {
     padding: 0.75rem 0.35rem;
-  }
-
-  .crm-sumup-alma-summary__amount {
-    font-size: 1.25rem;
   }
 }
 
