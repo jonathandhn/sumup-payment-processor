@@ -1298,7 +1298,102 @@
   display: none !important;
 }
 
-/* Adyen-Style Accordion Checkout Container & Items */
+/* ===================================================================
+   RÉCAPITULATIF DE COMMANDE (right column, always visible)
+   =================================================================== */
+
+.crm-sumup-recap-panel {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 0.85rem;
+  box-sizing: border-box;
+  margin-bottom: 1rem;
+  padding: 1.25rem 1.5rem;
+}
+
+.crm-sumup-recap-header {
+  align-items: center;
+  color: #0f172a;
+  display: flex;
+  font-size: 0.95rem;
+  font-weight: 700;
+  gap: 0.5rem;
+  letter-spacing: -0.01em;
+  margin-bottom: 1rem;
+}
+
+.crm-sumup-recap-header .crm-i {
+  color: #006f69;
+  font-size: 1rem;
+}
+
+.crm-sumup-recap-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.crm-sumup-recap-line {
+  align-items: baseline;
+  display: flex;
+  justify-content: space-between;
+}
+
+.crm-sumup-recap-line__label {
+  color: #475569;
+  font-size: 0.9rem;
+}
+
+.crm-sumup-recap-line__amount {
+  color: #0f172a;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.crm-sumup-recap-line__amount--pending {
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+.crm-sumup-recap-divider {
+  border-top: 1px solid #e2e8f0;
+  margin: 0.85rem 0;
+}
+
+.crm-sumup-recap-total {
+  align-items: baseline;
+  display: flex;
+  justify-content: space-between;
+}
+
+.crm-sumup-recap-total__label {
+  color: #0f172a;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.crm-sumup-recap-total__amount {
+  color: #006f69;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.crm-sumup-recap-secure {
+  align-items: center;
+  border-top: 1px solid #f1f5f9;
+  color: #64748b;
+  display: flex;
+  font-size: 0.8rem;
+  gap: 0.4rem;
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+}
+
+.crm-sumup-recap-secure .crm-i {
+  color: #006f69;
+}
+
+
 .crm-sumup-accordion-checkout {
   animation: crmSumUpFadeSlideIn 0.35s ease-out;
   box-sizing: border-box;
