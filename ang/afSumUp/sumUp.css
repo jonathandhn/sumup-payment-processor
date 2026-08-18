@@ -1179,10 +1179,9 @@
   display: none !important;
 }
 
-/* Bento 2-column layout: NEVER hide fieldsets — keep left column as summary */
-.crm-sumup-bento-layout fieldset[af-fieldset],
-.crm-sumup-bento-layout fieldset[af-fieldset] * {
-  display: revert !important;
+/* Bento 2-column layout: keep fieldsets themselves visible (Angular ng-show on children still works) */
+.crm-sumup-bento-layout fieldset[af-fieldset] {
+  display: block !important;
 }
 
 /* In Bento layout compact mode: lock inputs instead of hiding them */
