@@ -473,14 +473,19 @@
 }
 
 .crm-sumup-merchant-trust {
-  color: var(--sumup-muted, #51575d);
-  font-size: 0.95rem;
-  margin: 0 0 1rem;
+  align-items: center;
+  color: var(--sumup-muted, #64748b);
+  display: flex;
+  font-size: 0.85rem;
+  gap: 0.35rem;
+  justify-content: center;
+  margin: 1.25rem 0 0.5rem;
   text-align: center;
 }
 
 .crm-sumup-merchant-trust strong {
-  color: var(--sumup-text, #101010);
+  color: var(--sumup-text, #0f172a);
+  font-weight: 600;
 }
 
 .crm-sumup-checkout-block [data-sumup-id='submit_button'],
@@ -1325,7 +1330,6 @@
   padding: 0 !important;
 }
 
-.crm-sumup-accordion-checkout .crm-sumup-merchant-trust,
 .crm-sumup-accordion-checkout .crm-sumup-checkout__cancel {
   display: none !important;
 }

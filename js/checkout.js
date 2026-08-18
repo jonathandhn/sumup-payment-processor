@@ -150,16 +150,6 @@
     container.replaceChildren();
     container.appendChild(message);
 
-    if (config.businessName) {
-      var merchantTrust = document.createElement('p');
-      merchantTrust.className = 'crm-sumup-merchant-trust';
-      merchantTrust.appendChild(document.createTextNode(ts('Secure payment to') + ' '));
-      var merchantName = document.createElement('strong');
-      merchantName.textContent = config.businessName;
-      merchantTrust.appendChild(merchantName);
-      container.insertBefore(merchantTrust, message);
-    }
-
     var tasks = [];
     var walletCardSeparator = null;
 
@@ -492,6 +482,16 @@
       if (!hasSavedCards) {
         tasks.push(mountCardWidget());
       }
+    }
+
+    if (config.businessName) {
+      var merchantTrust = document.createElement('p');
+      merchantTrust.className = 'crm-sumup-merchant-trust';
+      merchantTrust.appendChild(document.createTextNode(ts('Secure payment to') + ' '));
+      var merchantName = document.createElement('strong');
+      merchantName.textContent = config.businessName;
+      merchantTrust.appendChild(merchantName);
+      container.appendChild(merchantTrust);
     }
 
     if (config.cancelUrl) {
