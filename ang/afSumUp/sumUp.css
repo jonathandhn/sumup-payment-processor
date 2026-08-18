@@ -1168,23 +1168,22 @@
   color: #c62828;
 }
 
-/* Compact Mode for Afform (single-column layout only):
-   Hide input fields & submit button while Bento payment is active.
-   NOT applied inside .crm-sumup-bento-layout (2-column template). */
-.crm-sumup-form--compact fieldset[af-fieldset]:not(:has(af-sum-up-embedded-checkout)):not(.crm-sumup-bento-panel):not(.crm-sumup-amount-panel),
-.crm-sumup-form--compact af-field:not([name="checkout_params"]),
-.crm-sumup-form--compact crm-tax-reduction,
-.crm-sumup-form--compact legend.af-title,
-.crm-sumup-form--compact button.af-button:not(.crm-sumup-continue-btn) {
+/* Compact Mode — SINGLE-column layout only (no .crm-sumup-bento-layout present).
+   When the bento 2-column template is active, NONE of these rules apply. */
+.crm-sumup-form--compact:not(:has(.crm-sumup-bento-layout)) fieldset[af-fieldset]:not(:has(af-sum-up-embedded-checkout)),
+.crm-sumup-form--compact:not(:has(.crm-sumup-bento-layout)) af-field:not([name="checkout_params"]),
+.crm-sumup-form--compact:not(:has(.crm-sumup-bento-layout)) crm-tax-reduction,
+.crm-sumup-form--compact:not(:has(.crm-sumup-bento-layout)) legend.af-title,
+.crm-sumup-form--compact:not(:has(.crm-sumup-bento-layout)) button.af-button {
   display: none !important;
 }
 
-/* Bento 2-column layout: keep fieldsets themselves visible (Angular ng-show on children still works) */
+/* Bento 2-column layout: keep fieldsets visible */
 .crm-sumup-bento-layout fieldset[af-fieldset] {
   display: block !important;
 }
 
-/* In Bento layout compact mode: lock inputs instead of hiding them */
+/* Bento 2-column layout compact mode: lock inputs, hide submit only */
 .crm-sumup-form--compact .crm-sumup-bento-col--form input,
 .crm-sumup-form--compact .crm-sumup-bento-col--form select,
 .crm-sumup-form--compact .crm-sumup-bento-col--form textarea {
@@ -1195,7 +1194,6 @@
   pointer-events: none !important;
 }
 
-/* In Bento layout compact mode: hide submit button only */
 .crm-sumup-form--compact .crm-sumup-continue-btn {
   display: none !important;
 }
