@@ -1270,21 +1270,31 @@
   color: #ffffff;
 }
 
-.crm-sumup-step-badge--locked {
+.crm-sumup-step-badge--locked,
+.crm-sumup-step-badge--waiting {
   background: #f1f5f9;
-  color: #94a3b8;
   border: 1px solid #cbd5e1;
-}
-
-.crm-sumup-accordion-item--locked {
-  background: #fafaf9;
-  border: 1.5px dashed #cbd5e1;
-  opacity: 0.85;
-  cursor: default;
-}
-
-.crm-sumup-accordion-item--locked .crm-sumup-step-title {
   color: #64748b;
+}
+
+.crm-sumup-accordion-item--locked,
+.crm-sumup-accordion-item--waiting {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 0.85rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  cursor: default;
+  margin-top: 0.85rem;
+}
+
+.crm-sumup-accordion-item--waiting .crm-sumup-step-title {
+  color: #334155;
+}
+
+.crm-sumup-card-schemes-preview {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.35rem;
 }
 
 .crm-sumup-step-info {
