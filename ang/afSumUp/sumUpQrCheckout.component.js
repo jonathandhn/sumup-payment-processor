@@ -176,22 +176,21 @@
           return;
         }
 
-        $.ajax({
-          url: CRM.url('civicrm/checkout/continue', {session: this.token}),
-          type: 'POST',
-          dataType: 'json',
-        }).done((res) => {
-          var status = (res && res.status) ? res.status : '';
-          if (status === 'success') {
+        CRM.api4('Contribution', 'continueCheckout', {
+          token: this.token,
+        }).then((res) => {
+          var response = (res && res[0]) ? res[0] : res;
+          var status = (response && response.status) ? response.status : (res && res.status ? res.status : '');
+          if (status === 'success' || status === 'completed') {
             this.waiting = false;
             this.completed = true;
             this.failed = false;
-            this.receiptRef = (res && res.response && res.response.receipt_ref) || '';
+            this.receiptRef = (response && response.receipt_ref) || (res && res.receipt_ref) || '';
             this.clearTimers();
           } else if (status === 'failed') {
             this.waiting = false;
             this.failed = true;
-            this.errorMessage = (res && res.message) || ts('The payment could not be processed.');
+            this.errorMessage = (response && response.message) || (res && res.message) || ts('The payment could not be processed.');
             this.clearTimers();
           } else if (status === 'cancelled') {
             this.resetKiosk();
@@ -200,7 +199,7 @@
             this.schedulePoll(2000);
           }
           $scope.$applyAsync();
-        }).fail(() => {
+        }).catch(() => {
           // Network fluctuation: continue polling until session timeout
           this.schedulePoll(3000);
         });
