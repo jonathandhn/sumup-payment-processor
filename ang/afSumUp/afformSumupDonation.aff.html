@@ -1,0 +1,42 @@
+<af-form ctrl="afform">
+  <af-entity data="{source: 'SumUp Donation'}" type="Individual" name="Individual1" label="Individual 1" actions="{create: true, update: false}" security="FBAC" contact-dedupe="Individual.Supervised" />
+  <af-entity data="{contact_id: 'Individual1', checkout_option: 'sumup_embedded', financial_type_id: 1}" type="Contribution" name="Contribution1" label="Contribution 1" actions="{create: true, update: false}" security="FBAC" />
+
+  <div class="crm-sumup-bento-layout">
+
+    <!-- LEFT COLUMN: Donor details + amount + submit -->
+    <div class="crm-sumup-bento-col crm-sumup-bento-col--form">
+
+      <fieldset af-fieldset="Individual1" class="af-container crm-sumup-bento-panel" af-title="Vos coordonnees">
+        <div actions="{update: true, delete: true}" class="af-container">
+          <af-field name="first_name" />
+          <af-field name="last_name" />
+          <div af-join="Email" actions="{update: true, delete: true}" data="{is_primary: true}">
+            <af-field name="email" />
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset af-fieldset="Contribution1" class="af-container crm-sumup-bento-panel crm-sumup-amount-panel" af-title="Votre don">
+        <af-field name="default_contribution_amount.contribution_amount" defn="{label: 'Montant', input_attrs: {}, required: true}" />
+        <crm-tax-reduction />
+      </fieldset>
+
+      <button class="af-button btn btn-primary crm-sumup-continue-btn" crm-icon="fa-lock" ng-click="afform.submit()" ng-if="afform.showSubmitButton">
+        Continuer vers le paiement
+      </button>
+
+    </div>
+
+    <!-- RIGHT COLUMN: SumUp Bento payment widget -->
+    <div class="crm-sumup-bento-col crm-sumup-bento-col--payment">
+
+      <fieldset af-fieldset="Contribution1" class="crm-sumup-payment-fieldset">
+        <af-field name="checkout_params" defn="{label: false}" />
+      </fieldset>
+
+    </div>
+
+  </div>
+
+</af-form>

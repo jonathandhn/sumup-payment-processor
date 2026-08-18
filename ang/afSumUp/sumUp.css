@@ -1194,6 +1194,85 @@
   display: block !important;
 }
 
+/* ===================================================================
+   BENTO 2-COLUMN LAYOUT (native grid in afformSumupDonation.aff.html)
+   =================================================================== */
+
+/* Desktop: 2 columns side-by-side */
+.crm-sumup-bento-layout {
+  align-items: start;
+  box-sizing: border-box;
+  display: grid;
+  gap: 1.75rem;
+  grid-template-columns: minmax(300px, 1.15fr) minmax(320px, 1fr);
+  margin: 0 auto;
+  max-width: 1100px;
+  padding: 1.5rem;
+  width: 100%;
+}
+
+/* Mobile: single column, payment panel moves below form */
+@media (max-width: 768px) {
+  .crm-sumup-bento-layout {
+    grid-template-columns: 1fr;
+    padding: 1rem;
+  }
+
+  .crm-sumup-bento-col--payment {
+    order: -1; /* Récapitulatif/paiement en premier sur mobile */
+  }
+}
+
+/* Each column */
+.crm-sumup-bento-col {
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.crm-sumup-bento-col--payment {
+  position: sticky;
+  top: 1.5rem;
+}
+
+/* Form panels (Individual1, Contribution1 amount) */
+.crm-sumup-bento-panel {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 0.85rem;
+  box-sizing: border-box;
+  margin-bottom: 1rem;
+  padding: 1.25rem 1.5rem;
+}
+
+.crm-sumup-bento-panel legend.af-title {
+  color: #0f172a;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin-bottom: 1rem;
+}
+
+/* Continue button */
+.crm-sumup-continue-btn {
+  border-radius: 0.65rem !important;
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  padding: 0.75rem 1.5rem !important;
+  width: 100%;
+}
+
+/* Payment fieldset wrapper (right column) — strip browser default fieldset style */
+.crm-sumup-payment-fieldset {
+  border: none !important;
+  margin: 0 !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+}
+
+.crm-sumup-payment-fieldset > legend {
+  display: none !important;
+}
+
 /* Adyen-Style Accordion Checkout Container & Items */
 .crm-sumup-accordion-checkout {
   animation: crmSumUpFadeSlideIn 0.35s ease-out;
