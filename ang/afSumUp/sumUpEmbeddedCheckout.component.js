@@ -117,11 +117,12 @@
         var form = this.getFormElement();
         form.removeClass('crm-sumup-form--compact');
         form.find('button[type="submit"]').not($element.find('*')).show();
+        // Preserve last known amount so Order Summary stays populated while user edits
+        this.pendingAmount = this.amount || this.pendingAmount;
         this.active = false;
         this.completed = false;
         this.amount = '';
         this.currency = 'EUR';
-        this.pendingAmount = null;
         this.donorSummary = '';
         this.error = '';
         var container = $element[0].querySelector('#sumup-afform-mount-target');
