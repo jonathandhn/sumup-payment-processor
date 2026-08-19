@@ -1,20 +1,30 @@
 <?php
 
+// afCheckoutLayout is a PSP-agnostic Angular module bundled here.
+// It is NOT a separate CiviCRM module (no .ang.php) to avoid global
+// Angular bootstrap interference. The Angular module dependency is
+// declared in afSumUp.js via CRM.angRequires + explicit concat.
+
 return [
     'css' => [
         'ang/afSumUp/sumUp.css',
     ],
     'js' => [
-        'js/checkout.js',
+        // afCheckoutLayout files MUST load before afSumUp files so the
+        // Angular module exists when afSumUp declares it as a dependency.
+        'ang/afCheckoutLayout.js',
+        'ang/afCheckoutLayout/*.js',
         'ang/afSumUp.js',
         'ang/afSumUp/*.js',
     ],
-    'partials' => ['ang/afSumUp'],
+    'partials' => [
+        'ang/afCheckoutLayout',
+        'ang/afSumUp',
+    ],
     'settings' => [],
-    // afCheckoutLayout is a separate CiviCRM Angular module declared in
-    // ang/afCheckoutLayout.ang.php — CiviCRM resolves and loads it once.
-    'requires' => ['afCheckout', 'afCheckoutLayout'],
+    'requires' => ['afCheckout'],
     'exports' => [
+        // afSumUp components
         'af-sum-up-embedded-checkout' => 'E',
         'af-sum-up-payment-methods' => 'E',
         'af-sum-up-readers' => 'E',
@@ -22,5 +32,10 @@ return [
         'af-sum-up-solo-checkout' => 'E',
         'af-sum-up-qr-checkout' => 'E',
         'af-sum-up-hybrid-checkout' => 'E',
+        // afCheckoutLayout components (bundled here, not a separate module)
+        'crm-checkout-summary' => 'E',
+        'crm-payment-orchestrator' => 'E',
+        'crm-payment-method' => 'E',
+        'crm-offline-payment' => 'E',
     ],
 ];
