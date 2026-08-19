@@ -42,10 +42,18 @@
   ];
 
   function metaForKey(key) {
-    for (var i = 0; i < OPTION_META.length; i++) {
-      if (key.indexOf(OPTION_META[i].prefix) === 0) { return OPTION_META[i]; }
+    // Prefer the real label from CRM.afCheckout.checkoutOptions (loaded on public form).
+    var crmLabel = null;
+    if (CRM.afCheckout && CRM.afCheckout.checkoutOptions && CRM.afCheckout.checkoutOptions[key]) {
+      crmLabel = CRM.afCheckout.checkoutOptions[key].label ||
+                 CRM.afCheckout.checkoutOptions[key].description || null;
     }
-    return { label: key, icon: 'fa-circle-o' };
+    for (var i = 0; i < OPTION_META.length; i++) {
+      if (key.indexOf(OPTION_META[i].prefix) === 0) {
+        return { label: crmLabel || OPTION_META[i].label, icon: OPTION_META[i].icon, sdkUrl: OPTION_META[i].sdkUrl || null };
+      }
+    }
+    return { label: crmLabel || key, icon: 'fa-circle-o', sdkUrl: null };
   }
 
   // AMD-safe SDK preload (same guard as sumUpEmbeddedCheckout.component.js).
@@ -74,36 +82,32 @@
     template:
       '<div class="crm-payment-orchestrator">' +
 
-        // ── Multiple methods: boudins always visible (pre-submit selection) ──
-        '<div class="crm-payment-boudins" ng-if="$ctrl.methods.length > 1">' +
-          '<div class="crm-payment-boudin"' +
-              ' ng-repeat="m in $ctrl.methods"' +
-              ' ng-class="{\'crm-payment-boudin--active\': $ctrl.activeMethod === m.key}">' +
+        // Only show anything after form submission.
+        '<div ng-if="$ctrl.submitted">' +
 
-            // Boudin header — always clickable for method selection.
-            '<div class="crm-payment-boudin__header" ng-click="$ctrl.switchMethod(m)">' +
-              '<span class="crm-payment-boudin__radio">' +
-                '<i class="crm-i" aria-hidden="true"' +
-                   ' ng-class="$ctrl.activeMethod === m.key ? \'fa-dot-circle-o\' : \'fa-circle-o\'"></i>' +
-              '</span>' +
-              '<i class="crm-i {{m.icon}}" aria-hidden="true"></i>' +
-              '<span class="crm-payment-boudin__label">{{m.label}}</span>' +
+          // ── Multiple methods: boudin selector ─────────────────────────────
+          '<div class="crm-payment-boudins" ng-if="$ctrl.methods.length > 1">' +
+            '<div class="crm-payment-boudin"' +
+                ' ng-repeat="m in $ctrl.methods"' +
+                ' ng-class="{\'crm-payment-boudin--active\': $ctrl.activeMethod === m.key}"' +
+                ' ng-click="$ctrl.switchMethod(m)">' +
+              '<div class="crm-payment-boudin__header">' +
+                '<span class="crm-payment-boudin__radio">' +
+                  '<i class="crm-i" aria-hidden="true"' +
+                     ' ng-class="$ctrl.activeMethod === m.key ? \'fa-dot-circle-o\' : \'fa-circle-o\'"></i>' +
+                '</span>' +
+                '<i class="crm-i {{m.icon}}" aria-hidden="true"></i>' +
+                '<span class="crm-payment-boudin__label">{{m.label}}</span>' +
+              '</div>' +
             '</div>' +
-
-            // Boudin content — payment widget, visible only after submit and when active.
-            '<div class="crm-payment-boudin__content"' +
-                ' ng-if="$ctrl.submitted && $ctrl.activeMethod === m.key && $last">' +
-              '<ng-transclude></ng-transclude>' +
-            '</div>' +
-
           '</div>' +
-        '</div>' +
 
-        // ── Single method: widget shown directly after submit (no boudins) ──
-        '<div class="crm-payment-orchestrator__content"' +
-            ' ng-show="$ctrl.submitted"' +
-            ' ng-if="$ctrl.methods.length <= 1">' +
-          '<ng-transclude></ng-transclude>' +
+          // ── Payment widget — ng-transclude MUST be outside ng-repeat ──────
+          // (Angular 1 does not support transclusion inside ng-repeat)
+          '<div class="crm-payment-orchestrator__content">' +
+            '<ng-transclude></ng-transclude>' +
+          '</div>' +
+
         '</div>' +
 
       '</div>',
