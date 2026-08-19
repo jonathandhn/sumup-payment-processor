@@ -17,6 +17,16 @@
         this.getFormElement().on('crmFormSuccess', listener);
       };
       this.$onDestroy = () => this.getFormElement().off('crmFormSuccess', listener);
+      this.$postLink = () => {
+        // ^^require doesn't cross transclusion — find orchestrator via querySelector.
+        var formEl = $element[0].closest('af-form');
+        if (formEl) {
+          var orchEl = formEl.querySelector('crm-payment-orchestrator');
+          if (orchEl) {
+            this._orch = angular.element(orchEl).controller('crmPaymentOrchestrator');
+          }
+        }
+      };
       this.getFormElement = () => $element.closest('af-form');
 
       function loadSdkScript(url) {

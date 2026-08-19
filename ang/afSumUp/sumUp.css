@@ -1660,6 +1660,48 @@ body.sumup-checkout-page h1.crm-page-title {
   gap: 0.5rem;
 }
 
+/* Header variant when method tabs are shown (no left/right split) */
+.crm-sumup-accordion-header--methods {
+  display: block;
+  padding: 0;
+}
+
+/* Method tab strip inside accordion step 2 */
+.crm-sumup-method-tabs {
+  display: flex;
+  gap: 0;
+  overflow: hidden;
+}
+
+.crm-sumup-method-tab {
+  align-items: center;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: #64748b;
+  cursor: pointer;
+  display: inline-flex;
+  flex: 1;
+  font-size: 0.875rem;
+  font-weight: 500;
+  gap: 0.45rem;
+  justify-content: center;
+  outline: none;
+  padding: 0.85rem 1rem;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.crm-sumup-method-tab:hover {
+  background: #f8fafc;
+  color: #006f69;
+}
+
+.crm-sumup-method-tab--active {
+  border-bottom-color: #006f69;
+  color: #006f69;
+  font-weight: 600;
+}
+
 .crm-sumup-step-badge {
   align-items: center;
   border-radius: 999px;

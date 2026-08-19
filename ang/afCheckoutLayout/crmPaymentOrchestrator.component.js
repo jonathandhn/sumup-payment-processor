@@ -74,9 +74,10 @@
     template:
       '<div class="crm-payment-orchestrator">' +
 
-        // Method tabs — only when multiple methods AND form has been submitted.
+        // Method tabs — only for non-embedded (redirect/offline) active methods.
+        // Embedded checkouts (SumUp, Stancer) render the tabs inside their own accordion.
         '<div class="crm-payment-orchestrator__tabs" ' +
-            'ng-if="$ctrl.submitted && $ctrl.methods.length > 1">' +
+            'ng-if="$ctrl.submitted && $ctrl.methods.length > 1 && !$ctrl.isEmbedded($ctrl.activeMethod)">' +
           '<button type="button" class="crm-payment-tab" ' +
               'ng-repeat="m in $ctrl.methods" ' +
               'ng-class="{\'crm-payment-tab--active\': $ctrl.activeMethod === m.key}" ' +
@@ -176,6 +177,15 @@
       ctrl.setActive = function (val) {
         $scope.$applyAsync(function () { ctrl.active = !!val; });
       };
+
+      // True when the key belongs to an embedded checkout that renders its own
+      // tab strip inside its accordion (SumUp, Stancer embedded).
+      ctrl.isEmbedded = function (key) {
+        if (!key) { return false; }
+        return key.indexOf('sumup_embedded_checkout') === 0 ||
+               key.indexOf('stancer_embedded_checkout') === 0;
+      };
+
 
       // Reset to pre-submit state (called by crm-checkout-summary "Modifier" button).
       ctrl.cancelActive = function () {
