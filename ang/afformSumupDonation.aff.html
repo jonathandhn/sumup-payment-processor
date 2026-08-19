@@ -28,12 +28,37 @@
 
     </div>
 
-    <!-- RIGHT COLUMN: SumUp Bento payment widget -->
+    <!-- RIGHT COLUMN: payment orchestrator (summary + method selector + widgets) -->
     <div class="crm-sumup-bento-col crm-sumup-bento-col--payment">
 
-      <fieldset af-fieldset="Contribution1" class="crm-sumup-payment-fieldset">
-        <af-field name="checkout_params" defn="{label: false}" />
-      </fieldset>
+      <crm-payment-orchestrator entity-name="Contribution1">
+
+        <!-- Order summary — always visible, reads live form data -->
+        <crm-checkout-summary></crm-checkout-summary>
+
+        <!-- Method: card payment via SumUp -->
+        <crm-payment-method key="card" label="Carte bancaire" icon="fa-credit-card">
+          <fieldset af-fieldset="Contribution1" class="crm-sumup-payment-fieldset">
+            <af-field name="checkout_params" defn="{label: false}" />
+          </fieldset>
+        </crm-payment-method>
+
+        <!-- Method: offline / bank transfer
+             set-data merges into Contribution entity before submit:
+               payment_processor_id=null → no SumUp checkout created
+               is_pay_later=1           → Pending contribution
+               payment_instrument_id=5  → EFT / bank transfer instrument
+        -->
+        <crm-payment-method key="transfer" label="Virement bancaire" icon="fa-university"
+          set-data="{payment_processor_id: null, is_pay_later: 1, payment_instrument_id: 5}">
+          <crm-offline-payment
+            instructions="&lt;p&gt;Effectuez votre virement à l'ordre de l'association :&lt;/p&gt;&lt;p&gt;&lt;strong&gt;IBAN :&lt;/strong&gt; FR76 … · &lt;strong&gt;BIC :&lt;/strong&gt; …&lt;/p&gt;&lt;p&gt;Référence : votre nom et prénom.&lt;/p&gt;"
+            button-label="Confirmer ma réservation"
+            success-message="Merci ! Votre don a bien été enregistré. Nous le validerons dès réception de votre virement.">
+          </crm-offline-payment>
+        </crm-payment-method>
+
+      </crm-payment-orchestrator>
 
     </div>
 

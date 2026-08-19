@@ -26,5 +26,8 @@ return [
         'af-sum-up-qr-checkout' => 'E',
         'af-sum-up-hybrid-checkout' => 'E',
         'crm-checkout-summary' => 'E',
+        'crm-payment-orchestrator' => 'E',
+        'crm-payment-method' => 'E',
+        'crm-offline-payment' => 'E',
     ],
 ];

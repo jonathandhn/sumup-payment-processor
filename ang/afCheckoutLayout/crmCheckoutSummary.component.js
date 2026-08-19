@@ -15,7 +15,10 @@
 
   angular.module('afCheckoutLayout').component('crmCheckoutSummary', {
     require: {
-      afForm: '^^afForm'
+      afForm: '^^afForm',
+      // Optional: when inside crm-payment-orchestrator, active state and
+      // Edit action are delegated to the orchestrator automatically.
+      orchestrator: '?^^crmPaymentOrchestrator'
     },
     bindings: {
       // True when the PSP payment step is active (checkout in progress).
@@ -115,7 +118,17 @@
       // ── Actions ─────────────────────────────────────────────────────────
 
       ctrl.edit = function () {
-        if (ctrl.onEdit) { ctrl.onEdit(); }
+        // Prefer orchestrator when available (orchestrator manages active state).
+        if (ctrl.orchestrator) {
+          ctrl.orchestrator.cancelActive();
+        } else if (ctrl.onEdit) {
+          ctrl.onEdit();
+        }
+      };
+
+      ctrl.isActive = function () {
+        if (ctrl.orchestrator) { return ctrl.orchestrator.active; }
+        return !!ctrl.active;
       };
 
       // ── Helpers ─────────────────────────────────────────────────────────

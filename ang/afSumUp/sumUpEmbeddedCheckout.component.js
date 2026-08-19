@@ -2,7 +2,11 @@
   'use strict';
 
   angular.module('afSumUp').component('afSumUpEmbeddedCheckout', {
-    require: {afCheckoutBlock: '^^afCheckoutBlock'},
+    require: {
+      afCheckoutBlock: '^^afCheckoutBlock',
+      // Optional: notify the payment orchestrator when this checkout becomes active.
+      orchestrator: '?^^crmPaymentOrchestrator'
+    },
     templateUrl: '~/afSumUp/sumUpEmbeddedCheckout.html',
     controller: function ($scope, $element) {
       var ts = $scope.ts = CRM.ts('sumup-payment-processor');
@@ -83,6 +87,7 @@
         this.currency = checkout.currency || 'EUR';
         this.checkout = checkout;
         this.error = '';
+        if (this.orchestrator) { this.orchestrator.setActive(true); }
 
         ensureCheckoutSdk().then(() => {
           if (!window.CiviSumUpCheckout || typeof window.CiviSumUpCheckout.mount !== 'function') {
@@ -110,14 +115,13 @@
         var form = this.getFormElement();
         form.removeClass('crm-sumup-form--compact');
         form.find('button[type="submit"]').not($element.find('*')).show();
-        // Preserve last known amount so Order Summary stays populated while user edits
-        this.pendingAmount = this.amount || this.pendingAmount;
         this.active = false;
         this.completed = false;
         this.amount = '';
         this.currency = 'EUR';
         this.donorSummary = '';
         this.error = '';
+        if (this.orchestrator) { this.orchestrator.setActive(false); }
         var container = $element[0].querySelector('#sumup-afform-mount-target');
         if (container) {
           container.innerHTML = '';

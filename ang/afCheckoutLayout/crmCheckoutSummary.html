@@ -27,7 +27,7 @@
     </strong>
   </div>
 
-  <div class="crm-checkout-summary__actions" ng-if="$ctrl.active">
+  <div class="crm-checkout-summary__actions" ng-if="$ctrl.isActive()">
     <button type="button" class="crm-sumup-btn-modify crm-checkout-summary__edit-btn" ng-click="$ctrl.edit()">
       <i class="crm-i fa-pencil" aria-hidden="true"></i> {{ts('Edit')}}
     </button>
