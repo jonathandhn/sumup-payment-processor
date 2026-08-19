@@ -44,12 +44,23 @@
           });
         }
 
-        // Find the orchestrator by walking up the DOM.
+        // Find the orchestrator: first try DOM ancestors (transcluded case),
+        // then fall back to a sibling within the same af-form (bento case).
         var el = $element[0].parentElement;
         while (el) {
           var orch = angular.element(el).controller('crmPaymentOrchestrator');
           if (orch) { _orchestrator = orch; break; }
+          if (el.tagName === 'AF-FORM') { break; }
           el = el.parentElement;
+        }
+        if (!_orchestrator) {
+          var formEl2 = $element[0].closest('af-form');
+          if (formEl2) {
+            var orchEl = formEl2.querySelector('crm-payment-orchestrator');
+            if (orchEl) {
+              _orchestrator = angular.element(orchEl).controller('crmPaymentOrchestrator');
+            }
+          }
         }
 
         // Trigger an initial render now that we have the orchestrator.

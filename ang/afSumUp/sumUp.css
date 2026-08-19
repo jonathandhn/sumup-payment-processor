@@ -2098,3 +2098,64 @@ body.sumup-checkout-page h1.crm-page-title {
   border-color: #9ca3af;
 }
 
+/* ── Payment orchestrator ─────────────────────────────────────────────────── */
+
+.crm-payment-orchestrator {
+  margin-top: 0.75rem;
+}
+
+.crm-payment-orchestrator__content {
+  /* no chrome — the af-checkout-block or the widget provides its own */
+}
+
+/* Method selector tabs — appear only after submit when N > 1 */
+.crm-payment-orchestrator__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.crm-payment-tab {
+  align-items: center;
+  background: #ffffff;
+  border: 1.5px solid #d1d5db;
+  border-radius: 2rem;
+  color: #374151;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 0.875rem;
+  font-weight: 500;
+  gap: 0.4rem;
+  padding: 0.4rem 1rem;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.crm-payment-tab:hover {
+  border-color: #006f69;
+  color: #006f69;
+}
+
+.crm-payment-tab--active {
+  background: #006f69;
+  border-color: #006f69;
+  color: #ffffff;
+}
+
+.crm-payment-tab--active:hover {
+  background: #005a55;
+  border-color: #005a55;
+  color: #ffffff;
+}
+
+/* Strip default fieldset chrome from the payment fieldset inside the orchestrator */
+.crm-payment-orchestrator .crm-sumup-payment-fieldset,
+.crm-payment-orchestrator fieldset.af-container {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+

@@ -1,13 +1,13 @@
 <af-form ctrl="afform">
   <af-entity data="{source: 'SumUp Donation'}" type="Individual" name="Individual1" label="Individual 1" actions="{create: true, update: false}" security="FBAC" contact-dedupe="Individual.Supervised" />
-  <af-entity data="{contact_id: 'Individual1', checkout_option: 'sumup_embedded_checkout_SumUP', financial_type_id: 1}" type="Contribution" name="Contribution1" label="Contribution 1" actions="{create: true, update: false}" security="FBAC" />
+  <af-entity data="{contact_id: 'Individual1', financial_type_id: 1}" type="Contribution" name="Contribution1" label="Contribution 1" actions="{create: true, update: false}" security="FBAC" />
 
   <div class="crm-sumup-bento-layout af-container">
 
     <!-- LEFT COLUMN: Donor details + amount + submit -->
     <div class="crm-sumup-bento-col crm-sumup-bento-col--form af-container">
 
-      <fieldset af-fieldset="Individual1" class="af-container crm-sumup-bento-panel" af-title="Vos coordonnees">
+      <fieldset af-fieldset="Individual1" class="af-container crm-sumup-bento-panel" af-title="Vos coordonnées">
         <div actions="{update: true, delete: true}" class="af-container">
           <af-field name="first_name" />
           <af-field name="last_name" />
@@ -30,16 +30,24 @@
 
     </div>
 
-    <!-- RIGHT COLUMN: Order summary + SumUp embedded checkout -->
+    <!-- RIGHT COLUMN: Order summary + payment orchestrator -->
     <div class="crm-sumup-bento-col crm-sumup-bento-col--payment af-container">
 
-      <!-- Order summary (reads live form data) -->
+      <!-- Order summary card (always visible) -->
       <crm-checkout-summary></crm-checkout-summary>
 
-      <!-- SumUp embedded checkout widget -->
-      <fieldset af-fieldset="Contribution1" class="crm-sumup-payment-fieldset">
-        <af-field name="checkout_params" defn="{label: false}" />
-      </fieldset>
+      <!--
+        Payment orchestrator.
+        options = comma-separated checkout_option keys to offer.
+        Add or remove keys to configure available payment methods.
+        Example: options="sumup_embedded_checkout_SumUP,pay_later"
+      -->
+      <crm-payment-orchestrator entity-name="Contribution1"
+        options="sumup_embedded_checkout_SumUP">
+        <fieldset af-fieldset="Contribution1" class="crm-sumup-payment-fieldset">
+          <af-field name="checkout_params" defn="{label: false}" />
+        </fieldset>
+      </crm-payment-orchestrator>
 
     </div>
 

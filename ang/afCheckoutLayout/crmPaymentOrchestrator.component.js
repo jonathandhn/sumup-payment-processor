@@ -3,38 +3,80 @@
 
   // crm-payment-orchestrator — PSP-agnostic payment method orchestrator.
   //
-  // Renders method-selector tabs and manages which payment method is active.
-  // Child crm-payment-method components self-register; the orchestrator shows
-  // only the selected one's content.
+  // Configure via the `options` attribute: a comma-separated list of
+  // checkout_option keys (from CRM.afCheckout.checkoutOptions).
   //
-  // Also manages the "active" (payment-in-progress) state so crm-checkout-summary
-  // knows when to show the Edit button.
+  // Behaviour:
+  //   - Before submit : right column shows only crm-checkout-summary (nothing else).
+  //   - After submit  : payment content revealed.
+  //                     - 1 option  → direct widget, no selector tabs.
+  //                     - N options → method tabs + active widget.
   //
-  // Usage in an afform template:
+  // SDK preloading: all embedded-processor SDKs in the options list are
+  // preloaded in parallel at $onInit so the widget mounts instantly after submit.
   //
-  //   <crm-payment-orchestrator entity-name="Contribution1">
-  //     <crm-checkout-summary></crm-checkout-summary>
-  //     <crm-payment-method key="card" label="Carte" icon="fa-credit-card">
-  //       <af-field name="checkout_params" defn="{label:false}"/>
-  //     </crm-payment-method>
-  //     <crm-payment-method key="transfer" label="Virement" icon="fa-university"
-  //       set-data="{payment_processor_id: null, is_pay_later: 1}">
-  //       <crm-offline-payment/>
-  //     </crm-payment-method>
+  // Usage:
+  //   <crm-payment-orchestrator entity-name="Contribution1"
+  //     options="sumup_embedded_checkout_SumUP,pay_later">
+  //     <fieldset af-fieldset="Contribution1" class="crm-sumup-payment-fieldset">
+  //       <af-field name="checkout_params" defn="{label: false}" />
+  //     </fieldset>
   //   </crm-payment-orchestrator>
 
+  // ── Metadata for known checkout option prefixes ──────────────────────────
+
+  var OPTION_META = [
+    {
+      prefix: 'sumup_embedded_checkout',
+      label: 'Carte bancaire',
+      icon: 'fa-credit-card',
+      sdkUrl: 'https://gateway.sumup.com/gateway/ecom/card/v2/sdk.js'
+    },
+    { prefix: 'sumup_solo_checkout',       label: 'Terminal',          icon: 'fa-mobile' },
+    { prefix: 'sumup_qr_checkout',         label: 'QR Code',           icon: 'fa-qrcode' },
+    { prefix: 'sumup_hybrid_checkout',     label: 'Terminal / QR',     icon: 'fa-exchange' },
+    { prefix: 'stancer_embedded_checkout', label: 'Carte (Stancer)',   icon: 'fa-credit-card' },
+    { prefix: 'stancer_hosted_checkout',   label: 'Stancer',           icon: 'fa-external-link' },
+    { prefix: 'helloasso_hosted_checkout', label: 'HelloAsso',         icon: 'fa-heart' },
+    { prefix: 'pay_later',                 label: 'Virement bancaire', icon: 'fa-university' }
+  ];
+
+  function metaForKey(key) {
+    for (var i = 0; i < OPTION_META.length; i++) {
+      if (key.indexOf(OPTION_META[i].prefix) === 0) { return OPTION_META[i]; }
+    }
+    return { label: key, icon: 'fa-circle-o' };
+  }
+
+  // AMD-safe SDK preload (same guard as sumUpEmbeddedCheckout.component.js).
+  function preloadSdk(url) {
+    if (!url || document.querySelector('script[src="' + url + '"]')) { return; }
+    var savedDefine = window.define;
+    window.define = undefined;
+    var script = document.createElement('script');
+    script.src = url;
+    script.async = true;
+    script.onload  = function () { window.define = savedDefine; };
+    script.onerror = function () { window.define = savedDefine; };
+    document.head.appendChild(script);
+  }
+
+  // ── Component ─────────────────────────────────────────────────────────────
+
   angular.module('afCheckoutLayout').component('crmPaymentOrchestrator', {
-    // No require: { afForm } — the orchestrator itself may be transcluded in
-    // some afform contexts, breaking Angular's ^^ require traversal.
-    // We access afForm via angular.element(formEl).controller('afForm') instead.
     bindings: {
-      entityName: '@?'
+      entityName: '@?',
+      // Comma-separated checkout_option keys to offer as payment methods.
+      // Example: "sumup_embedded_checkout_SumUP,pay_later"
+      options: '@?'
     },
     transclude: true,
     template:
       '<div class="crm-payment-orchestrator">' +
-        // Method tabs — hidden while payment is in progress
-        '<div class="crm-payment-orchestrator__tabs" ng-show="!$ctrl.active && $ctrl.methods.length > 1">' +
+
+        // Method tabs — only when multiple methods AND form has been submitted.
+        '<div class="crm-payment-orchestrator__tabs" ' +
+            'ng-if="$ctrl.submitted && $ctrl.methods.length > 1">' +
           '<button type="button" class="crm-payment-tab" ' +
               'ng-repeat="m in $ctrl.methods" ' +
               'ng-class="{\'crm-payment-tab--active\': $ctrl.activeMethod === m.key}" ' +
@@ -42,29 +84,79 @@
             '<i class="crm-i {{m.icon}}" aria-hidden="true"></i> {{m.label}}' +
           '</button>' +
         '</div>' +
-        '<ng-transclude></ng-transclude>' +
+
+        // Payment content — hidden until form is submitted.
+        '<div class="crm-payment-orchestrator__content" ng-show="$ctrl.submitted">' +
+          '<ng-transclude></ng-transclude>' +
+        '</div>' +
+
       '</div>',
 
     controller: function ($scope, $element) {
       var ctrl = this;
 
       ctrl.$onInit = function () {
-        ctrl.methods = [];
+        ctrl.methods      = [];
         ctrl.activeMethod = null;
-        ctrl.active = false;
+        ctrl.submitted    = false;
+        ctrl.active       = false; // compatibility: crm-checkout-summary may read this
+
         if (!ctrl.entityName) {
           ctrl.entityName = resolveContributionEntity();
         }
+
+        if (ctrl.options) {
+          var keys = ctrl.options.split(',').map(function (k) { return k.trim(); });
+
+          // Build method list.
+          ctrl.methods = keys.map(function (key) {
+            var meta = metaForKey(key);
+            return { key: key, label: meta.label, icon: meta.icon };
+          });
+
+          // Preload all embedded-processor SDKs in parallel.
+          keys.forEach(function (key) {
+            var sdkUrl = metaForKey(key).sdkUrl;
+            if (sdkUrl) { preloadSdk(sdkUrl); }
+          });
+
+          // Auto-select first method and write checkout_option into entity data.
+          if (ctrl.methods.length) {
+            ctrl.activeMethod = ctrl.methods[0].key;
+            applyCheckoutOption(ctrl.methods[0].key);
+          }
+        }
       };
 
-      // ── Public API for child components (via require) ─────────────────────
+      ctrl.$postLink = function () {
+        // Listen for successful afform submission → reveal payment content.
+        var formEl = $element[0].closest('af-form');
+        if (!formEl) { return; }
 
+        var onSuccess = function () {
+          $scope.$applyAsync(function () { ctrl.submitted = true; });
+        };
+        formEl.addEventListener('crmFormSuccess', onSuccess);
+        $scope.$on('$destroy', function () {
+          formEl.removeEventListener('crmFormSuccess', onSuccess);
+        });
+      };
+
+      // ── Public API ─────────────────────────────────────────────────────
+
+      // Switch to a different payment method tab.
+      ctrl.switchMethod = function (method) {
+        ctrl.activeMethod = method.key;
+        applyCheckoutOption(method.key);
+      };
+
+      // Backward-compat: child crm-payment-method components can self-register.
       ctrl.register = function (method) {
-        ctrl.methods.push(method);
-        // First registered method becomes the default
+        var exists = ctrl.methods.some(function (m) { return m.key === method.key; });
+        if (!exists) { ctrl.methods.push(method); }
         if (!ctrl.activeMethod) {
           ctrl.activeMethod = method.key;
-          applyMethodData(method);
+          applyCheckoutOption(method.key);
         }
       };
 
@@ -75,40 +167,44 @@
         }
       };
 
-      ctrl.switchMethod = function (method) {
-        ctrl.activeMethod = method.key;
-        applyMethodData(method);
-      };
-
-      // Called by a payment widget (e.g. af-sum-up-embedded-checkout) when
-      // a checkout starts (val=true) or is cancelled (val=false).
+      // Called by a payment widget when checkout starts (val=true) or is cancelled (val=false).
       ctrl.setActive = function (val) {
-        $scope.$applyAsync(function () {
-          ctrl.active = !!val;
-        });
+        $scope.$applyAsync(function () { ctrl.active = !!val; });
       };
 
+      // Reset to pre-submit state (called by crm-checkout-summary "Modifier" button).
       ctrl.cancelActive = function () {
-        ctrl.setActive(false);
+        $scope.$applyAsync(function () {
+          ctrl.submitted = false;
+          ctrl.active    = false;
+        });
+
+        // Also cancel any mounted payment widget.
+        var formEl = $element[0].closest('af-form');
+        if (!formEl) { return; }
+        var checkoutEl = formEl.querySelector('af-sum-up-embedded-checkout');
+        if (checkoutEl) {
+          var checkoutCtrl = angular.element(checkoutEl).controller('afSumUpEmbeddedCheckout');
+          if (checkoutCtrl && checkoutCtrl.active) { checkoutCtrl.cancelAndUnlock(); }
+        }
       };
 
-      // ── Private ───────────────────────────────────────────────────────────
+      // ── Private ────────────────────────────────────────────────────────
 
-      function getAfForm() {
-        var formEl = $element[0].closest('af-form');
-        return formEl ? angular.element(formEl).controller('afForm') : null;
-      }
-
-      // Merge the method's setData into the live Contribution entity fields so
-      // the next afform.submit() carries the right payment_processor_id etc.
-      function applyMethodData(method) {
-        if (!method || !method.setData || !ctrl.entityName) { return; }
+      // Write checkout_option into the live entity data so afform submit uses it.
+      function applyCheckoutOption(key) {
+        if (!key || !ctrl.entityName) { return; }
         var afForm = getAfForm();
         if (!afForm) { return; }
         var data = afForm.getData(ctrl.entityName);
         if (data && data[0] && data[0].fields) {
-          angular.extend(data[0].fields, method.setData);
+          data[0].fields.checkout_option = key;
         }
+      }
+
+      function getAfForm() {
+        var formEl = $element[0].closest('af-form');
+        return formEl ? angular.element(formEl).controller('afForm') : null;
       }
 
       function resolveContributionEntity() {
