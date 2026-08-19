@@ -29,6 +29,12 @@ function sumup_payment_processor_civicrm_config(\CRM_Core_Config $config): void
         'sumup_payment_processor_decorate_contact_tab',
         -100
     );
+
+    // Register crm-payment-orchestrator as a FormBuilder element.
+    \Civi::dispatcher()->addListener(
+        'civi.afform_admin.metadata',
+        'sumup_payment_processor_afform_admin_metadata'
+    );
 }
 
 /**
@@ -117,31 +123,34 @@ function sumup_payment_processor_civicrm_angularModules(array &$angularModules):
     $module = include __DIR__ . '/ang/afSumUp.ang.php';
     $module['ext'] = E::LONG_NAME;
     $angularModules['afSumUp'] = $module;
-
-    // Register crm-payment-orchestrator as a FormBuilder (afGuiEditor) element
-    // so the admin panel appears when the element is selected in the canvas.
-    if (!isset($angularModules['afGuiEditor'])) {
-        $angularModules['afGuiEditor'] = [];
-    }
-    if (!isset($angularModules['afGuiEditor']['settings'])) {
-        $angularModules['afGuiEditor']['settings'] = [];
-    }
-    if (!isset($angularModules['afGuiEditor']['settings']['elements'])) {
-        $angularModules['afGuiEditor']['settings']['elements'] = [];
-    }
-    $angularModules['afGuiEditor']['settings']['elements']['paymentOrchestrator'] = [
-        'title'       => E::ts('Payment method selector'),
-        'afform_type' => ['form'],
-        'directive'   => 'crm-payment-orchestrator',
-        'admin_tpl'   => '~/afSumUp/crmPaymentOrchestratorAdmin.html',
-        'element'     => ['#tag' => 'crm-payment-orchestrator', '#children' => []],
-    ];
 }
 
 function sumup_payment_processor_supports_afform_checkout(): bool
 {
     return interface_exists('Civi\\Checkout\\CheckoutOptionInterface')
         && interface_exists('Civi\\Checkout\\AfformCheckoutOptionInterface');
+}
+
+/**
+ * Listener for civi.afform_admin.metadata.
+ *
+ * Registers crm-payment-orchestrator as a configurable FormBuilder element
+ * so the admin panel appears when the element is selected on the canvas.
+ *
+ * @param \Civi\Core\Event\GenericHookEvent $event
+ */
+function sumup_payment_processor_afform_admin_metadata(\Civi\Core\Event\GenericHookEvent $event): void
+{
+    if (!sumup_payment_processor_supports_afform_checkout()) {
+        return;
+    }
+    $event->elements['paymentOrchestrator'] = [
+        'title'       => E::ts('Payment method selector'),
+        'afform_type' => ['form'],
+        'directive'   => 'crm-payment-orchestrator',
+        'admin_tpl'   => '~/afSumUp/crmPaymentOrchestratorAdmin.html',
+        'element'     => ['#tag' => 'crm-payment-orchestrator', '#children' => []],
+    ];
 }
 
 /**
