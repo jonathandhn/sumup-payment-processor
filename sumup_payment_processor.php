@@ -117,6 +117,25 @@ function sumup_payment_processor_civicrm_angularModules(array &$angularModules):
     $module = include __DIR__ . '/ang/afSumUp.ang.php';
     $module['ext'] = E::LONG_NAME;
     $angularModules['afSumUp'] = $module;
+
+    // Register crm-payment-orchestrator as a FormBuilder (afGuiEditor) element
+    // so the admin panel appears when the element is selected in the canvas.
+    if (!isset($angularModules['afGuiEditor'])) {
+        $angularModules['afGuiEditor'] = [];
+    }
+    if (!isset($angularModules['afGuiEditor']['settings'])) {
+        $angularModules['afGuiEditor']['settings'] = [];
+    }
+    if (!isset($angularModules['afGuiEditor']['settings']['elements'])) {
+        $angularModules['afGuiEditor']['settings']['elements'] = [];
+    }
+    $angularModules['afGuiEditor']['settings']['elements']['paymentOrchestrator'] = [
+        'title'       => E::ts('Payment method selector'),
+        'afform_type' => ['form'],
+        'directive'   => 'crm-payment-orchestrator',
+        'admin_tpl'   => '~/afSumUp/crmPaymentOrchestratorAdmin.html',
+        'element'     => ['#tag' => 'crm-payment-orchestrator', '#children' => []],
+    ];
 }
 
 function sumup_payment_processor_supports_afform_checkout(): bool
