@@ -16,7 +16,7 @@
       onTotalChange: '&?',
       onEdit: '&?'
     },
-    templateUrl: '~/afCheckoutLayout/crmCheckoutSummary.html',
+    templateUrl: '~/afSumUp/crmCheckoutSummary.html',
     controller: function ($scope, $element) {
       var ctrl = this;
       var ts = CRM.ts('sumup-payment-processor');

@@ -25,7 +25,7 @@
       buttonLabel: '@?',
       successMessage: '@?'
     },
-    templateUrl: '~/afCheckoutLayout/crmOfflinePayment.html',
+    templateUrl: '~/afSumUp/crmOfflinePayment.html',
     controller: function ($scope, $element, $sce) {
       var ctrl = this;
       ctrl.ts = CRM.ts('sumup-payment-processor');
