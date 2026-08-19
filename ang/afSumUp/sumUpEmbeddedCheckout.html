@@ -16,7 +16,11 @@
     <strong class="crm-sumup-recap-total__amount" ng-if="$ctrl.amount || $ctrl.pendingAmount">{{$ctrl.amount || $ctrl.pendingAmount}} {{$ctrl.currency}}</strong>
     <strong class="crm-sumup-recap-total__amount crm-sumup-recap-line__amount--pending" ng-if="!$ctrl.amount && !$ctrl.pendingAmount">—</strong>
   </div>
-
+  <div class="crm-sumup-recap-edit" ng-if="$ctrl.active">
+    <button type="button" class="crm-sumup-btn-modify crm-sumup-recap-edit__btn" ng-click="$ctrl.cancelAndUnlock()">
+      <i class="crm-i fa-pencil" aria-hidden="true"></i> {{ts('Edit')}}
+    </button>
+  </div>
 </div>
 
 <div class="crm-sumup-embedded-checkout__error messages error" ng-if="$ctrl.error">

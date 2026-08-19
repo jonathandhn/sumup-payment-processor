@@ -1234,7 +1234,7 @@
   width: 100%;
 }
 
-/* Mobile: single column, payment panel moves below form */
+/* Mobile: single column, form on top, payment below */
 @media (max-width: 768px) {
   .crm-sumup-bento-layout {
     grid-template-columns: 1fr;
@@ -1242,8 +1242,46 @@
   }
 
   .crm-sumup-bento-col--payment {
-    order: -1; /* Récapitulatif/paiement en premier sur mobile */
+    order: 2;
   }
+
+  .crm-sumup-bento-col--form {
+    order: 1;
+  }
+}
+
+/* Recap panel Edit button (shown when payment is active) */
+.crm-sumup-recap-edit {
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.85rem;
+  padding-top: 0.75rem;
+}
+
+.crm-sumup-recap-edit__btn {
+  align-items: center;
+  background: transparent !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 0.375rem !important;
+  color: #374151 !important;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 0.85rem !important;
+  font-weight: 500 !important;
+  gap: 0.4rem;
+  padding: 0.4rem 0.85rem !important;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.crm-sumup-recap-edit__btn:hover {
+  background: #f9fafb !important;
+  border-color: #d1d5db !important;
+}
+
+.crm-sumup-recap-edit__btn .crm-i {
+  color: #6b7280;
+  font-size: 0.8rem;
 }
 
 /* Each column */
@@ -1252,31 +1290,29 @@
   min-width: 0;
 }
 
+/* Right column: fully transparent — only the inner cards (recap-panel, accordion) have borders */
+.crm-sumup-bento-col--payment,
+.crm-sumup-bento-col--payment > fieldset.af-container,
+.crm-sumup-bento-col--payment > .crm-sumup-payment-fieldset {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Desktop: sticky right column */
 .crm-sumup-bento-col--payment {
   position: sticky;
   top: 1.5rem;
 }
 
-/* In 2-column Bento layout: Synthèse → show only the Modifier button, hide the info text */
+/* In 2-column Bento layout: fully hide Synthèse bar (Modifier is inside Order Summary card) */
 .crm-sumup-bento-col--payment .crm-sumup-accordion-item--collapsed {
-  background: transparent !important;
-  border: none !important;
-  border-bottom: 1px solid #f1f5f9 !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
-  margin: 0 0 0.5rem !important;
-}
-
-.crm-sumup-bento-col--payment .crm-sumup-accordion-item--collapsed .crm-sumup-accordion-header {
-  justify-content: flex-end !important;
-  padding: 0.5rem 0 !important;
-}
-
-.crm-sumup-bento-col--payment .crm-sumup-accordion-item--collapsed .crm-sumup-accordion-header__left {
   display: none !important;
 }
 
-/* Continue button — stays inside the left column card */
 .crm-sumup-bento-panel {
   background: transparent;
   border: none;
