@@ -67,7 +67,7 @@
       && (config.mode === 'wallet' || config.mode === 'widget_wallet');
     var id = ++instance;
     var message = document.createElement('p');
-    message.className = 'messages status no-popup';
+    message.className = 'crm-sumup-status-message';
     message.hidden = true;
 
     function showMessage(text) {
