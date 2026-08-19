@@ -6,16 +6,13 @@ return [
     ],
     'js' => [
         'js/checkout.js',
-        'ang/afCheckoutLayout.js',
-        'ang/afCheckoutLayout/*.js',
         'ang/afSumUp.js',
         'ang/afSumUp/*.js',
     ],
-    'partials' => [
-        'ang/afCheckoutLayout',
-        'ang/afSumUp',
-    ],
+    'partials' => ['ang/afSumUp'],
     'settings' => [],
+    // afCheckoutLayout is a separate CiviCRM Angular module declared in
+    // ang/afCheckoutLayout.ang.php — CiviCRM resolves and loads it once.
     'requires' => ['afCheckout', 'afCheckoutLayout'],
     'exports' => [
         'af-sum-up-embedded-checkout' => 'E',
@@ -25,9 +22,5 @@ return [
         'af-sum-up-solo-checkout' => 'E',
         'af-sum-up-qr-checkout' => 'E',
         'af-sum-up-hybrid-checkout' => 'E',
-        'crm-checkout-summary' => 'E',
-        'crm-payment-orchestrator' => 'E',
-        'crm-payment-method' => 'E',
-        'crm-offline-payment' => 'E',
     ],
 ];
