@@ -42,10 +42,18 @@
   ];
 
   function metaForKey(key) {
-    for (var i = 0; i < OPTION_META.length; i++) {
-      if (key.indexOf(OPTION_META[i].prefix) === 0) { return OPTION_META[i]; }
+    // Prefer the real label from CRM.afCheckout.checkoutOptions (loaded on public form).
+    var crmLabel = null;
+    if (CRM.afCheckout && CRM.afCheckout.checkoutOptions && CRM.afCheckout.checkoutOptions[key]) {
+      crmLabel = CRM.afCheckout.checkoutOptions[key].label ||
+                 CRM.afCheckout.checkoutOptions[key].description || null;
     }
-    return { label: key, icon: 'fa-circle-o' };
+    for (var i = 0; i < OPTION_META.length; i++) {
+      if (key.indexOf(OPTION_META[i].prefix) === 0) {
+        return { label: crmLabel || OPTION_META[i].label, icon: OPTION_META[i].icon, sdkUrl: OPTION_META[i].sdkUrl || null };
+      }
+    }
+    return { label: crmLabel || key, icon: 'fa-circle-o', sdkUrl: null };
   }
 
   // AMD-safe SDK preload (same guard as sumUpEmbeddedCheckout.component.js).
@@ -74,20 +82,32 @@
     template:
       '<div class="crm-payment-orchestrator">' +
 
-        // Method tabs — only when multiple methods AND form has been submitted.
-        '<div class="crm-payment-orchestrator__tabs" ' +
-            'ng-if="$ctrl.submitted && $ctrl.methods.length > 1">' +
-          '<button type="button" class="crm-payment-tab" ' +
-              'ng-repeat="m in $ctrl.methods" ' +
-              'ng-class="{\'crm-payment-tab--active\': $ctrl.activeMethod === m.key}" ' +
-              'ng-click="$ctrl.switchMethod(m)">' +
-            '<i class="crm-i {{m.icon}}" aria-hidden="true"></i> {{m.label}}' +
-          '</button>' +
-        '</div>' +
+        // ng-show (not ng-if): keeps the SumUp component alive in the DOM so it
+        // receives crmFormSuccess even though it fires before submitted turns true.
+        '<div ng-show="$ctrl.submitted">' +
 
-        // Payment content — hidden until form is submitted.
-        '<div class="crm-payment-orchestrator__content" ng-show="$ctrl.submitted">' +
-          '<ng-transclude></ng-transclude>' +
+          // ── Multiple methods: boudin selector ─────────────────────────────
+          '<div class="crm-payment-boudins" ng-if="$ctrl.methods.length > 1">' +
+            '<div class="crm-payment-boudin"' +
+                ' ng-repeat="m in $ctrl.methods"' +
+                ' ng-class="{\'crm-payment-boudin--active\': $ctrl.activeMethod === m.key}"' +
+                ' ng-click="$ctrl.switchMethod(m)">' +
+              '<div class="crm-payment-boudin__header">' +
+                '<span class="crm-payment-boudin__radio">' +
+                  '<i class="crm-i" aria-hidden="true"' +
+                     ' ng-class="$ctrl.activeMethod === m.key ? \'fa-dot-circle-o\' : \'fa-circle-o\'"></i>' +
+                '</span>' +
+                '<i class="crm-i {{m.icon}}" aria-hidden="true"></i>' +
+                '<span class="crm-payment-boudin__label">{{m.label}}</span>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+
+          // ── Payment widget — ng-transclude outside ng-repeat ───────────────
+          '<div class="crm-payment-orchestrator__content">' +
+            '<ng-transclude></ng-transclude>' +
+          '</div>' +
+
         '</div>' +
 
       '</div>',
@@ -176,6 +196,15 @@
       ctrl.setActive = function (val) {
         $scope.$applyAsync(function () { ctrl.active = !!val; });
       };
+
+      // True when the key belongs to an embedded checkout that renders its own
+      // tab strip inside its accordion (SumUp, Stancer embedded).
+      ctrl.isEmbedded = function (key) {
+        if (!key) { return false; }
+        return key.indexOf('sumup_embedded_checkout') === 0 ||
+               key.indexOf('stancer_embedded_checkout') === 0;
+      };
+
 
       // Reset to pre-submit state (called by crm-checkout-summary "Modifier" button).
       ctrl.cancelActive = function () {
