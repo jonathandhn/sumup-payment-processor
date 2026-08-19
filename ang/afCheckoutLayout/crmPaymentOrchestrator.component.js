@@ -74,20 +74,35 @@
     template:
       '<div class="crm-payment-orchestrator">' +
 
-        // Method tabs — only for non-embedded (redirect/offline) active methods.
-        // Embedded checkouts (SumUp, Stancer) render the tabs inside their own accordion.
-        '<div class="crm-payment-orchestrator__tabs" ' +
-            'ng-if="$ctrl.submitted && $ctrl.methods.length > 1 && !$ctrl.isEmbedded($ctrl.activeMethod)">' +
-          '<button type="button" class="crm-payment-tab" ' +
-              'ng-repeat="m in $ctrl.methods" ' +
-              'ng-class="{\'crm-payment-tab--active\': $ctrl.activeMethod === m.key}" ' +
-              'ng-click="$ctrl.switchMethod(m)">' +
-            '<i class="crm-i {{m.icon}}" aria-hidden="true"></i> {{m.label}}' +
-          '</button>' +
+        // ── Multiple methods: boudins always visible (pre-submit selection) ──
+        '<div class="crm-payment-boudins" ng-if="$ctrl.methods.length > 1">' +
+          '<div class="crm-payment-boudin"' +
+              ' ng-repeat="m in $ctrl.methods"' +
+              ' ng-class="{\'crm-payment-boudin--active\': $ctrl.activeMethod === m.key}">' +
+
+            // Boudin header — always clickable for method selection.
+            '<div class="crm-payment-boudin__header" ng-click="$ctrl.switchMethod(m)">' +
+              '<span class="crm-payment-boudin__radio">' +
+                '<i class="crm-i" aria-hidden="true"' +
+                   ' ng-class="$ctrl.activeMethod === m.key ? \'fa-dot-circle-o\' : \'fa-circle-o\'"></i>' +
+              '</span>' +
+              '<i class="crm-i {{m.icon}}" aria-hidden="true"></i>' +
+              '<span class="crm-payment-boudin__label">{{m.label}}</span>' +
+            '</div>' +
+
+            // Boudin content — payment widget, visible only after submit and when active.
+            '<div class="crm-payment-boudin__content"' +
+                ' ng-if="$ctrl.submitted && $ctrl.activeMethod === m.key && $last">' +
+              '<ng-transclude></ng-transclude>' +
+            '</div>' +
+
+          '</div>' +
         '</div>' +
 
-        // Payment content — hidden until form is submitted.
-        '<div class="crm-payment-orchestrator__content" ng-show="$ctrl.submitted">' +
+        // ── Single method: widget shown directly after submit (no boudins) ──
+        '<div class="crm-payment-orchestrator__content"' +
+            ' ng-show="$ctrl.submitted"' +
+            ' ng-if="$ctrl.methods.length <= 1">' +
           '<ng-transclude></ng-transclude>' +
         '</div>' +
 
