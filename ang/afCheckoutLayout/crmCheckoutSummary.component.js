@@ -97,15 +97,30 @@
         if (ctrl.onTotalChange) { ctrl.onTotalChange({ total: ctrl.total, currency: ctrl.currency }); }
       }
 
+      // ── Helpers: find the SumUp checkout controller via DOM ──────────────
+
+      function getCheckoutCtrl() {
+        var formEl = $element[0].closest('af-form');
+        if (!formEl) { return null; }
+        var checkoutEl = formEl.querySelector('af-sum-up-embedded-checkout');
+        return checkoutEl
+          ? angular.element(checkoutEl).controller('afSumUpEmbeddedCheckout')
+          : null;
+      }
+
       // ── Actions ──────────────────────────────────────────────────────────
 
       ctrl.edit = function () {
-        if (_orchestrator) { _orchestrator.cancelActive(); }
-        else if (ctrl.onEdit) { ctrl.onEdit(); }
+        if (_orchestrator) { _orchestrator.cancelActive(); return; }
+        var checkout = getCheckoutCtrl();
+        if (checkout) { checkout.cancelAndUnlock(); return; }
+        if (ctrl.onEdit) { ctrl.onEdit(); }
       };
 
       ctrl.isActive = function () {
-        if (_orchestrator) { return _orchestrator.active; }
+        if (_orchestrator) { return !!_orchestrator.active; }
+        var checkout = getCheckoutCtrl();
+        if (checkout) { return !!checkout.active; }
         return !!ctrl.active;
       };
 
