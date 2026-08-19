@@ -11,22 +11,6 @@
       this.$onInit = () => {
         loadSdkScript('https://gateway.sumup.com/gateway/ecom/card/v2/sdk.js');
         this.getFormElement().on('crmFormSuccess', listener);
-
-        // Real-time Order Summary: watch the amount input as the user types
-        var self = this;
-        var form = this.getFormElement()[0];
-        if (form) {
-          form.addEventListener('input', function (event) {
-            var el = event.target;
-            // Match any number/text input that looks like the donation amount field
-            if (el && (el.type === 'number' || el.name && el.name.indexOf('contribution_amount') !== -1)) {
-              var val = parseFloat(el.value);
-              $scope.$applyAsync(function () {
-                self.pendingAmount = (!isNaN(val) && val > 0) ? val.toFixed(2) : null;
-              });
-            }
-          });
-        }
       };
       this.$onDestroy = () => this.getFormElement().off('crmFormSuccess', listener);
       this.getFormElement = () => $element.closest('af-form');
@@ -59,6 +43,15 @@
       this.currency = 'EUR';
       this.checkout = null;
       this.donorSummary = '';
+      // Filled by crm-checkout-summary via on-total-change binding.
+      this.summaryTotal = 0;
+      this.summaryCurrency = 'EUR';
+
+      // Called by crm-checkout-summary whenever the computed total changes.
+      this.onSummaryTotalChange = (total, currency) => {
+        this.summaryTotal = total || 0;
+        this.summaryCurrency = currency || 'EUR';
+      };
 
       this.onAfformSuccess = (data) => {
         var response = data.submissionResponse;

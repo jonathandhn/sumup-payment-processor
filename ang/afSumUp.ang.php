@@ -6,12 +6,17 @@ return [
     ],
     'js' => [
         'js/checkout.js',
+        'ang/afCheckoutLayout.js',
+        'ang/afCheckoutLayout/*.js',
         'ang/afSumUp.js',
         'ang/afSumUp/*.js',
     ],
-    'partials' => ['ang/afSumUp'],
+    'partials' => [
+        'ang/afCheckoutLayout',
+        'ang/afSumUp',
+    ],
     'settings' => [],
-    'requires' => ['afCheckout'],
+    'requires' => ['afCheckout', 'afCheckoutLayout'],
     'exports' => [
         'af-sum-up-embedded-checkout' => 'E',
         'af-sum-up-payment-methods' => 'E',
@@ -20,5 +25,6 @@ return [
         'af-sum-up-solo-checkout' => 'E',
         'af-sum-up-qr-checkout' => 'E',
         'af-sum-up-hybrid-checkout' => 'E',
+        'crm-checkout-summary' => 'E',
     ],
 ];
