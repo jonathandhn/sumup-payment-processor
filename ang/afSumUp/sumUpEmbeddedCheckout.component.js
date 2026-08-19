@@ -25,11 +25,15 @@
             resolve();
             return;
           }
+          // Temporarily disable AMD so the UMD SumUp SDK does not call
+          // define() and conflict with CiviCRM's RequireJS (FormBuilder).
+          var savedDefine = window.define;
+          window.define = undefined;
           var script = document.createElement('script');
           script.src = url;
           script.async = true;
-          script.onload = () => resolve();
-          script.onerror = () => reject(new Error('Failed to load ' + url));
+          script.onload = function () { window.define = savedDefine; resolve(); };
+          script.onerror = function () { window.define = savedDefine; reject(new Error('Failed to load ' + url)); };
           document.head.appendChild(script);
         });
       }
