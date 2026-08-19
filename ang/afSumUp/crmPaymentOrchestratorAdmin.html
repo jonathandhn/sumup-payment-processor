@@ -1,62 +1,33 @@
-<div class="form-group crm-payment-orchestrator-admin"
-  ng-init="
-    payOpts = {};
-    angular.forEach(($ctrl.node.options || '').split(','), function(k) {
-      if (k.trim()) { payOpts[k.trim()] = true; }
-    });
-    function syncOpts() {
-      var keys = [];
-      angular.forEach(payOpts, function(v, k) { if (v) { keys.push(k); } });
-      $ctrl.node.options = keys.join(',');
-    }
-  ">
+<div class="form-group crm-payment-orchestrator-admin">
 
-  <p class="help-block" style="margin-bottom:0.75rem">
-    Sélectionnez les méthodes de paiement proposées sur ce formulaire.
-    L'utilisateur pourra choisir parmi celles-ci lors du paiement.
+  <label><strong>Méthodes de paiement proposées</strong></label>
+  <p class="description" style="margin-bottom:0.5rem">
+    Saisissez les clés des processeurs à proposer, séparées par une virgule.
   </p>
 
-  <div ng-if="!CRM.afCheckout || !CRM.afCheckout.checkoutOptions">
-    <em class="text-muted">afCheckout non chargé — les options ne sont pas disponibles.</em>
-  </div>
+  <input type="text"
+    class="form-control"
+    ng-model="$ctrl.node.options"
+    placeholder="sumup_embedded_checkout_SumUP"
+    style="font-family:monospace;font-size:0.85rem" />
 
-  <div ng-repeat="(key, opt) in CRM.afCheckout.checkoutOptions" class="checkbox"
-    style="margin:0.25rem 0">
-    <label style="font-weight:normal">
-      <input type="checkbox"
-        ng-model="payOpts[key]"
-        ng-change="syncOpts()">
-      <strong>{{ payLabels[key] || key }}</strong>
-      <span ng-if="opt.description" class="text-muted"> — {{ opt.description }}</span>
-    </label>
-  </div>
+  <p class="description" style="margin-top:0.75rem;margin-bottom:0.25rem">
+    <strong>Clés disponibles (selon les extensions installées) :</strong>
+  </p>
+  <ul style="margin:0;padding-left:1.25rem;font-size:0.85rem">
+    <li><code>sumup_embedded_checkout_SumUP</code> — Carte bancaire (SumUp)</li>
+    <li><code>sumup_solo_checkout_SumUP</code> — Terminal SumUp</li>
+    <li><code>sumup_qr_checkout_SumUP</code> — QR Code SumUp</li>
+    <li><code>sumup_hybrid_checkout_SumUP</code> — Terminal / QR SumUp</li>
+    <li><code>pay_later</code> — Virement bancaire / Paiement différé</li>
+    <li><code>stancer_embedded_checkout_Stancer</code> — Carte (Stancer)</li>
+    <li><code>stancer_hosted_checkout_Stancer</code> — Stancer (redirect)</li>
+    <li><code>helloasso_hosted_checkout_helloasso</code> — HelloAsso</li>
+  </ul>
+
+  <p class="description" style="margin-top:0.5rem">
+    <em>Exemple avec deux options :</em>
+    <code>sumup_embedded_checkout_SumUP,pay_later</code>
+  </p>
 
 </div>
-
-<script>
-// Provide human-readable labels for the checkbox list.
-// This runs inline in the afGuiEditor scope — no separate controller needed.
-(function () {
-  var meta = [
-    { prefix: 'sumup_embedded_checkout', label: 'Carte bancaire (SumUp)' },
-    { prefix: 'sumup_solo_checkout',     label: 'Terminal SumUp' },
-    { prefix: 'sumup_qr_checkout',       label: 'QR Code SumUp' },
-    { prefix: 'sumup_hybrid_checkout',   label: 'Terminal / QR SumUp' },
-    { prefix: 'stancer_embedded_checkout', label: 'Carte (Stancer)' },
-    { prefix: 'stancer_hosted_checkout', label: 'Stancer (redirect)' },
-    { prefix: 'helloasso_hosted_checkout', label: 'HelloAsso' },
-    { prefix: 'pay_later',               label: 'Virement bancaire / paiement différé' }
-  ];
-  var map = {};
-  if (CRM.afCheckout && CRM.afCheckout.checkoutOptions) {
-    angular.forEach(CRM.afCheckout.checkoutOptions, function (opt, key) {
-      for (var i = 0; i < meta.length; i++) {
-        if (key.indexOf(meta[i].prefix) === 0) { map[key] = meta[i].label; break; }
-      }
-    });
-  }
-  // Expose on the current scope so ng-repeat can use {{ payLabels[key] }}.
-  var scope = angular.element(document.currentScript.previousElementSibling).scope();
-  if (scope) { scope.payLabels = map; }
-})();
-</script>
