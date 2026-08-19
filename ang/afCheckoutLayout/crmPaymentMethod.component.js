@@ -3,21 +3,14 @@
 
   // crm-payment-method — child of crm-payment-orchestrator.
   //
-  // Registers itself with the orchestrator and shows its transcluded content
-  // only when the orchestrator's activeMethod matches its key.
-  //
-  // Bindings:
-  //   key      — unique identifier, e.g. "card", "transfer", "check"
-  //   label    — tab label shown to the user
-  //   icon     — Font Awesome class, e.g. "fa-credit-card"
-  //   set-data — plain object merged into the Contribution entity fields
-  //              when this method is selected, e.g.:
-  //              {payment_processor_id: null, is_pay_later: 1, payment_instrument_id: 5}
+  // IMPORTANT: We do NOT use require: { orchestrator: '^^crmPaymentOrchestrator' }
+  // because this component is transcluded into the orchestrator's slot.
+  // In Angular 1, ^^ require is resolved at compile time in the OUTER scope,
+  // before the transclusion is placed in the DOM — so the orchestrator ancestor
+  // is not yet visible. Instead we use $postLink + DOM traversal, which runs
+  // after the element is in its final DOM position inside the orchestrator.
 
   angular.module('afCheckoutLayout').component('crmPaymentMethod', {
-    require: {
-      orchestrator: '^^crmPaymentOrchestrator'
-    },
     bindings: {
       key: '@',
       label: '@',
@@ -27,23 +20,42 @@
     transclude: true,
     template:
       '<div class="crm-payment-method" ' +
-          'ng-class="{\'crm-payment-method--active\': $ctrl.orchestrator.activeMethod === $ctrl.key}">' +
-        '<ng-transclude ng-show="$ctrl.orchestrator.activeMethod === $ctrl.key"></ng-transclude>' +
+          'ng-class="{\'crm-payment-method--active\': $ctrl.isActive()}">' +
+        '<ng-transclude ng-show="$ctrl.isActive()"></ng-transclude>' +
       '</div>',
-    controller: function () {
+    controller: function ($element, $scope) {
       var ctrl = this;
+      ctrl._orchestrator = null;
 
-      ctrl.$onInit = function () {
-        ctrl.orchestrator.register({
-          key: ctrl.key,
-          label: ctrl.label,
-          icon: ctrl.icon || 'fa-circle-o',
-          setData: ctrl.setData || null
-        });
+      ctrl.$postLink = function () {
+        // Walk up the DOM to find the orchestrator — works after transclusion.
+        var el = $element[0].parentElement;
+        while (el) {
+          var orch = angular.element(el).controller('crmPaymentOrchestrator');
+          if (orch) {
+            ctrl._orchestrator = orch;
+            orch.register({
+              key: ctrl.key,
+              label: ctrl.label,
+              icon: ctrl.icon || 'fa-circle-o',
+              setData: ctrl.setData || null
+            });
+            break;
+          }
+          el = el.parentElement;
+        }
       };
 
       ctrl.$onDestroy = function () {
-        ctrl.orchestrator.unregister(ctrl.key);
+        if (ctrl._orchestrator) {
+          ctrl._orchestrator.unregister(ctrl.key);
+        }
+      };
+
+      ctrl.isActive = function () {
+        return ctrl._orchestrator
+          ? ctrl._orchestrator.activeMethod === ctrl.key
+          : true; // standalone fallback: always show
       };
     }
   });

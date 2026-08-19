@@ -4,20 +4,13 @@
   // crm-checkout-summary — PSP-agnostic order summary component.
   //
   // Pattern: same as crmTaxReduction (fr.collectifidem.taxreduction).
-  // We intentionally do NOT use require: { afForm: '^^afForm' } because
-  // this component is placed inside crm-payment-orchestrator which uses
-  // transclusion — Angular 1's ^^ require does not reliably cross
-  // transclusion boundaries. Instead we access afForm via DOM traversal
-  // (angular.element(formEl).controller('afForm')), which works regardless
-  // of where the component sits in the compiled tree.
+  //
+  // We avoid require: { afForm/orchestrator } because this component is
+  // transcluded. Angular 1's ^^ require resolves at compile time in the
+  // outer scope — before transclusion places the element in the DOM.
+  // Instead we use DOM traversal in $postLink (final DOM position guaranteed).
 
   angular.module('afCheckoutLayout').component('crmCheckoutSummary', {
-    require: {
-      // Optional — when inside crm-payment-orchestrator, active state and
-      // Edit action are delegated to the orchestrator automatically.
-      // This require DOES work because the orchestrator is a direct DOM ancestor.
-      orchestrator: '?^^crmPaymentOrchestrator'
-    },
     bindings: {
       active: '<?',
       onTotalChange: '&?',
@@ -27,35 +20,45 @@
     controller: function ($scope, $element) {
       var ctrl = this;
       var ts = CRM.ts('sumup-payment-processor');
+      var _orchestrator = null;
 
       ctrl.$onInit = function () {
         ctrl.lineItems = [];
         ctrl.total = 0;
         ctrl.currency = 'EUR';
         ctrl.hasTotal = false;
-
-        // Reactive watch — fires whenever afForm data changes.
+        // Watch is set up here; getAfForm() is called lazily at each digest.
         $scope.$watch(readLineItems, renderSummary, true);
+      };
 
-        // Price-set / membership / event fields fire this DOM event.
+      ctrl.$postLink = function () {
+        // DOM is in its final position after transclusion — safe to traverse.
         var formEl = $element[0].closest('af-form');
         if (formEl) {
           var onFilters = function () {
-            $scope.$evalAsync(function () {
-              renderSummary(readLineItems());
-            });
+            $scope.$evalAsync(function () { renderSummary(readLineItems()); });
           };
           formEl.addEventListener('crmFormChangeFilters', onFilters);
           $scope.$on('$destroy', function () {
             formEl.removeEventListener('crmFormChangeFilters', onFilters);
           });
         }
+
+        // Find the orchestrator by walking up the DOM.
+        var el = $element[0].parentElement;
+        while (el) {
+          var orch = angular.element(el).controller('crmPaymentOrchestrator');
+          if (orch) { _orchestrator = orch; break; }
+          el = el.parentElement;
+        }
+
+        // Trigger an initial render now that we have the orchestrator.
+        $scope.$evalAsync(function () { renderSummary(readLineItems()); });
       };
 
       // ── Line-item reader ─────────────────────────────────────────────────
 
       function getAfForm() {
-        // DOM-based access — works through transclusion boundaries.
         var formEl = $element[0].closest('af-form');
         return formEl ? angular.element(formEl).controller('afForm') : null;
       }
@@ -73,18 +76,12 @@
           var data = afForm.getData(entityName);
           var fields = (data && data[0] && data[0].fields) ? data[0].fields : {};
           var raw = fields['default_contribution_amount.contribution_amount'] ||
-            fields.total_amount ||
-            null;
+            fields.total_amount || null;
           var amt = parseAmount(raw);
           if (amt > 0) {
-            lines.push({
-              label: label,
-              amount: amt,
-              currency: fields.currency || 'EUR'
-            });
+            lines.push({ label: label, amount: amt, currency: fields.currency || 'EUR' });
           }
         });
-
         return lines;
       }
 
@@ -92,30 +89,23 @@
 
       function renderSummary(lines) {
         ctrl.lineItems = lines || [];
-        ctrl.total = ctrl.lineItems.reduce(function (sum, l) { return sum + l.amount; }, 0);
+        ctrl.total = ctrl.lineItems.reduce(function (s, l) { return s + l.amount; }, 0);
         ctrl.currency = ctrl.lineItems.length ? ctrl.lineItems[0].currency : 'EUR';
         ctrl.hasTotal = ctrl.total > 0;
         ctrl.formattedTotal = ctrl.hasTotal ? formatCurrency(ctrl.total, ctrl.currency) : null;
-        ctrl.lineItems.forEach(function (l) {
-          l.formatted = formatCurrency(l.amount, l.currency);
-        });
-        if (ctrl.onTotalChange) {
-          ctrl.onTotalChange({ total: ctrl.total, currency: ctrl.currency });
-        }
+        ctrl.lineItems.forEach(function (l) { l.formatted = formatCurrency(l.amount, l.currency); });
+        if (ctrl.onTotalChange) { ctrl.onTotalChange({ total: ctrl.total, currency: ctrl.currency }); }
       }
 
       // ── Actions ──────────────────────────────────────────────────────────
 
       ctrl.edit = function () {
-        if (ctrl.orchestrator) {
-          ctrl.orchestrator.cancelActive();
-        } else if (ctrl.onEdit) {
-          ctrl.onEdit();
-        }
+        if (_orchestrator) { _orchestrator.cancelActive(); }
+        else if (ctrl.onEdit) { ctrl.onEdit(); }
       };
 
       ctrl.isActive = function () {
-        if (ctrl.orchestrator) { return ctrl.orchestrator.active; }
+        if (_orchestrator) { return _orchestrator.active; }
         return !!ctrl.active;
       };
 
