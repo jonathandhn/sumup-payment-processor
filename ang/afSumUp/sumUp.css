@@ -414,12 +414,11 @@
   display: block;
   font-size: 1rem !important;
   font-weight: 700 !important;
-  margin: 0.75rem auto 0 !important;
-  min-width: 12rem;
-  padding: 0.75rem 2rem !important;
+  margin: 0.75rem 0 0 !important;
+  padding: 0.75rem 1.5rem !important;
   text-align: center;
   transition: background 0.15s ease, transform 0.1s ease;
-  width: auto;
+  width: 100%;
 }
 
 .crm-sumup-btn-pay:hover {
@@ -1373,7 +1372,7 @@
   background: #ffffff;
   border: 1px solid #e5e7eb;
   border-radius: 0.5rem;
-  padding: 0 1.5rem;
+  padding: 1.25rem 1.5rem 0;
 }
 
 /* Legend (section titles) */
@@ -1446,15 +1445,25 @@
 }
 
 /* Continue button */
+/* "Continuer vers le paiement" — same black pill as SumUp native "Payer X €" */
 .crm-sumup-continue-btn {
-  border-radius: 0.65rem !important;
+  background: #101010 !important;
+  border: 1px solid #101010 !important;
+  border-radius: 1.5rem !important;
+  color: #ffffff !important;
   font-size: 1rem !important;
-  font-weight: 600 !important;
+  font-weight: 700 !important;
   margin: 1rem 0 1.25rem !important;
   padding: 0.75rem 1.5rem !important;
+  text-align: center;
+  transition: background 0.15s ease !important;
   width: 100%;
 }
 
+.crm-sumup-continue-btn:hover {
+  background: #262626 !important;
+  border-color: #262626 !important;
+}
 
 /* Payment fieldset wrapper (right column) — strip browser default fieldset style */
 .crm-sumup-payment-fieldset {

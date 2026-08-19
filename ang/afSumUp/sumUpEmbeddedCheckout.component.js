@@ -119,6 +119,9 @@
         form.find('button[type="submit"]').not($element.find('*')).show();
         this.active = false;
         this.completed = false;
+        this.amount = '';
+        this.currency = 'EUR';
+        this.pendingAmount = null;
         this.donorSummary = '';
         this.error = '';
         var container = $element[0].querySelector('#sumup-afform-mount-target');
