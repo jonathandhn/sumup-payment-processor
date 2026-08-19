@@ -10,8 +10,10 @@ return [
         'ang/afSumUp/sumUp.css',
     ],
     'js' => [
-        // afCheckoutLayout files MUST load before afSumUp files so the
-        // Angular module exists when afSumUp declares it as a dependency.
+        // checkout.js MUST load first — it defines window.CiviSumUpCheckout.
+        'js/checkout.js',
+        // afCheckoutLayout files load before afSumUp so the Angular module
+        // exists when afSumUp declares it as a dependency.
         'ang/afCheckoutLayout.js',
         'ang/afCheckoutLayout/*.js',
         'ang/afSumUp.js',

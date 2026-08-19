@@ -24,9 +24,9 @@
   //   </crm-payment-orchestrator>
 
   angular.module('afCheckoutLayout').component('crmPaymentOrchestrator', {
-    require: {
-      afForm: '^^afForm'
-    },
+    // No require: { afForm } — the orchestrator itself may be transcluded in
+    // some afform contexts, breaking Angular's ^^ require traversal.
+    // We access afForm via angular.element(formEl).controller('afForm') instead.
     bindings: {
       entityName: '@?'
     },
@@ -94,11 +94,18 @@
 
       // ── Private ───────────────────────────────────────────────────────────
 
+      function getAfForm() {
+        var formEl = $element[0].closest('af-form');
+        return formEl ? angular.element(formEl).controller('afForm') : null;
+      }
+
       // Merge the method's setData into the live Contribution entity fields so
       // the next afform.submit() carries the right payment_processor_id etc.
       function applyMethodData(method) {
         if (!method || !method.setData || !ctrl.entityName) { return; }
-        var data = ctrl.afForm.getData(ctrl.entityName);
+        var afForm = getAfForm();
+        if (!afForm) { return; }
+        var data = afForm.getData(ctrl.entityName);
         if (data && data[0] && data[0].fields) {
           angular.extend(data[0].fields, method.setData);
         }

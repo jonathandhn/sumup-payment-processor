@@ -3,30 +3,24 @@
 
   // crm-checkout-summary — PSP-agnostic order summary component.
   //
-  // Uses the same pattern as crmTaxReduction (fr.collectifidem.taxreduction):
-  //   - require: { afForm: '^^afForm' } to read live form data
-  //   - $scope.$watch(read, render, true) for reactive updates
-  //   - crmFormChangeFilters DOM event for price-set / membership / event changes
-  //
-  // Outputs:
-  //   - renders line items + total
-  //   - fires on-total-change(total, currency) so the PSP widget knows the amount
-  //   - fires on-edit() when the user clicks the Edit button
+  // Pattern: same as crmTaxReduction (fr.collectifidem.taxreduction).
+  // We intentionally do NOT use require: { afForm: '^^afForm' } because
+  // this component is placed inside crm-payment-orchestrator which uses
+  // transclusion — Angular 1's ^^ require does not reliably cross
+  // transclusion boundaries. Instead we access afForm via DOM traversal
+  // (angular.element(formEl).controller('afForm')), which works regardless
+  // of where the component sits in the compiled tree.
 
   angular.module('afCheckoutLayout').component('crmCheckoutSummary', {
     require: {
-      afForm: '^^afForm',
-      // Optional: when inside crm-payment-orchestrator, active state and
+      // Optional — when inside crm-payment-orchestrator, active state and
       // Edit action are delegated to the orchestrator automatically.
+      // This require DOES work because the orchestrator is a direct DOM ancestor.
       orchestrator: '?^^crmPaymentOrchestrator'
     },
     bindings: {
-      // True when the PSP payment step is active (checkout in progress).
-      active: '<',
-      // Callback fired whenever the computed total changes.
-      // Receives { total: Number, currency: String }.
+      active: '<?',
       onTotalChange: '&?',
-      // Callback fired when the user clicks the Edit button.
       onEdit: '&?'
     },
     templateUrl: '~/afCheckoutLayout/crmCheckoutSummary.html',
@@ -40,12 +34,10 @@
         ctrl.currency = 'EUR';
         ctrl.hasTotal = false;
 
-        // Reactive watch: fires whenever afForm data changes (text input, select, etc.)
+        // Reactive watch — fires whenever afForm data changes.
         $scope.$watch(readLineItems, renderSummary, true);
 
-        // Price-set / membership / event fields fire this DOM event on the fieldset.
-        // We listen on af-form because crm-checkout-summary may sit outside any
-        // specific fieldset (it is in the payment slot, not in a data fieldset).
+        // Price-set / membership / event fields fire this DOM event.
         var formEl = $element[0].closest('af-form');
         if (formEl) {
           var onFilters = function () {
@@ -60,22 +52,26 @@
         }
       };
 
-      // ── Line-item reader ────────────────────────────────────────────────
+      // ── Line-item reader ─────────────────────────────────────────────────
+
+      function getAfForm() {
+        // DOM-based access — works through transclusion boundaries.
+        var formEl = $element[0].closest('af-form');
+        return formEl ? angular.element(formEl).controller('afForm') : null;
+      }
 
       function readLineItems() {
         var lines = [];
         var formEl = $element[0].closest('af-form');
-        if (!formEl || !ctrl.afForm) { return lines; }
+        var afForm = getAfForm();
+        if (!formEl || !afForm) { return lines; }
 
-        // Contribution entities → contribution_amount price field or total_amount
         var contributions = formEl.querySelectorAll('af-entity[type="Contribution"]');
         Array.prototype.forEach.call(contributions, function (entity) {
           var entityName = entity.getAttribute('name');
           var label = entity.getAttribute('label') || ts('Contribution');
-          var data = ctrl.afForm.getData(entityName);
+          var data = afForm.getData(entityName);
           var fields = (data && data[0] && data[0].fields) ? data[0].fields : {};
-          // CiviCRM price field path used by default New Donation afform.
-          // Falls back to total_amount when a custom price set is not used.
           var raw = fields['default_contribution_amount.contribution_amount'] ||
             fields.total_amount ||
             null;
@@ -89,16 +85,10 @@
           }
         });
 
-        // Membership entities → fetch fee from MembershipType if type is chosen
-        // (Phase 2: requires async API call — deferred)
-
-        // Participant entities → price fields via crmFormChangeFilters
-        // (Phase 2: CiviCRM price-field values parsed from event)
-
         return lines;
       }
 
-      // ── Render ──────────────────────────────────────────────────────────
+      // ── Render ───────────────────────────────────────────────────────────
 
       function renderSummary(lines) {
         ctrl.lineItems = lines || [];
@@ -109,16 +99,14 @@
         ctrl.lineItems.forEach(function (l) {
           l.formatted = formatCurrency(l.amount, l.currency);
         });
-
         if (ctrl.onTotalChange) {
           ctrl.onTotalChange({ total: ctrl.total, currency: ctrl.currency });
         }
       }
 
-      // ── Actions ─────────────────────────────────────────────────────────
+      // ── Actions ──────────────────────────────────────────────────────────
 
       ctrl.edit = function () {
-        // Prefer orchestrator when available (orchestrator manages active state).
         if (ctrl.orchestrator) {
           ctrl.orchestrator.cancelActive();
         } else if (ctrl.onEdit) {
@@ -131,7 +119,7 @@
         return !!ctrl.active;
       };
 
-      // ── Helpers ─────────────────────────────────────────────────────────
+      // ── Helpers ──────────────────────────────────────────────────────────
 
       function parseAmount(value) {
         if (value === null || value === undefined || value === '') { return 0; }
