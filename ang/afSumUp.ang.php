@@ -24,7 +24,7 @@ return [
         'ang/afSumUp',
     ],
     'settings' => [],
-    'requires' => ['afCheckout'],
+    'requires' => ['afCheckout', 'afCheckoutLayout'],
     'exports' => [
         // afSumUp components
         'af-sum-up-embedded-checkout' => 'E',
