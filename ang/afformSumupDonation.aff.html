@@ -1,6 +1,6 @@
 <af-form ctrl="afform">
   <af-entity data="{source: 'SumUp Donation'}" type="Individual" name="Individual1" label="Individual 1" actions="{create: true, update: false}" security="FBAC" contact-dedupe="Individual.Supervised" />
-  <af-entity data="{contact_id: 'Individual1', checkout_option: 'sumup_embedded', financial_type_id: 1}" type="Contribution" name="Contribution1" label="Contribution 1" actions="{create: true, update: false}" security="FBAC" />
+  <af-entity data="{contact_id: 'Individual1', checkout_option: 'sumup_embedded_checkout_SumUP', financial_type_id: 1}" type="Contribution" name="Contribution1" label="Contribution 1" actions="{create: true, update: false}" security="FBAC" />
 
   <div class="crm-sumup-bento-layout">
 
@@ -22,47 +22,24 @@
         <crm-tax-reduction />
       </fieldset>
 
-      <!-- Continue button: only for card payment -->
       <button class="af-button btn btn-primary crm-sumup-continue-btn" crm-icon="fa-lock"
         ng-click="afform.submit()"
-        ng-if="afform.showSubmitButton && paymentMethod !== 'transfer'">
+        ng-if="afform.showSubmitButton">
         Continuer vers le paiement
       </button>
 
     </div>
 
-    <!-- RIGHT COLUMN: Summary + method tabs + payment widget -->
-    <div class="crm-sumup-bento-col crm-sumup-bento-col--payment" ng-init="paymentMethod = 'card'">
+    <!-- RIGHT COLUMN: Order summary + SumUp embedded checkout -->
+    <div class="crm-sumup-bento-col crm-sumup-bento-col--payment">
 
-      <!-- Order summary — standalone, reads live form data via afForm -->
+      <!-- Order summary (reads live form data) -->
       <crm-checkout-summary></crm-checkout-summary>
 
-      <!-- Method selector tabs -->
-      <div class="crm-payment-tabs">
-        <button type="button" class="crm-payment-tab"
-          ng-class="{'crm-payment-tab--active': paymentMethod === 'card'}"
-          ng-click="paymentMethod = 'card'">
-          <i class="crm-i fa-credit-card" aria-hidden="true"></i> Carte bancaire
-        </button>
-        <button type="button" class="crm-payment-tab"
-          ng-class="{'crm-payment-tab--active': paymentMethod === 'transfer'}"
-          ng-click="paymentMethod = 'transfer'">
-          <i class="crm-i fa-university" aria-hidden="true"></i> Virement bancaire
-        </button>
-      </div>
-
-      <!-- Card: SumUp embedded checkout -->
-      <div ng-show="paymentMethod === 'card'">
-        <fieldset af-fieldset="Contribution1" class="crm-sumup-payment-fieldset">
-          <af-field name="checkout_params" defn="{label: false}" />
-        </fieldset>
-      </div>
-
-      <!-- Offline: instructions + confirm button -->
-      <!-- crm-offline-payment sets payment_processor_id=null + is_pay_later=1 before submit -->
-      <div ng-show="paymentMethod === 'transfer'">
-        <crm-offline-payment entity-name="Contribution1"></crm-offline-payment>
-      </div>
+      <!-- SumUp embedded checkout widget -->
+      <fieldset af-fieldset="Contribution1" class="crm-sumup-payment-fieldset">
+        <af-field name="checkout_params" defn="{label: false}" />
+      </fieldset>
 
     </div>
 
