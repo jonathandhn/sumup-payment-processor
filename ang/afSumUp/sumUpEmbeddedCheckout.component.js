@@ -101,7 +101,8 @@
         this.currency = checkout.currency || 'EUR';
         this.checkout = checkout;
         this.error = '';
-        if (this.orchestrator) { this.orchestrator.setActive(true); }
+        var orch = this._orch || this.orchestrator;
+        if (orch) { orch.setActive(true); }
 
         ensureCheckoutSdk().then(() => {
           if (!window.CiviSumUpCheckout || typeof window.CiviSumUpCheckout.mount !== 'function') {
@@ -135,7 +136,8 @@
         this.currency = 'EUR';
         this.donorSummary = '';
         this.error = '';
-        if (this.orchestrator) { this.orchestrator.setActive(false); }
+        var orch = this._orch || this.orchestrator;
+        if (orch) { orch.setActive(false); }
         var container = $element[0].querySelector('#sumup-afform-mount-target');
         if (container) {
           container.innerHTML = '';

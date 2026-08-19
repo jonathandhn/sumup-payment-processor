@@ -83,7 +83,9 @@
       '<div class="crm-payment-orchestrator">' +
 
         // Only show anything after form submission.
-        '<div ng-if="$ctrl.submitted">' +
+        // ng-show (not ng-if) keeps the component in DOM from $onInit so
+        // applyCheckoutOption fires before af-checkout-block initialises.
+        '<div ng-show="$ctrl.submitted">' +
 
           // ── Multiple methods: boudin selector ─────────────────────────────
           '<div class="crm-payment-boudins" ng-if="$ctrl.methods.length > 1">' +
