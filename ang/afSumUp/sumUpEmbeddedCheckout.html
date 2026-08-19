@@ -20,7 +20,7 @@
   </div>
 
   <div ng-hide="$ctrl.completed">
-    <!-- Accordion Step 1: Summary Recap Line -->
+    <!-- Accordion Step 1: Summary Recap Line (Adyen Bento Style) -->
     <div class="crm-sumup-accordion-item crm-sumup-accordion-item--collapsed" ng-click="$ctrl.cancelAndUnlock()">
       <div class="crm-sumup-accordion-header">
         <div class="crm-sumup-accordion-header__left">
@@ -38,7 +38,7 @@
       </div>
     </div>
 
-    <!-- Accordion Step 2: Payment -->
+    <!-- Accordion Step 2: Choose a payment method -->
     <div class="crm-sumup-accordion-item crm-sumup-accordion-item--active">
       <div class="crm-sumup-accordion-header">
         <div class="crm-sumup-accordion-header__left">
@@ -47,7 +47,9 @@
             <span class="crm-sumup-step-title">{{ts('Choose a payment method')}}</span>
           </div>
         </div>
-        <!-- Amount intentionally omitted: already shown in crm-checkout-summary -->
+        <div class="crm-sumup-accordion-header__right">
+          <span class="crm-sumup-total-amount">{{$ctrl.amount}} {{$ctrl.currency}}</span>
+        </div>
       </div>
 
       <div class="crm-sumup-accordion-body">
