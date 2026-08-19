@@ -38,39 +38,74 @@
       </div>
     </div>
 
-    <!-- Accordion Step 2: Payment method -->
+    <!-- Accordion Step 2: Choose a payment method -->
     <div class="crm-sumup-accordion-item crm-sumup-accordion-item--active">
-      <div class="crm-sumup-accordion-header crm-sumup-accordion-header--methods">
-
-        <!-- Multiple methods: show orchestrator tabs inside the header -->
-        <div ng-if="$ctrl._orch && $ctrl._orch.methods.length > 1"
-          class="crm-sumup-method-tabs">
-          <button type="button"
-            ng-repeat="m in $ctrl._orch.methods"
-            class="crm-sumup-method-tab"
-            ng-class="{'crm-sumup-method-tab--active': $ctrl._orch.activeMethod === m.key}"
-            ng-click="$ctrl._orch.switchMethod(m); $event.stopPropagation()">
-            <i class="crm-i {{m.icon}}" aria-hidden="true"></i> {{m.label}}
-          </button>
-        </div>
-
-        <!-- Single method: simple title -->
-        <div ng-if="!$ctrl._orch || $ctrl._orch.methods.length <= 1"
-          class="crm-sumup-accordion-header__left">
+      <div class="crm-sumup-accordion-header">
+        <div class="crm-sumup-accordion-header__left">
           <span class="crm-sumup-step-badge crm-sumup-step-badge--active">2</span>
           <div class="crm-sumup-step-info">
-            <span class="crm-sumup-step-title">{{ts('Payment')}}</span>
+            <span class="crm-sumup-step-title">{{ts('Choose a payment method')}}</span>
           </div>
         </div>
-
-        <!-- Amount supprimé ici : déjà affiché dans crm-checkout-summary -->
+        <!-- Montant retiré ici : déjà affiché dans crm-checkout-summary -->
       </div>
 
       <div class="crm-sumup-accordion-body">
-        <div class="crm-sumup-payment-frame">
+
+        <!-- ── Plusieurs méthodes : un boudin par méthode ────────────── -->
+        <div class="crm-payment-boudins"
+          ng-if="$ctrl._orch && $ctrl._orch.methods.length > 1">
+
+          <div class="crm-payment-boudin"
+            ng-repeat="m in $ctrl._orch.methods"
+            ng-class="{'crm-payment-boudin--active': $ctrl._orch.activeMethod === m.key}">
+
+            <!-- En-tête du boudin : clic pour sélectionner cette méthode -->
+            <div class="crm-payment-boudin__header"
+              ng-click="$ctrl._orch.switchMethod(m)">
+              <span class="crm-payment-boudin__radio">
+                <i class="crm-i"
+                  ng-class="$ctrl._orch.activeMethod === m.key ? 'fa-dot-circle-o' : 'fa-circle-o'"
+                  aria-hidden="true"></i>
+              </span>
+              <i class="crm-i {{m.icon}}" aria-hidden="true"></i>
+              <span class="crm-payment-boudin__label">{{m.label}}</span>
+            </div>
+
+            <!-- Corps du boudin : visible uniquement quand actif -->
+            <div class="crm-payment-boudin__content"
+              ng-show="$ctrl._orch.activeMethod === m.key">
+
+              <!-- Widget SumUp embedded -->
+              <div class="crm-sumup-payment-frame"
+                ng-if="m.key.indexOf('sumup_embedded_checkout') === 0">
+                <div class="crm-sumup-embedded-checkout" id="sumup-afform-mount-target"></div>
+              </div>
+
+              <!-- Stancer embedded -->
+              <div class="crm-sumup-payment-frame"
+                ng-if="m.key.indexOf('stancer_embedded_checkout') === 0">
+                <div class="crm-sumup-embedded-checkout" id="sumup-afform-mount-target"></div>
+              </div>
+
+              <!-- Virement / paiement différé -->
+              <div class="crm-payment-offline-info"
+                ng-if="m.key === 'pay_later'">
+                <i class="crm-i fa-info-circle" aria-hidden="true"></i>
+                {{ts('You will receive payment instructions by email.')}}
+              </div>
+
+            </div>
+          </div><!-- end ng-repeat -->
+        </div><!-- end boudins -->
+
+        <!-- ── Méthode unique : widget direct, sans boudin ──────────── -->
+        <div class="crm-sumup-payment-frame"
+          ng-if="!$ctrl._orch || $ctrl._orch.methods.length <= 1">
           <div class="crm-sumup-embedded-checkout" id="sumup-afform-mount-target"></div>
         </div>
-      </div>
-    </div>
+
+      </div><!-- end accordion-body -->
+    </div><!-- end step 2 -->
   </div>
 </div>
