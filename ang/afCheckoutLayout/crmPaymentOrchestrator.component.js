@@ -106,7 +106,10 @@
         }
 
         if (ctrl.options) {
-          var keys = ctrl.options.split(',').map(function (k) { return k.trim(); });
+          var seen = {};
+          var keys = ctrl.options.split(',')
+            .map(function (k) { return k.trim(); })
+            .filter(function (k) { return k && !seen[k] && (seen[k] = true); });
 
           // Build method list.
           ctrl.methods = keys.map(function (key) {
@@ -130,15 +133,17 @@
 
       ctrl.$postLink = function () {
         // Listen for successful afform submission → reveal payment content.
-        var formEl = $element[0].closest('af-form');
-        if (!formEl) { return; }
+        // afform fires crmFormSuccess via jQuery trigger(), NOT a native DOM
+        // event, so we must use jQuery .on() — addEventListener() won't fire.
+        var $formEl = CRM.$(  $element[0].closest('af-form')  );
+        if (!$formEl.length) { return; }
 
         var onSuccess = function () {
           $scope.$applyAsync(function () { ctrl.submitted = true; });
         };
-        formEl.addEventListener('crmFormSuccess', onSuccess);
+        $formEl.on('crmFormSuccess', onSuccess);
         $scope.$on('$destroy', function () {
-          formEl.removeEventListener('crmFormSuccess', onSuccess);
+          $formEl.off('crmFormSuccess', onSuccess);
         });
       };
 
