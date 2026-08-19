@@ -34,11 +34,11 @@
         // Translate defaults
         ctrl.safeInstructions = $sce.trustAsHtml(
           ctrl.instructions ||
-          '<p>' + ctrl.ts('Please complete your payment via bank transfer. We will record your contribution upon receipt.') + '</p>'
+          '<p>' + ctrl.ts('Click below to confirm your contribution. You will receive an email with the bank transfer details.') + '</p>'
         );
         ctrl.safeSuccess = $sce.trustAsHtml(
           ctrl.successMessage ||
-          ctrl.ts('Thank you! Your contribution has been registered as pending. We will confirm it upon receipt of your payment.')
+          ctrl.ts('Thank you! Your contribution has been registered. A confirmation email with the payment details has been sent to you.')
         );
 
         // Listen for general afform submit success

@@ -51,11 +51,7 @@
         -->
         <crm-payment-method key="transfer" label="Virement bancaire" icon="fa-university"
           set-data="{payment_processor_id: null, is_pay_later: 1, payment_instrument_id: 5}">
-          <crm-offline-payment
-            instructions="&lt;p&gt;Effectuez votre virement à l'ordre de l'association :&lt;/p&gt;&lt;p&gt;&lt;strong&gt;IBAN :&lt;/strong&gt; FR76 … · &lt;strong&gt;BIC :&lt;/strong&gt; …&lt;/p&gt;&lt;p&gt;Référence : votre nom et prénom.&lt;/p&gt;"
-            button-label="Confirmer ma réservation"
-            success-message="Merci ! Votre don a bien été enregistré. Nous le validerons dès réception de votre virement.">
-          </crm-offline-payment>
+          <crm-offline-payment></crm-offline-payment>
         </crm-payment-method>
 
       </crm-payment-orchestrator>
