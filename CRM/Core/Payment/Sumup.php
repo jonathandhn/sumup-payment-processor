@@ -19,7 +19,7 @@ use SumUp\Exception\SDKException;
 
 // phpcs:disable PSR1.Classes.ClassDeclaration.MissingNamespace
 // phpcs:disable Squiz.Classes.ValidClassName.NotCamelCaps
-class CRM_Core_Payment_Sumup extends CRM_Core_Payment
+class CRM_Core_Payment_SumupBase extends CRM_Core_Payment
 {
     private const WIDGET_SIGNED_FIELDS = [
         'cancel_url',
@@ -1110,7 +1110,7 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
     {
         http_response_code(204);
         if (strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? '')) !== 'POST') {
-            CRM_Utils_System::civiExit();
+            return;
         }
 
         $rawPayload = (string) file_get_contents('php://input');
@@ -1146,10 +1146,10 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             || !in_array($eventType, $acceptedEvents, true)
         ) {
             if (!is_array($payload) || !in_array($eventType, $acceptedEvents, true)) {
-                CRM_Utils_System::civiExit();
+                return;
             }
             http_response_code(400);
-            CRM_Utils_System::civiExit();
+            return;
         }
 
         try {
@@ -1173,8 +1173,6 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             ));
             http_response_code(500);
         }
-
-        CRM_Utils_System::civiExit();
     }
 
     /**
@@ -1184,6 +1182,9 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
      */
     public function processWebhookEvent(array $webhookEvent): bool
     {
+        if ($this->rejectDuplicateWebhookEvent($webhookEvent)) {
+            return false;
+        }
         $webhookId = (int) ($webhookEvent['id'] ?? 0);
         try {
             $payload = json_decode((string) ($webhookEvent['data'] ?? ''), true);
@@ -3183,6 +3184,50 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             ->execute();
     }
 
+    /**
+     * Deduplicate webhook events using MJWShared's canonical helper when available.
+     *
+     * With MJWShared 1.6+, delegates to PaymentProcessorWebhook::rejectIfDuplicate()
+     * and then stamps processed_date (the helper does not set it).
+     * With MJWShared 1.5.x (no helper class), performs an equivalent local query.
+     *
+     * @param array<string, mixed> $webhookEvent
+     */
+    private function rejectDuplicateWebhookEvent(array $webhookEvent): bool
+    {
+        $helperClass = '\\Civi\\Mjwshared\\PaymentProcessorWebhook';
+        if (class_exists($helperClass)) {
+            if (!$helperClass::rejectIfDuplicate($webhookEvent, E::ts('Duplicate webhook ignored.'))) {
+                return false;
+            }
+            // The helper records status + message; stamp processed_date as well.
+            PaymentprocessorWebhook::update(false)
+                ->addWhere('id', '=', (int) ($webhookEvent['id'] ?? 0))
+                ->addValue('processed_date', 'now')
+                ->execute();
+            return true;
+        }
+
+        // MJWShared 1.5.x fallback: look for an earlier row with the same event_id.
+        $duplicates = PaymentprocessorWebhook::get(false)
+            ->selectRowCount()
+            ->addWhere('event_id', '=', (string) ($webhookEvent['event_id'] ?? ''))
+            ->addWhere('id', '<', (int) ($webhookEvent['id'] ?? 0))
+            ->execute()
+            ->count();
+        if (!$duplicates) {
+            return false;
+        }
+
+        PaymentprocessorWebhook::update(false)
+            ->addWhere('id', '=', (int) ($webhookEvent['id'] ?? 0))
+            ->addValue('status', 'error')
+            ->addValue('message', E::ts('Duplicate webhook ignored.'))
+            ->addValue('processed_date', 'now')
+            ->execute();
+        return true;
+    }
+
     private function finishWebhook(int $webhookId, string $status, string $message): void
     {
         if ($webhookId <= 0) {
@@ -3198,3 +3243,19 @@ class CRM_Core_Payment_Sumup extends CRM_Core_Payment
             ->execute();
     }
 }
+
+// ── MJWShared 1.6 conditional adapter ────────────────────────────────────────
+// phpcs:disable PSR1.Classes.ClassDeclaration.MissingNamespace
+// phpcs:disable PSR1.Classes.ClassDeclaration.MultipleClasses
+if (interface_exists('Civi\\Mjwshared\\PaymentProcessorWebhookInterface')) {
+    // phpcs:ignore Generic.Files.LineLength.TooLong
+    class CRM_Core_Payment_SumupWebhook extends CRM_Core_Payment_SumupBase implements \Civi\Mjwshared\PaymentProcessorWebhookInterface
+    {
+    }
+} else {
+    class CRM_Core_Payment_SumupWebhook extends CRM_Core_Payment_SumupBase
+    {
+    }
+}
+
+class_alias(CRM_Core_Payment_SumupWebhook::class, 'CRM_Core_Payment_Sumup');
