@@ -2,7 +2,11 @@
   'use strict';
 
   angular.module('afSumUp').component('afSumUpEmbeddedCheckout', {
-    require: {afCheckoutBlock: '^^afCheckoutBlock'},
+    require: {
+      afCheckoutBlock: '^^afCheckoutBlock',
+      // Optional: notify the payment orchestrator when this checkout becomes active.
+      orchestrator: '?^^crmPaymentOrchestrator'
+    },
     templateUrl: '~/afSumUp/sumUpEmbeddedCheckout.html',
     controller: function ($scope, $element) {
       var ts = $scope.ts = CRM.ts('sumup-payment-processor');
@@ -13,6 +17,16 @@
         this.getFormElement().on('crmFormSuccess', listener);
       };
       this.$onDestroy = () => this.getFormElement().off('crmFormSuccess', listener);
+      this.$postLink = () => {
+        // ^^require doesn't cross transclusion — find orchestrator via querySelector.
+        var formEl = $element[0].closest('af-form');
+        if (formEl) {
+          var orchEl = formEl.querySelector('crm-payment-orchestrator');
+          if (orchEl) {
+            this._orch = angular.element(orchEl).controller('crmPaymentOrchestrator');
+          }
+        }
+      };
       this.getFormElement = () => $element.closest('af-form');
 
       function loadSdkScript(url) {
@@ -21,11 +35,15 @@
             resolve();
             return;
           }
+          // Temporarily disable AMD so the UMD SumUp SDK does not call
+          // define() and conflict with CiviCRM's RequireJS (FormBuilder).
+          var savedDefine = window.define;
+          window.define = undefined;
           var script = document.createElement('script');
           script.src = url;
           script.async = true;
-          script.onload = () => resolve();
-          script.onerror = () => reject(new Error('Failed to load ' + url));
+          script.onload = function () { window.define = savedDefine; resolve(); };
+          script.onerror = function () { window.define = savedDefine; reject(new Error('Failed to load ' + url)); };
           document.head.appendChild(script);
         });
       }
@@ -42,6 +60,16 @@
       this.amount = '';
       this.currency = 'EUR';
       this.checkout = null;
+      this.donorSummary = '';
+      // Filled by crm-checkout-summary via on-total-change binding.
+      this.summaryTotal = 0;
+      this.summaryCurrency = 'EUR';
+
+      // Called by crm-checkout-summary whenever the computed total changes.
+      this.onSummaryTotalChange = (total, currency) => {
+        this.summaryTotal = total || 0;
+        this.summaryCurrency = currency || 'EUR';
+      };
 
       this.onAfformSuccess = (data) => {
         var response = data.submissionResponse;
@@ -63,7 +91,7 @@
         if (email) {
           nameParts.push(email);
         }
-        this.donorSummary = nameParts.join(' · ');
+        this.donorSummary = nameParts.join(' · ') || email || '';
 
         form.addClass('crm-sumup-form--compact');
 
@@ -73,6 +101,8 @@
         this.currency = checkout.currency || 'EUR';
         this.checkout = checkout;
         this.error = '';
+        var orch = this._orch || this.orchestrator;
+        if (orch) { orch.setActive(true); }
 
         ensureCheckoutSdk().then(() => {
           if (!window.CiviSumUpCheckout || typeof window.CiviSumUpCheckout.mount !== 'function') {
@@ -102,8 +132,12 @@
         form.find('button[type="submit"]').not($element.find('*')).show();
         this.active = false;
         this.completed = false;
+        this.amount = '';
+        this.currency = 'EUR';
         this.donorSummary = '';
         this.error = '';
+        var orch = this._orch || this.orchestrator;
+        if (orch) { orch.setActive(false); }
         var container = $element[0].querySelector('#sumup-afform-mount-target');
         if (container) {
           container.innerHTML = '';

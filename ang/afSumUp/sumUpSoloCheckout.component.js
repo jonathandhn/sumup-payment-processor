@@ -154,24 +154,27 @@
         CRM.api4('Contribution', 'continueCheckout', {
           token: this.token,
         }).then((response) => {
-          response = response && response[0] ? response[0] : response;
-          if (!response || !response.status) {
+          var res = (response && response[0]) ? response[0] : response;
+          var status = (res && res.status) ? res.status : (response && response.status ? response.status : '');
+          if (!status) {
             throw new Error('Missing SumUp checkout status');
           }
-          if (response.token) {
+          if (res && res.token) {
+            this.token = res.token;
+          } else if (response && response.token) {
             this.token = response.token;
           }
-          if (response.redirect) {
-            $window.location.assign(response.redirect);
+          if (res && res.redirect) {
+            $window.location.assign(res.redirect);
             return;
           }
 
-          if (response.status === 'success' || response.status === 'completed') {
-            this.onPaymentSuccess(response);
+          if (status === 'success' || status === 'completed') {
+            this.onPaymentSuccess(res || response);
             return;
           }
 
-          if (response.status === 'failed' || response.status === 'cancelled') {
+          if (status === 'failed' || status === 'cancelled') {
             // Solo reader hardware timeout or cancel should mark the reader expired while keeping QR active
             this.terminalExpired = true;
           }

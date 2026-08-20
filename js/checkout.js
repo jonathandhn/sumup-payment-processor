@@ -67,7 +67,7 @@
       && (config.mode === 'wallet' || config.mode === 'widget_wallet');
     var id = ++instance;
     var message = document.createElement('p');
-    message.className = 'messages status no-popup';
+    message.className = 'crm-sumup-status-message';
     message.hidden = true;
 
     function showMessage(text) {
@@ -149,16 +149,6 @@
 
     container.replaceChildren();
     container.appendChild(message);
-
-    if (config.businessName) {
-      var merchantTrust = document.createElement('p');
-      merchantTrust.className = 'crm-sumup-merchant-trust';
-      merchantTrust.appendChild(document.createTextNode(ts('Secure payment to') + ' '));
-      var merchantName = document.createElement('strong');
-      merchantName.textContent = config.businessName;
-      merchantTrust.appendChild(merchantName);
-      container.insertBefore(merchantTrust, message);
-    }
 
     var tasks = [];
     var walletCardSeparator = null;
@@ -493,6 +483,8 @@
         tasks.push(mountCardWidget());
       }
     }
+
+
 
     if (config.cancelUrl) {
       var cancel = document.createElement('a');

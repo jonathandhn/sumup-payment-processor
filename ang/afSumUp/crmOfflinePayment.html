@@ -1,0 +1,17 @@
+<div class="crm-offline-payment">
+
+  <div class="crm-offline-payment__instructions" ng-if="!$ctrl.confirmed" ng-bind-html="$ctrl.safeInstructions"></div>
+
+  <button type="button" class="btn btn-primary crm-offline-payment__submit" ng-if="!$ctrl.confirmed" ng-click="$ctrl.submit()">
+    <i class="crm-i fa-check" aria-hidden="true"></i>
+    {{$ctrl.buttonLabel || $ctrl.ts('Confirm')}}
+  </button>
+
+  <div class="crm-offline-payment__success" ng-if="$ctrl.confirmed">
+    <div class="crm-offline-payment__success-icon">
+      <i class="crm-i fa-check-circle" aria-hidden="true"></i>
+    </div>
+    <p ng-bind-html="$ctrl.safeSuccess"></p>
+  </div>
+
+</div>

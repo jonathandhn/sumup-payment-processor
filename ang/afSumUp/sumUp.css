@@ -1,4 +1,24 @@
-.crm-sumup-checkout-block,
+/* ── Page-level overrides for the dedicated checkout page ─────────────── */
+body.sumup-checkout-page {
+  background: #f3f4f6 !important;
+  background-image: none !important;
+}
+
+body.sumup-checkout-page main {
+  margin: 0 auto;
+  max-width: 1100px;
+  padding: 2.5rem 1.5rem;
+}
+
+/* Hide the CiviCRM page title block on the checkout page (afform title is enough) */
+body.sumup-checkout-page .crm-page-title-wrapper,
+body.sumup-checkout-page .page-title,
+body.sumup-checkout-page h1.crm-page-title {
+  display: none !important;
+}
+
+/* ── SumUp component variables ─────────────────────────────────────────── */
+
 .crm-sumup-embedded-checkout,
 .crm-sumup-payment-methods,
 .crm-sumup-readers-admin,
@@ -409,16 +429,16 @@
   align-items: center;
   background: #101010 !important;
   border: 1px solid #101010 !important;
-  border-radius: 0.6rem !important;
+  border-radius: 1.5rem !important;
   color: #ffffff !important;
-  display: inline-flex;
+  display: block;
   font-size: 1rem !important;
   font-weight: 700 !important;
-  gap: 0.5rem;
-  justify-content: center;
+  margin: 0.75rem 0 0 !important;
   padding: 0.75rem 1.5rem !important;
-  width: 100%;
+  text-align: center;
   transition: background 0.15s ease, transform 0.1s ease;
+  width: 100%;
 }
 
 .crm-sumup-btn-pay:hover {
@@ -473,17 +493,52 @@
 }
 
 .crm-sumup-merchant-trust {
-  color: var(--sumup-muted, #51575d);
-  font-size: 0.95rem;
-  margin: 0 0 1rem;
+  align-items: center;
+  color: var(--sumup-muted, #64748b);
+  display: flex;
+  font-size: 0.85rem;
+  gap: 0.35rem;
+  justify-content: center;
+  margin: 1.25rem 0 0.5rem;
   text-align: center;
 }
 
 .crm-sumup-merchant-trust strong {
-  color: var(--sumup-text, #101010);
+  color: var(--sumup-text, #0f172a);
+  font-weight: 600;
 }
 
-.crm-sumup-checkout-block [data-sumup-id='submit_button'],
+/* Status/loading message — replaces CiviCRM 'messages status no-popup' beige box */
+.crm-sumup-status-message {
+  align-items: center;
+  border-radius: 0.5rem;
+  color: #374151;
+  display: flex;
+  font-size: 0.9rem;
+  gap: 0.6rem;
+  margin: 0.75rem 0;
+  padding: 0.75rem 1rem;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+}
+
+.crm-sumup-status-message::before {
+  animation: crm-sumup-spin 0.8s linear infinite;
+  border: 2px solid #d1d5db;
+  border-radius: 50%;
+  border-top-color: #006f69;
+  content: '';
+  display: inline-block;
+  flex-shrink: 0;
+  height: 1rem;
+  width: 1rem;
+}
+
+@keyframes crm-sumup-spin {
+  to { transform: rotate(360deg); }
+}
+
+
 .crm-sumup-embedded-checkout [data-sumup-id='submit_button'],
 .crm-sumup-replacement-widget [data-sumup-id='submit_button'] {
   align-items: center;
@@ -1163,48 +1218,598 @@
   color: #c62828;
 }
 
-/* Alma-Style Compact Mode: Hide non-checkout fields, tax disclaimers, and submit button */
-.crm-sumup-form--compact fieldset[af-fieldset]:not(:has(af-sum-up-embedded-checkout)),
-.crm-sumup-form--compact af-field:not([name="checkout_params"]),
-.crm-sumup-form--compact crm-tax-reduction,
-.crm-sumup-form--compact legend.af-title,
-.crm-sumup-form--compact button.af-button {
+/* Compact Mode — SINGLE-column layout only (no .crm-sumup-bento-layout present).
+   When the bento 2-column template is active, NONE of these rules apply. */
+.crm-sumup-form--compact:not(:has(.crm-sumup-bento-layout)) fieldset[af-fieldset]:not(:has(af-sum-up-embedded-checkout)),
+.crm-sumup-form--compact:not(:has(.crm-sumup-bento-layout)) af-field:not([name="checkout_params"]),
+.crm-sumup-form--compact:not(:has(.crm-sumup-bento-layout)) crm-tax-reduction,
+.crm-sumup-form--compact:not(:has(.crm-sumup-bento-layout)) legend.af-title,
+.crm-sumup-form--compact:not(:has(.crm-sumup-bento-layout)) button.af-button {
   display: none !important;
 }
 
-/* Ensure SumUp's internal fieldsets and elements are ALWAYS visible */
-.crm-sumup-alma-container fieldset,
-.crm-sumup-alma-container [data-testid="form-fieldset"],
-.crm-sumup-alma-container [data-testid="card"] {
+/* Bento 2-column layout: keep fieldsets visible */
+.crm-sumup-bento-layout fieldset[af-fieldset] {
   display: block !important;
 }
 
-.crm-sumup-compact-recap {
-  align-items: center;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.75rem;
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 1.25rem;
-  padding: 0.75rem 1.15rem;
+/* Bento 2-column layout compact mode: lock inputs, hide submit only */
+.crm-sumup-form--compact .crm-sumup-bento-col--form input,
+.crm-sumup-form--compact .crm-sumup-bento-col--form select,
+.crm-sumup-form--compact .crm-sumup-bento-col--form textarea {
+  background-color: #f8fafc !important;
+  color: #64748b !important;
+  cursor: not-allowed !important;
+  opacity: 0.7 !important;
+  pointer-events: none !important;
 }
 
-.crm-sumup-compact-recap__content {
+.crm-sumup-form--compact .crm-sumup-continue-btn {
+  display: none !important;
+}
+
+
+/* Ensure SumUp submit button and internal card SDK elements are ALWAYS visible */
+.crm-sumup-embedded-checkout [data-sumup-id="submit_button"],
+.crm-sumup-embedded-checkout button[type="submit"],
+.crm-sumup-accordion-checkout [data-sumup-id="submit_button"],
+.crm-sumup-accordion-checkout button[type="submit"] {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Ensure SumUp's internal fieldsets and elements are ALWAYS visible */
+.crm-sumup-accordion-checkout fieldset,
+.crm-sumup-accordion-checkout [data-testid="form-fieldset"],
+.crm-sumup-accordion-checkout [data-testid="card"] {
+  display: block !important;
+}
+
+/* ===================================================================
+   BENTO 2-COLUMN LAYOUT (native grid in afformSumupDonation.aff.html)
+   =================================================================== */
+
+/* Desktop: 2 columns side-by-side */
+.crm-sumup-bento-layout {
+  align-items: start;
+  box-sizing: border-box;
+  display: grid;
+  gap: 1.75rem;
+  grid-template-columns: minmax(300px, 1.15fr) minmax(320px, 1fr);
+  margin: 0 auto;
+  max-width: 1100px;
+  padding: 1.5rem;
+  width: 100%;
+}
+
+/* Mobile: single column, form on top, payment below */
+@media (max-width: 768px) {
+  .crm-sumup-bento-layout {
+    grid-template-columns: 1fr;
+    padding: 1rem;
+  }
+
+  .crm-sumup-bento-col--payment {
+    order: 2;
+  }
+
+  .crm-sumup-bento-col--form {
+    order: 1;
+  }
+}
+
+/* Recap panel Edit button (shown when payment is active) */
+.crm-sumup-recap-edit {
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.85rem;
+  padding-top: 0.75rem;
+}
+
+.crm-sumup-recap-edit__btn {
   align-items: center;
-  color: #334155;
+  background: transparent !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 0.375rem !important;
+  color: #374151 !important;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 0.85rem !important;
+  font-weight: 500 !important;
+  gap: 0.4rem;
+  padding: 0.4rem 0.85rem !important;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.crm-sumup-recap-edit__btn:hover {
+  background: #f9fafb !important;
+  border-color: #d1d5db !important;
+}
+
+.crm-sumup-recap-edit__btn .crm-i {
+  color: #6b7280;
+  font-size: 0.8rem;
+}
+
+/* Each column */
+.crm-sumup-bento-col {
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+/* Right column: fully transparent — only the inner cards (recap-panel, accordion) have borders */
+.crm-sumup-bento-col--payment,
+.crm-sumup-bento-col--payment > fieldset.af-container,
+.crm-sumup-bento-col--payment > .crm-sumup-payment-fieldset {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Desktop: sticky right column */
+.crm-sumup-bento-col--payment {
+  position: sticky;
+  top: 1.5rem;
+}
+
+/* In 2-column Bento layout: fully hide Synthèse bar (Modifier is inside Order Summary card) */
+.crm-sumup-bento-col--payment .crm-sumup-accordion-item--collapsed {
+  display: none !important;
+}
+
+.crm-sumup-bento-panel {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #f1f5f9;
+  border-radius: 0;
+  box-sizing: border-box;
+  margin-bottom: 0;
+  padding: 1.25rem 0;
+}
+
+.crm-sumup-bento-panel:last-of-type {
+  border-bottom: none;
+  padding-bottom: 1.5rem;
+}
+
+/* Strip CiviCRM's default af-container fieldset card styling inside our layout */
+.crm-sumup-bento-layout fieldset.af-container {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* The outer left column card — ONE single white card */
+.crm-sumup-bento-col--form {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  padding: 1.25rem 1.5rem 0;
+}
+
+/* Legend (section titles) */
+.crm-sumup-bento-panel legend.af-title,
+.crm-sumup-bento-layout fieldset legend {
+  color: #111827;
+  float: none !important;
+  font-size: 0.95rem !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.01em;
+  margin-bottom: 1rem;
+  padding: 0 !important;
+  width: 100%;
+}
+
+/* Input fields — clean, modern, Adyen-style */
+.crm-sumup-bento-layout input[type="text"],
+.crm-sumup-bento-layout input[type="email"],
+.crm-sumup-bento-layout input[type="number"],
+.crm-sumup-bento-layout input[type="tel"],
+.crm-sumup-bento-layout select {
+  background: #ffffff !important;
+  border: 1px solid #d1d5db !important;
+  border-radius: 0.375rem !important;
+  box-shadow: none !important;
+  font-size: 0.95rem !important;
+  height: 2.625rem !important;
+  padding: 0 0.75rem !important;
+  transition: border-color 0.15s ease !important;
+  width: 100% !important;
+}
+
+.crm-sumup-bento-layout input:focus,
+.crm-sumup-bento-layout select:focus {
+  border-color: #006f69 !important;
+  box-shadow: 0 0 0 2px rgba(0, 111, 105, 0.1) !important;
+  outline: none !important;
+}
+
+/* Labels */
+.crm-sumup-bento-layout label {
+  color: #374151 !important;
+  font-size: 0.85rem !important;
+  font-weight: 500 !important;
+}
+
+/* Remove CiviCRM's default .crm-form-block and af-field extra wrappers padding */
+.crm-sumup-bento-layout .crm-section,
+.crm-sumup-bento-layout .crm-form-block {
+  margin-bottom: 0 !important;
+}
+
+.crm-sumup-bento-layout af-field {
+  display: block;
+  margin-bottom: 0.85rem;
+}
+
+.crm-sumup-bento-layout af-field:last-child {
+  margin-bottom: 0;
+}
+
+
+
+.crm-sumup-bento-panel legend.af-title {
+  color: #0f172a;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin-bottom: 1rem;
+}
+
+/* Continue button */
+/* "Continuer vers le paiement" — same black pill as SumUp native "Payer X €" */
+.crm-sumup-continue-btn {
+  align-items: center !important;
+  background: #101010 !important;
+  border: 1px solid #101010 !important;
+  border-radius: 1.5rem !important;
+  box-sizing: border-box !important;
+  color: #ffffff !important;
+  display: flex !important;
+  font-size: 1rem !important;
+  font-weight: 700 !important;
+  justify-content: center !important;
+  margin: 1rem 0 1.25rem !important;
+  padding: 0.75rem 1.5rem !important;
+  text-align: center !important;
+  transition: background 0.15s ease !important;
+  width: 100% !important;
+}
+
+.crm-sumup-continue-btn:hover {
+  background: #262626 !important;
+  border-color: #262626 !important;
+}
+
+/* Payment fieldset wrapper (right column) — strip browser default fieldset style */
+.crm-sumup-payment-fieldset {
+  border: none !important;
+  margin: 0 !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+}
+
+.crm-sumup-payment-fieldset > legend {
+  display: none !important;
+}
+
+/* ===================================================================
+   RÉCAPITULATIF DE COMMANDE (right column, always visible)
+   =================================================================== */
+
+.crm-sumup-recap-panel {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  box-sizing: border-box;
+  margin-bottom: 0.65rem;
+  padding: 1.25rem 1.5rem;
+}
+
+.crm-sumup-recap-header {
+  align-items: center;
+  color: #0f172a;
   display: flex;
   font-size: 0.95rem;
-  font-weight: 500;
+  font-weight: 700;
+  gap: 0.5rem;
+  letter-spacing: -0.01em;
+  margin-bottom: 1rem;
+}
+
+.crm-sumup-recap-header .crm-i {
+  color: #006f69;
+  font-size: 1rem;
+}
+
+.crm-sumup-recap-lines {
+  display: flex;
+  flex-direction: column;
   gap: 0.5rem;
 }
 
-.crm-sumup-compact-recap__content .crm-i {
-  color: #64748b;
-  font-size: 1.15rem;
+.crm-sumup-recap-line {
+  align-items: baseline;
+  display: flex;
+  justify-content: space-between;
 }
 
-.crm-sumup-compact-recap__edit-btn {
+.crm-sumup-recap-line__label {
+  color: #475569;
+  font-size: 0.9rem;
+}
+
+.crm-sumup-recap-line__amount {
+  color: #0f172a;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.crm-sumup-recap-line__amount--pending {
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+.crm-sumup-recap-divider {
+  border-top: 1px solid #e2e8f0;
+  margin: 0.85rem 0;
+}
+
+.crm-sumup-recap-total {
+  align-items: baseline;
+  display: flex;
+  justify-content: space-between;
+}
+
+.crm-sumup-recap-total__label {
+  color: #0f172a;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.crm-sumup-recap-total__amount {
+  color: #006f69;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.crm-sumup-recap-secure {
+  align-items: center;
+  border-top: 1px solid #f1f5f9;
+  color: #64748b;
+  display: flex;
+  font-size: 0.8rem;
+  gap: 0.4rem;
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+}
+
+.crm-sumup-recap-secure .crm-i {
+  color: #006f69;
+}
+
+
+.crm-sumup-accordion-checkout {
+  animation: crmSumUpFadeSlideIn 0.35s ease-out;
+  box-sizing: border-box;
+  margin: 0.5rem auto;
+  max-width: 100%;
+  pointer-events: auto !important;
+  position: relative;
+  width: 100%;
+  z-index: 10;
+}
+
+.crm-sumup-accordion-item {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  box-sizing: border-box;
+  margin-bottom: 0.65rem;
+  overflow: hidden;
+  transition: border-color 0.15s ease;
+}
+
+.crm-sumup-accordion-item--collapsed {
+  background: #ffffff;
+  border-color: #e5e7eb;
+  cursor: pointer;
+}
+
+.crm-sumup-accordion-item--collapsed:hover {
+  background: #fafafa;
+  border-color: #d1d5db;
+}
+
+.crm-sumup-accordion-item--active {
+  background: #ffffff;
+  border-color: #006f69;
+  box-shadow: none;
+}
+
+.crm-sumup-accordion-header {
+  align-items: center;
+  box-sizing: border-box;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  padding: 0.9rem 1.25rem;
+  user-select: none;
+}
+
+.crm-sumup-accordion-header__left {
+  align-items: center;
+  display: flex;
+  flex: 1;
+  gap: 0.85rem;
+  min-width: 0;
+}
+
+.crm-sumup-accordion-header__right {
+  align-items: center;
+  display: flex;
+  flex-shrink: 0;
+  gap: 0.5rem;
+}
+
+/* ── Payment boudins (sub-accordions inside step 2) ─────────────────────── */
+
+.crm-payment-boudins {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.crm-payment-boudin {
+  border: 1.5px solid #e2e8f0;
+  border-radius: 0.6rem;
+  margin-bottom: 0.5rem;
+  overflow: hidden;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.crm-payment-boudin--active {
+  border-color: #006f69;
+  box-shadow: 0 0 0 2px rgba(0, 111, 105, 0.12);
+}
+
+.crm-payment-boudin__header {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  gap: 0.65rem;
+  padding: 0.8rem 1rem;
+  user-select: none;
+}
+
+.crm-payment-boudin__header:hover {
+  background: #f8fafc;
+}
+
+.crm-payment-boudin--active .crm-payment-boudin__header {
+  background: #f0faf9;
+}
+
+.crm-payment-boudin__radio {
+  color: #94a3b8;
+  flex-shrink: 0;
+  font-size: 1rem;
+}
+
+.crm-payment-boudin--active .crm-payment-boudin__radio {
+  color: #006f69;
+}
+
+.crm-payment-boudin__label {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.crm-payment-boudin__content {
+  border-top: 1px solid #e2e8f0;
+  padding: 1rem;
+}
+
+.crm-payment-boudin--active .crm-payment-boudin__content {
+  border-top-color: #b2dbd9;
+}
+
+/* Offline / pay_later info message inside boudin */
+.crm-payment-offline-info {
+  align-items: center;
+  color: #475569;
+  display: flex;
+  font-size: 0.9rem;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+}
+
+.crm-payment-offline-info .crm-i {
+  color: #006f69;
+  flex-shrink: 0;
+}
+
+.crm-sumup-step-badge {
+  align-items: center;
+  border-radius: 999px;
+  display: inline-flex;
+  flex-shrink: 0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  height: 26px;
+  justify-content: center;
+  width: 26px;
+}
+
+.crm-sumup-step-badge--done {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.crm-sumup-step-badge--active {
+  background: #006f69;
+  color: #ffffff;
+}
+
+.crm-sumup-step-badge--locked,
+.crm-sumup-step-badge--waiting {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #64748b;
+}
+
+.crm-sumup-accordion-item--locked,
+.crm-sumup-accordion-item--waiting {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 0.85rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  cursor: default;
+  margin-top: 0.85rem;
+}
+
+.crm-sumup-accordion-item--waiting .crm-sumup-step-title {
+  color: #334155;
+}
+
+.crm-sumup-card-schemes-preview {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.35rem;
+}
+
+.crm-sumup-step-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.crm-sumup-step-title {
+  color: #0f172a;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+.crm-sumup-step-subtitle {
+  color: #64748b;
+  font-size: 0.85rem;
+  line-height: 1.3;
+  margin-top: 0.15rem;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.crm-sumup-accordion-edit-btn {
   align-items: center;
   background: #ffffff;
   border: 1px solid #cbd5e1;
@@ -1219,10 +1824,152 @@
   transition: all 0.15s ease;
 }
 
-.crm-sumup-compact-recap__edit-btn:hover {
+.crm-sumup-accordion-edit-btn:hover {
   background: #f1f5f9;
   border-color: #94a3b8;
   color: #0f172a;
+}
+
+.crm-sumup-total-amount {
+  color: #0f172a;
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+/* Bord-à-Bord Body & Payment Integration */
+.crm-sumup-accordion-body {
+  border-top: 1px solid #e2e8f0;
+  padding: 0 !important; /* Seamless bord-à-bord without nested borders */
+}
+
+.crm-sumup-accordion-checkout .crm-sumup-embedded-checkout {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+  min-height: auto !important;
+  padding: 0 !important;
+}
+
+.crm-sumup-accordion-checkout .crm-sumup-checkout__cancel {
+  display: none !important;
+}
+
+.crm-sumup-accordion-checkout .crm-sumup-method-selector {
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  display: flex;
+  flex-direction: column;
+  gap: 0 !important;
+  margin: 0 !important;
+  width: 100%;
+}
+
+.crm-sumup-accordion-checkout .crm-sumup-choice {
+  background: #ffffff;
+  border: none !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+  overflow: visible !important;
+  transition: background-color 0.15s ease;
+}
+
+.crm-sumup-accordion-checkout .crm-sumup-choice:last-child {
+  border-bottom: none !important;
+}
+
+.crm-sumup-accordion-checkout .crm-sumup-choice:hover {
+  background: #f8fafc;
+}
+
+.crm-sumup-accordion-checkout .crm-sumup-choice.crm-sumup-choice--selected {
+  background: #ffffff;
+  box-shadow: none !important;
+}
+
+.crm-sumup-accordion-checkout .crm-sumup-choice__header {
+  align-items: center;
+  box-sizing: border-box;
+  cursor: pointer;
+  display: flex;
+  gap: 0.85rem;
+  margin: 0;
+  padding: 0.85rem 1.25rem;
+  user-select: none;
+  width: 100%;
+}
+
+.crm-sumup-accordion-checkout .crm-sumup-choice__drawer {
+  background: transparent;
+  border-top: none;
+  box-sizing: border-box;
+  padding: 0 1.25rem 1.25rem;
+}
+
+/* Flatten SumUp Card SDK v2 internal fieldset boxes */
+.crm-sumup-accordion-checkout [id^="sumup-card-"] fieldset,
+.crm-sumup-accordion-checkout [id^="sumup-card-"] [data-testid="form-fieldset"],
+.crm-sumup-accordion-checkout [id^="sumup-card-"] [data-testid="card"],
+.crm-sumup-accordion-checkout [id^="sumup-card-"] > div {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+.crm-sumup-accordion-success {
+  background: #ffffff;
+  border: 1.5px solid #bbf7d0;
+  border-radius: 0.85rem;
+  box-shadow: 0 4px 16px rgba(22, 101, 52, 0.08);
+  padding: 2rem 1.25rem;
+  text-align: center;
+}
+
+.crm-sumup-accordion-success__icon {
+  color: #16a34a;
+  font-size: 3.5rem;
+  line-height: 1;
+  margin-bottom: 1rem;
+}
+
+.crm-sumup-accordion-success h3 {
+  color: #0f172a;
+  font-size: 1.4rem;
+  font-weight: 800;
+  margin: 0 0 0.5rem;
+}
+
+.crm-sumup-accordion-success p {
+  color: #64748b;
+  font-size: 0.95rem;
+  margin: 0 0 1.25rem;
+}
+
+.crm-sumup-accordion-summary__badge {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 999px;
+  color: #166534;
+  display: inline-block;
+  font-size: 1.15rem;
+  font-weight: 700;
+  padding: 0.5rem 1.25rem;
+}
+
+/* Ensure SumUp's internal fieldsets and elements are ALWAYS visible */
+.crm-sumup-accordion-checkout fieldset,
+.crm-sumup-accordion-checkout [data-testid="form-fieldset"],
+.crm-sumup-accordion-checkout [data-testid="card"],
+.crm-sumup-alma-container fieldset,
+.crm-sumup-alma-container [data-testid="form-fieldset"],
+.crm-sumup-alma-container [data-testid="card"] {
+  display: block !important;
 }
 
 .crm-sumup-alma-container {
@@ -1256,42 +2003,6 @@
   }
 }
 
-.crm-sumup-alma-summary {
-  border-bottom: 1.5px solid #f1f5f9;
-  margin-bottom: 1.25rem;
-  padding-bottom: 1rem;
-}
-
-.crm-sumup-alma-summary__row {
-  align-items: center;
-  display: flex;
-  justify-content: space-between;
-}
-
-.crm-sumup-alma-summary__label {
-  color: #475569;
-  font-size: 1.05rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-}
-
-.crm-sumup-alma-summary__amount {
-  color: #101010;
-  font-size: 1.4rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-}
-
-.crm-sumup-alma-payment-frame {
-  margin-bottom: 1rem;
-}
-
-.crm-sumup-alma-actions {
-  display: flex;
-  justify-content: center;
-  margin-top: 1rem;
-}
-
 .crm-sumup-btn-modify {
   align-items: center;
   background: none;
@@ -1312,71 +2023,26 @@
   text-decoration: underline;
 }
 
-.crm-sumup-alma-success {
-  padding: 1.5rem 1rem;
-  text-align: center;
-}
-
-.crm-sumup-alma-success__icon {
-  color: #16a34a;
-  font-size: 3.5rem;
-  line-height: 1;
-  margin-bottom: 1rem;
-}
-
-.crm-sumup-alma-success h3 {
-  color: #101010;
-  font-size: 1.4rem;
-  font-weight: 800;
-  margin: 0 0 0.5rem;
-}
-
-.crm-sumup-alma-success p {
-  color: #64748b;
-  font-size: 0.95rem;
-  margin: 0 0 1.25rem;
-}
-
-.crm-sumup-alma-summary__badge {
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
-  border-radius: 999px;
-  color: #166534;
-  display: inline-block;
-  font-size: 1.15rem;
-  font-weight: 700;
-  padding: 0.5rem 1.25rem;
-}
-
 @media (max-width: 640px) {
+  .crm-sumup-accordion-checkout,
   .crm-sumup-alma-container {
     border-radius: 0.85rem;
     box-sizing: border-box;
     margin: 0.5rem auto;
     max-width: 100%;
-    padding: 0.85rem 0.65rem;
     width: 100%;
   }
 
-  .crm-sumup-compact-recap {
-    align-items: center;
-    box-sizing: border-box;
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    padding: 0.6rem 0.75rem;
+  .crm-sumup-accordion-header {
+    padding: 0.75rem 0.85rem;
   }
 
-  .crm-sumup-compact-recap__content {
-    flex: 1 1 auto;
-    font-size: 0.88rem;
-    min-width: 0;
+  .crm-sumup-accordion-body {
+    padding: 0.65rem 0.65rem 1rem;
   }
 
-  .crm-sumup-compact-recap__donor {
-    hyphens: none;
-    overflow-wrap: anywhere;
-    word-break: break-word;
+  .crm-sumup-total-amount {
+    font-size: 1.1rem;
   }
 
   .crm-sumup-choice__header {
@@ -1385,10 +2051,6 @@
 
   .crm-sumup-choice__drawer {
     padding: 0.75rem 0.35rem;
-  }
-
-  .crm-sumup-alma-summary__amount {
-    font-size: 1.25rem;
   }
 }
 
@@ -1405,3 +2067,172 @@
   margin: 0 !important;
   padding: 0 !important;
 }
+
+/* ── crm-checkout-summary card ─────────────────────────────────────────── */
+
+.crm-checkout-summary {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  margin-bottom: 1rem;
+  padding: 1.25rem;
+}
+
+.crm-checkout-summary__header {
+  align-items: center;
+  color: #6b7280;
+  display: flex;
+  font-size: 0.78rem;
+  font-weight: 700;
+  gap: 0.5rem;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.85rem;
+  text-transform: uppercase;
+}
+
+.crm-checkout-summary__lines {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.crm-checkout-summary__line {
+  display: flex;
+  justify-content: space-between;
+}
+
+.crm-checkout-summary__line-label,
+.crm-checkout-summary__line-label--pending {
+  color: #374151;
+  font-size: 0.9rem;
+}
+
+.crm-checkout-summary__line-amount {
+  color: #374151;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.crm-checkout-summary__line-label--pending,
+.crm-checkout-summary__line-amount--pending {
+  color: #d1d5db;
+}
+
+.crm-checkout-summary__divider {
+  border-top: 1px solid #f1f5f9;
+  margin: 0.85rem 0;
+}
+
+.crm-checkout-summary__total {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.crm-checkout-summary__total-label {
+  color: #111827;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.crm-checkout-summary__total-amount {
+  color: #006f69;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.crm-checkout-summary__total-amount--pending {
+  color: #d1d5db;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.crm-checkout-summary__actions {
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.85rem;
+  padding-top: 0.75rem;
+}
+
+.crm-sumup-btn-modify {
+  align-items: center;
+  background: none;
+  border: 1px solid #d1d5db;
+  border-radius: 999px;
+  color: #374151;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 0.82rem;
+  font-weight: 600;
+  gap: 0.35rem;
+  padding: 0.35rem 0.9rem;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.crm-sumup-btn-modify:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+/* ── Payment orchestrator ─────────────────────────────────────────────────── */
+
+.crm-payment-orchestrator {
+  margin-top: 0.75rem;
+}
+
+.crm-payment-orchestrator__content {
+  /* no chrome — the af-checkout-block or the widget provides its own */
+}
+
+/* Method selector tabs — appear only after submit when N > 1 */
+.crm-payment-orchestrator__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.crm-payment-tab {
+  align-items: center;
+  background: #ffffff;
+  border: 1.5px solid #d1d5db;
+  border-radius: 2rem;
+  color: #374151;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 0.875rem;
+  font-weight: 500;
+  gap: 0.4rem;
+  padding: 0.4rem 1rem;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.crm-payment-tab:hover {
+  border-color: #006f69;
+  color: #006f69;
+}
+
+.crm-payment-tab--active {
+  background: #006f69;
+  border-color: #006f69;
+  color: #ffffff;
+}
+
+.crm-payment-tab--active:hover {
+  background: #005a55;
+  border-color: #005a55;
+  color: #ffffff;
+}
+
+/* Strip default fieldset chrome from the payment fieldset inside the orchestrator */
+.crm-payment-orchestrator .crm-sumup-payment-fieldset,
+.crm-payment-orchestrator fieldset.af-container {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
