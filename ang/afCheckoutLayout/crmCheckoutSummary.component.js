@@ -80,20 +80,121 @@
         var afForm = getAfForm();
         if (!formEl || !afForm) { return lines; }
 
-        var contributions = formEl.querySelectorAll('af-entity[type="Contribution"]');
-        Array.prototype.forEach.call(contributions, function (entity) {
+        // Scan all entity types that can produce payable line items in Afform
+        var entities = formEl.querySelectorAll('af-entity[type]');
+        Array.prototype.forEach.call(entities, function (entity) {
+          var entityType = entity.getAttribute('type');
           var entityName = entity.getAttribute('name');
-          var label = entity.getAttribute('label') || ts('Contribution');
+          var entityLabel = entity.getAttribute('label');
           var data = afForm.getData(entityName);
-          var fields = (data && data[0] && data[0].fields) ? data[0].fields : {};
-          var raw = fields['default_contribution_amount.contribution_amount'] ||
-            fields.total_amount || null;
-          var amt = parseAmount(raw);
-          if (amt > 0) {
-            lines.push({ label: label, amount: amt, currency: fields.currency || 'EUR' });
+          if (!data || !data[0] || !data[0].fields) { return; }
+          var fields = data[0].fields;
+          var currency = fields.currency || 'EUR';
+
+          if (entityType === 'Contribution') {
+            // 1. Direct amount field (standard donation / contribution)
+            var baseAmount = parseAmount(fields['default_contribution_amount.contribution_amount'] || fields.total_amount);
+            if (baseAmount > 0) {
+              lines.push({
+                label: entityLabel || ts('Contribution'),
+                amount: baseAmount,
+                currency: currency,
+                type: 'contribution'
+              });
+            }
+
+            // 2. Scan for additional price set fields on Contribution
+            Object.keys(fields).forEach(function (key) {
+              if (key === 'total_amount' || key === 'default_contribution_amount.contribution_amount' || key === 'checkout_params' || key === 'checkout_option') {
+                return;
+              }
+              var val = fields[key];
+              var fieldAmt = parseAmount(val);
+              if (fieldAmt > 0) {
+                var fieldLabel = formatFieldLabel(key, entityLabel || ts('Donation Option'));
+                lines.push({
+                  label: fieldLabel,
+                  amount: fieldAmt,
+                  currency: currency,
+                  type: 'contribution'
+                });
+              }
+            });
+          } else if (entityType === 'Participant') {
+            // Participant / Event ticket options & fees
+            var participantLabel = entityLabel || ts('Event Registration');
+            var feeAmt = parseAmount(fields.fee_amount);
+            if (feeAmt > 0) {
+              lines.push({
+                label: participantLabel,
+                amount: feeAmt,
+                currency: currency,
+                type: 'participant'
+              });
+            }
+
+            // Scan price set options on participant (e.g. participant_fields.ticket_option)
+            Object.keys(fields).forEach(function (key) {
+              if (key === 'fee_amount' || key === 'event_id' || key === 'contact_id' || key === 'status_id' || key === 'role_id') {
+                return;
+              }
+              var val = fields[key];
+              var optAmt = parseAmount(val);
+              if (optAmt > 0) {
+                var optLabel = formatFieldLabel(key, participantLabel);
+                lines.push({
+                  label: optLabel,
+                  amount: optAmt,
+                  currency: currency,
+                  type: 'participant'
+                });
+              }
+            });
+          } else if (entityType === 'Membership') {
+            // Membership fee
+            var membershipLabel = entityLabel || ts('Membership');
+            var memAmt = parseAmount(fields.fee_amount || fields.total_amount);
+            if (memAmt > 0) {
+              lines.push({
+                label: membershipLabel,
+                amount: memAmt,
+                currency: currency,
+                type: 'membership'
+              });
+            }
+
+            // Scan membership price fields
+            Object.keys(fields).forEach(function (key) {
+              if (key === 'fee_amount' || key === 'total_amount' || key === 'membership_type_id' || key === 'contact_id') {
+                return;
+              }
+              var val = fields[key];
+              var optAmt = parseAmount(val);
+              if (optAmt > 0) {
+                var optLabel = formatFieldLabel(key, membershipLabel);
+                lines.push({
+                  label: optLabel,
+                  amount: optAmt,
+                  currency: currency,
+                  type: 'membership'
+                });
+              }
+            });
           }
         });
+
         return lines;
+      }
+
+      function formatFieldLabel(key, defaultLabel) {
+        if (!key) { return defaultLabel; }
+        // Clean dot notation like 'participant_fields.ticket_option' or 'donation_options.additional'
+        var parts = key.split('.');
+        var rawName = parts[parts.length - 1];
+        if (!rawName) { return defaultLabel; }
+        // Humanize: 'ticket_option' -> 'Ticket Option'
+        var clean = rawName.replace(/_/g, ' ').replace(/\b\w/g, function (l) { return l.toUpperCase(); });
+        return clean || defaultLabel;
       }
 
       // ── Render ───────────────────────────────────────────────────────────
