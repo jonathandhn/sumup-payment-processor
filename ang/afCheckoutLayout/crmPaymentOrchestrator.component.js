@@ -100,8 +100,8 @@
       ctrl.$onInit = function () {
         ctrl.methods      = [];
         ctrl.activeMethod = null;
-        ctrl.submitted    = !!ctrl.directMount;
-        ctrl.active       = !!ctrl.directMount; // compatibility: crm-checkout-summary may read this
+        ctrl.submitted    = false;
+        ctrl.active       = false; // compatibility: crm-checkout-summary may read this
 
         if (!ctrl.entityName) {
           ctrl.entityName = resolveContributionEntity();

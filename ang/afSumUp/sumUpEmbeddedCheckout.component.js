@@ -26,12 +26,6 @@
             this._orch = angular.element(orchEl).controller('crmPaymentOrchestrator');
           }
         }
-        if (this.isDirect()) {
-          this.active = true;
-          var form = this.getFormElement();
-          form.find('.crm-sumup-continue-btn').hide();
-          $scope.$applyAsync();
-        }
       };
       this.getFormElement = () => $element.closest('af-form');
 
@@ -139,7 +133,8 @@
       this.cancelAndUnlock = () => {
         var form = this.getFormElement();
         form.removeClass('crm-sumup-form--compact');
-        form.find('button[type="submit"]').not($element.find('*')).show();
+        form.find('.crm-sumup-continue-btn').show();
+        form.find('button[type="submit"]').show();
         this.active = false;
         this.completed = false;
         this.amount = '';
