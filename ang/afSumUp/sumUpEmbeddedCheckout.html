@@ -20,8 +20,8 @@
   </div>
 
   <div ng-hide="$ctrl.completed">
-    <!-- Accordion Step 1: Summary Recap Line (Adyen Bento Style) -->
-    <div class="crm-sumup-accordion-item crm-sumup-accordion-item--collapsed" ng-click="$ctrl.cancelAndUnlock()">
+    <!-- Accordion Step 1: Summary Recap Line (Adyen Bento Style) — omitted in direct mount mode -->
+    <div class="crm-sumup-accordion-item crm-sumup-accordion-item--collapsed" ng-if="!$ctrl.isDirect()" ng-click="$ctrl.cancelAndUnlock()">
       <div class="crm-sumup-accordion-header">
         <div class="crm-sumup-accordion-header__left">
           <span class="crm-sumup-step-badge crm-sumup-step-badge--done"><i class="crm-i fa-check"></i></span>

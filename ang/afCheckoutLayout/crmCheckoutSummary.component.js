@@ -315,6 +315,7 @@
       };
 
       ctrl.isActive = function () {
+        if (_orchestrator && _orchestrator.directMount) { return false; }
         if (_orchestrator) { return !!_orchestrator.active; }
         var checkout = getCheckoutCtrl();
         if (checkout) { return !!checkout.active; }

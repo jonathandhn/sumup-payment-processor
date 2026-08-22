@@ -68,15 +68,17 @@
       entityName: '@?',
       // Comma-separated checkout_option keys to offer as payment methods.
       // Example: "sumup_embedded_checkout_SumUP,pay_later"
-      options: '@?'
+      options: '@?',
+      // Optional: if true, reveal payment widget directly without waiting for intermediate submit.
+      directMount: '<?'
     },
     transclude: true,
     template:
       '<div class="crm-payment-orchestrator">' +
 
-        // Method tabs — only when multiple methods AND form has been submitted.
+        // Method tabs — only when multiple methods AND (form has been submitted OR directMount is enabled).
         '<div class="crm-payment-orchestrator__tabs" ' +
-            'ng-if="$ctrl.submitted && $ctrl.methods.length > 1">' +
+            'ng-if="($ctrl.submitted || $ctrl.directMount) && $ctrl.methods.length > 1">' +
           '<button type="button" class="crm-payment-tab" ' +
               'ng-repeat="m in $ctrl.methods" ' +
               'ng-class="{\'crm-payment-tab--active\': $ctrl.activeMethod === m.key}" ' +
@@ -85,8 +87,8 @@
           '</button>' +
         '</div>' +
 
-        // Payment content — hidden until form is submitted.
-        '<div class="crm-payment-orchestrator__content" ng-show="$ctrl.submitted">' +
+        // Payment content — revealed after submit OR directly if directMount is enabled.
+        '<div class="crm-payment-orchestrator__content" ng-show="$ctrl.submitted || $ctrl.directMount">' +
           '<ng-transclude></ng-transclude>' +
         '</div>' +
 
@@ -98,8 +100,8 @@
       ctrl.$onInit = function () {
         ctrl.methods      = [];
         ctrl.activeMethod = null;
-        ctrl.submitted    = false;
-        ctrl.active       = false; // compatibility: crm-checkout-summary may read this
+        ctrl.submitted    = !!ctrl.directMount;
+        ctrl.active       = !!ctrl.directMount; // compatibility: crm-checkout-summary may read this
 
         if (!ctrl.entityName) {
           ctrl.entityName = resolveContributionEntity();

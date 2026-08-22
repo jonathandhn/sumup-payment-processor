@@ -65,6 +65,10 @@
       this.summaryTotal = 0;
       this.summaryCurrency = 'EUR';
 
+      this.isDirect = () => {
+        return !!(this._orch && this._orch.directMount);
+      };
+
       // Called by crm-checkout-summary whenever the computed total changes.
       this.onSummaryTotalChange = (total, currency) => {
         this.summaryTotal = total || 0;
