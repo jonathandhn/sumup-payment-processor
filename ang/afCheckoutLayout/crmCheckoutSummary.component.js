@@ -92,15 +92,20 @@
           var currency = fields.currency || 'EUR';
 
           if (entityType === 'Contribution') {
-            // 1. Direct amount field (standard donation / contribution)
-            var baseAmount = parseAmount(fields['default_contribution_amount.contribution_amount'] || fields.total_amount);
-            if (baseAmount > 0) {
-              lines.push({
-                label: entityLabel || ts('Contribution'),
-                amount: baseAmount,
-                currency: currency,
-                type: 'contribution'
-              });
+            // 1. Direct amount field (standard donation / contribution input).
+            // Do NOT fallback to total_amount here: total_amount is the consolidated order total,
+            // not an individual donation line item.
+            var donationRaw = fields['default_contribution_amount.contribution_amount'];
+            if (donationRaw !== undefined && donationRaw !== null && donationRaw !== '') {
+              var baseAmount = parseAmount(donationRaw);
+              if (baseAmount > 0) {
+                lines.push({
+                  label: entityLabel || ts('Contribution'),
+                  amount: baseAmount,
+                  currency: currency,
+                  type: 'contribution'
+                });
+              }
             }
 
             // 2. Scan for additional price set fields on Contribution
@@ -113,7 +118,8 @@
                 lines.push(resolved);
               }
             });
-          } else if (entityType === 'Participant') {
+          }
+ else if (entityType === 'Participant') {
             // Participant / Event ticket options & fees
             var participantLabel = entityLabel || ts('Event Registration');
             var feeAmt = parseAmount(fields.fee_amount);
@@ -139,7 +145,7 @@
           } else if (entityType === 'Membership') {
             // Membership fee
             var membershipLabel = entityLabel || ts('Membership');
-            var memAmt = parseAmount(fields.fee_amount || fields.total_amount);
+            var memAmt = parseAmount(fields.fee_amount);
             if (memAmt > 0) {
               lines.push({
                 label: membershipLabel,
