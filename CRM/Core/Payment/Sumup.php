@@ -829,14 +829,16 @@ class CRM_Core_Payment_SumupBase extends CRM_Core_Payment
         int $contributionId,
         string $returnUrl,
         string $cancelUrl,
-        ?string $description = null
+        ?string $description = null,
+        ?float $orderTotal = null
     ): array {
         return $this->createCheckoutForContribution(
             $contributionId,
             $returnUrl,
             $cancelUrl,
             $description,
-            false
+            false,
+            $orderTotal
         );
     }
 
@@ -864,7 +866,8 @@ class CRM_Core_Payment_SumupBase extends CRM_Core_Payment
         string $returnUrl,
         string $cancelUrl,
         ?string $description,
-        bool $hosted
+        bool $hosted,
+        ?float $orderTotal = null
     ): array {
         $configurationError = $this->getOperationalConfigurationError();
         if ($configurationError !== null) {
@@ -890,19 +893,27 @@ class CRM_Core_Payment_SumupBase extends CRM_Core_Payment
             ->single();
         $amount = (float) $contribution['total_amount'];
 
-        // If line items exist for this contribution, ensure the amount reflects their sum
-        // (handles cases where line items were recorded or adjusted during checkout).
-        $lineItems = LineItem::get(false)
-            ->addWhere('contribution_id', '=', $contributionId)
-            ->addSelect('line_total')
-            ->execute();
-        if ($lineItems->count() > 0) {
-            $lineItemsSum = 0.0;
-            foreach ($lineItems as $item) {
-                $lineItemsSum += (float) ($item['line_total'] ?? 0);
-            }
-            if ($lineItemsSum > 0 && abs($lineItemsSum - $amount) > 0.0001) {
-                $amount = $lineItemsSum;
+        // If an explicit order total was provided (e.g. from a multi-entity Afform checkout),
+        // or if line items exist for this contribution, ensure the amount reflects the total.
+        if ($orderTotal !== null && $orderTotal > 0 && abs($orderTotal - $amount) > 0.0001) {
+            $amount = $orderTotal;
+            Contribution::update(false)
+                ->addWhere('id', '=', $contributionId)
+                ->addValue('total_amount', $orderTotal)
+                ->execute();
+        } else {
+            $lineItems = LineItem::get(false)
+                ->addWhere('contribution_id', '=', $contributionId)
+                ->addSelect('line_total')
+                ->execute();
+            if ($lineItems->count() > 0) {
+                $lineItemsSum = 0.0;
+                foreach ($lineItems as $item) {
+                    $lineItemsSum += (float) ($item['line_total'] ?? 0);
+                }
+                if ($lineItemsSum > 0 && abs($lineItemsSum - $amount) > 0.0001) {
+                    $amount = $lineItemsSum;
+                }
             }
         }
 

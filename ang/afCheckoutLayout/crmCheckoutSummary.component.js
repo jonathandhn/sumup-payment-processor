@@ -265,8 +265,11 @@
         var entityName = contributionEntity.getAttribute('name');
         var data = afForm.getData(entityName);
         if (data && data[0] && data[0].fields) {
-          // Keep total_amount synced with consolidated order total
           data[0].fields.total_amount = totalAmount;
+          if (!data[0].fields.checkout_params || typeof data[0].fields.checkout_params !== 'object') {
+            data[0].fields.checkout_params = {};
+          }
+          data[0].fields.checkout_params.order_total = totalAmount;
         }
       }
 
