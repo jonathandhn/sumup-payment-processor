@@ -1,33 +1,77 @@
-<div class="form-group crm-payment-orchestrator-admin">
+<div class="crm-payment-orchestrator-admin" ng-init="
+  $ctrl.getOptionsList = function() {
+    return ($ctrl.node.options || '').split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+  };
+  $ctrl.hasOpt = function(key) {
+    return $ctrl.getOptionsList().indexOf(key) !== -1;
+  };
+  $ctrl.toggleOpt = function(key) {
+    var list = $ctrl.getOptionsList();
+    var idx = list.indexOf(key);
+    if (idx !== -1) {
+      list.splice(idx, 1);
+    } else {
+      list.push(key);
+    }
+    $ctrl.node.options = list.join(',');
+  };
+">
 
-  <label><strong>Méthodes de paiement proposées</strong></label>
-  <p class="description" style="margin-bottom:0.5rem">
-    Saisissez les clés des processeurs à proposer, séparées par une virgule.
-  </p>
+  <!-- Display Mode Selector -->
+  <div class="form-group" style="margin-bottom: 1rem;">
+    <label><strong>{{ts('Mode d\'affichage')}}</strong></label>
+    <select class="form-control" ng-model="$ctrl.node['direct-mount']">
+      <option value="">{{ts('Classique (Avec bouton Continuer)')}}</option>
+      <option value="true">{{ts('Direct (Panneau de paiement ouvert dès l\'arrivée)')}}</option>
+    </select>
+  </div>
 
-  <input type="text"
-    class="form-control"
-    ng-model="$ctrl.node.options"
-    placeholder="sumup_embedded_checkout_SumUP"
-    style="font-family:monospace;font-size:0.85rem" />
+  <!-- Available Payment Methods with Checkboxes -->
+  <div class="form-group">
+    <label><strong>{{ts('Moyens de paiement à proposer')}}</strong></label>
+    <div class="crm-payment-admin-methods" style="margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.5rem;">
+      <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: normal; margin: 0;">
+        <input type="checkbox"
+          ng-checked="$ctrl.hasOpt('sumup_embedded_checkout_SumUP')"
+          ng-click="$ctrl.toggleOpt('sumup_embedded_checkout_SumUP')" />
+        <i class="crm-i fa-credit-card"></i> {{ts('Carte bancaire (SumUp)')}}
+      </label>
 
-  <p class="description" style="margin-top:0.75rem;margin-bottom:0.25rem">
-    <strong>Clés disponibles (selon les extensions installées) :</strong>
-  </p>
-  <ul style="margin:0;padding-left:1.25rem;font-size:0.85rem">
-    <li><code>sumup_embedded_checkout_SumUP</code> — Carte bancaire (SumUp)</li>
-    <li><code>sumup_solo_checkout_SumUP</code> — Terminal SumUp</li>
-    <li><code>sumup_qr_checkout_SumUP</code> — QR Code SumUp</li>
-    <li><code>sumup_hybrid_checkout_SumUP</code> — Terminal / QR SumUp</li>
-    <li><code>pay_later</code> — Virement bancaire / Paiement différé</li>
-    <li><code>stancer_embedded_checkout_Stancer</code> — Carte (Stancer)</li>
-    <li><code>stancer_hosted_checkout_Stancer</code> — Stancer (redirect)</li>
-    <li><code>helloasso_hosted_checkout_helloasso</code> — HelloAsso</li>
-  </ul>
+      <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: normal; margin: 0;">
+        <input type="checkbox"
+          ng-checked="$ctrl.hasOpt('stripe_embedded_checkout_Stripe')"
+          ng-click="$ctrl.toggleOpt('stripe_embedded_checkout_Stripe')" />
+        <i class="crm-i fa-cc-stripe"></i> {{ts('Stripe')}}
+      </label>
 
-  <p class="description" style="margin-top:0.5rem">
-    <em>Exemple avec deux options :</em>
-    <code>sumup_embedded_checkout_SumUP,pay_later</code>
-  </p>
+      <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: normal; margin: 0;">
+        <input type="checkbox"
+          ng-checked="$ctrl.hasOpt('pay_later')"
+          ng-click="$ctrl.toggleOpt('pay_later')" />
+        <i class="crm-i fa-university"></i> {{ts('Virement bancaire / Paiement différé')}}
+      </label>
+
+      <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: normal; margin: 0;">
+        <input type="checkbox"
+          ng-checked="$ctrl.hasOpt('sumup_solo_checkout_SumUP')"
+          ng-click="$ctrl.toggleOpt('sumup_solo_checkout_SumUP')" />
+        <i class="crm-i fa-mobile"></i> {{ts('Terminal SumUp')}}
+      </label>
+
+      <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: normal; margin: 0;">
+        <input type="checkbox"
+          ng-checked="$ctrl.hasOpt('sumup_qr_checkout_SumUP')"
+          ng-click="$ctrl.toggleOpt('sumup_qr_checkout_SumUP')" />
+        <i class="crm-i fa-qrcode"></i> {{ts('QR Code SumUp')}}
+      </label>
+
+      <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: normal; margin: 0;">
+        <input type="checkbox"
+          ng-checked="$ctrl.hasOpt('helloasso_hosted_checkout_helloasso')"
+          ng-click="$ctrl.toggleOpt('helloasso_hosted_checkout_helloasso')" />
+        <i class="crm-i fa-heart"></i> {{ts('HelloAsso')}}
+      </label>
+    </div>
+  </div>
 
 </div>
