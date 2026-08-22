@@ -43,7 +43,8 @@
         Example: options="sumup_embedded_checkout_SumUP,pay_later"
       -->
       <crm-payment-orchestrator entity-name="Contribution1"
-        options="sumup_embedded_checkout_SumUP,stripe_embedded_checkout_Stripe">
+        direct-mount="true"
+        options="stripe_embedded_checkout_Stripe">
         <fieldset af-fieldset="Contribution1" class="crm-sumup-payment-fieldset">
           <af-field name="checkout_params" defn="{label: false}" />
         </fieldset>
