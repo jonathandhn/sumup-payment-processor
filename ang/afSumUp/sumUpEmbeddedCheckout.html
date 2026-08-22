@@ -40,7 +40,7 @@
 
     <!-- Accordion Step 2: Choose a payment method -->
     <div class="crm-sumup-accordion-item crm-sumup-accordion-item--active">
-      <div class="crm-sumup-accordion-header">
+      <div class="crm-sumup-accordion-header" ng-if="!$ctrl.isDirect()">
         <div class="crm-sumup-accordion-header__left">
           <span class="crm-sumup-step-badge crm-sumup-step-badge--active">2</span>
           <div class="crm-sumup-step-info">
