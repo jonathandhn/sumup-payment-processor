@@ -171,8 +171,21 @@
         return lines;
       }
 
+      var IGNORED_FIELDS = [
+        'id', 'contact_id', 'status_id', 'event_id', 'membership_type_id',
+        'financial_type_id', 'payment_processor_id', 'contribution_recur_id',
+        'is_test', 'is_primary', 'currency', 'source', 'checkout_option',
+        'checkout_params', 'total_amount', 'fee_amount', 'role_id'
+      ];
+
+      function isPriceField(key) {
+        if (!key || IGNORED_FIELDS.indexOf(key) !== -1) { return false; }
+        // Price fields in Afform always use dot notation (e.g. price_set.field_name)
+        return key.indexOf('.') !== -1;
+      }
+
       function resolveFieldItem(formEl, fieldKey, rawValue, fallbackLabel, currency, itemType) {
-        if (rawValue === null || rawValue === undefined || rawValue === '') {
+        if (!isPriceField(fieldKey) || rawValue === null || rawValue === undefined || rawValue === '') {
           return null;
         }
 
@@ -196,6 +209,8 @@
               ? parseAmount(option.amount)
               : parseAmountFromText(option.label);
 
+            if (optAmount <= 0) { return null; }
+
             var optLabel = option.label || '';
             var fullLabel = fieldLabel;
             if (optLabel && optLabel !== fieldLabel) {
@@ -211,7 +226,7 @@
           }
         }
 
-        // Direct numeric input (e.g. custom amount)
+        // Direct numeric input on a price field (e.g. custom amount)
         var directAmt = parseAmount(rawValue);
         if (directAmt > 0) {
           return {
