@@ -246,7 +246,28 @@
         ctrl.hasTotal = ctrl.total > 0;
         ctrl.formattedTotal = ctrl.hasTotal ? formatCurrency(ctrl.total, ctrl.currency) : null;
         ctrl.lineItems.forEach(function (l) { l.formatted = formatCurrency(l.amount, l.currency); });
+
+        // Synchronize consolidated order total into the Contribution entity data
+        // so that CiviCRM submits the full consolidated amount for payment creation.
+        syncTotalToContribution(ctrl.total);
+
         if (ctrl.onTotalChange) { ctrl.onTotalChange({ total: ctrl.total, currency: ctrl.currency }); }
+      }
+
+      function syncTotalToContribution(totalAmount) {
+        if (!totalAmount || totalAmount <= 0) { return; }
+        var formEl = $element[0].closest('af-form');
+        var afForm = getAfForm();
+        if (!formEl || !afForm) { return; }
+
+        var contributionEntity = formEl.querySelector('af-entity[type="Contribution"]');
+        if (!contributionEntity) { return; }
+        var entityName = contributionEntity.getAttribute('name');
+        var data = afForm.getData(entityName);
+        if (data && data[0] && data[0].fields) {
+          // Keep total_amount synced with consolidated order total
+          data[0].fields.total_amount = totalAmount;
+        }
       }
 
       // ── Helpers: find the SumUp checkout controller via DOM ──────────────

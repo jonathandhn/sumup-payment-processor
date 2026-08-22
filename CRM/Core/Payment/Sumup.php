@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Civi\Api4\Contribution;
 use Civi\Api4\ContributionRecur;
+use Civi\Api4\LineItem;
 use Civi\Api4\Payment;
 use Civi\Api4\PaymentToken;
 use Civi\Api4\PaymentProcessor;
@@ -888,6 +889,23 @@ class CRM_Core_Payment_SumupBase extends CRM_Core_Payment
             ->execute()
             ->single();
         $amount = (float) $contribution['total_amount'];
+
+        // If line items exist for this contribution, ensure the amount reflects their sum
+        // (handles cases where line items were recorded or adjusted during checkout).
+        $lineItems = LineItem::get(false)
+            ->addWhere('contribution_id', '=', $contributionId)
+            ->addSelect('line_total')
+            ->execute();
+        if ($lineItems->count() > 0) {
+            $lineItemsSum = 0.0;
+            foreach ($lineItems as $item) {
+                $lineItemsSum += (float) ($item['line_total'] ?? 0);
+            }
+            if ($lineItemsSum > 0 && abs($lineItemsSum - $amount) > 0.0001) {
+                $amount = $lineItemsSum;
+            }
+        }
+
         $currency = strtoupper((string) $contribution['currency']);
         $merchantProfile = $this->getVerifiedMerchantProfile();
         if ($merchantProfile['currency'] !== $currency) {
