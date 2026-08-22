@@ -35,6 +35,13 @@
     { prefix: 'sumup_solo_checkout',       label: 'Terminal',          icon: 'fa-mobile' },
     { prefix: 'sumup_qr_checkout',         label: 'QR Code',           icon: 'fa-qrcode' },
     { prefix: 'sumup_hybrid_checkout',     label: 'Terminal / QR',     icon: 'fa-exchange' },
+    {
+      prefix: 'stripe_embedded_checkout',
+      label: 'Stripe',
+      icon: 'fa-cc-stripe',
+      sdkUrl: 'https://js.stripe.com/v3/'
+    },
+    { prefix: 'stripe_hosted_checkout',     label: 'Stripe (redirect)', icon: 'fa-external-link' },
     { prefix: 'stancer_embedded_checkout', label: 'Carte (Stancer)',   icon: 'fa-credit-card' },
     { prefix: 'stancer_hosted_checkout',   label: 'Stancer',           icon: 'fa-external-link' },
     { prefix: 'helloasso_hosted_checkout', label: 'HelloAsso',         icon: 'fa-heart' },
