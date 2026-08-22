@@ -105,19 +105,12 @@
 
             // 2. Scan for additional price set fields on Contribution
             Object.keys(fields).forEach(function (key) {
-              if (key === 'total_amount' || key === 'default_contribution_amount.contribution_amount' || key === 'checkout_params' || key === 'checkout_option') {
+              if (key === 'total_amount' || key === 'default_contribution_amount.contribution_amount' || key === 'checkout_params' || key === 'checkout_option' || key === 'financial_type_id') {
                 return;
               }
-              var val = fields[key];
-              var fieldAmt = parseAmount(val);
-              if (fieldAmt > 0) {
-                var fieldLabel = formatFieldLabel(key, entityLabel || ts('Donation Option'));
-                lines.push({
-                  label: fieldLabel,
-                  amount: fieldAmt,
-                  currency: currency,
-                  type: 'contribution'
-                });
+              var resolved = resolveFieldItem(formEl, key, fields[key], entityLabel || ts('Donation Option'), currency, 'contribution');
+              if (resolved && resolved.amount > 0) {
+                lines.push(resolved);
               }
             });
           } else if (entityType === 'Participant') {
@@ -138,16 +131,9 @@
               if (key === 'fee_amount' || key === 'event_id' || key === 'contact_id' || key === 'status_id' || key === 'role_id') {
                 return;
               }
-              var val = fields[key];
-              var optAmt = parseAmount(val);
-              if (optAmt > 0) {
-                var optLabel = formatFieldLabel(key, participantLabel);
-                lines.push({
-                  label: optLabel,
-                  amount: optAmt,
-                  currency: currency,
-                  type: 'participant'
-                });
+              var resolved = resolveFieldItem(formEl, key, fields[key], participantLabel, currency, 'participant');
+              if (resolved && resolved.amount > 0) {
+                lines.push(resolved);
               }
             });
           } else if (entityType === 'Membership') {
@@ -168,16 +154,9 @@
               if (key === 'fee_amount' || key === 'total_amount' || key === 'membership_type_id' || key === 'contact_id') {
                 return;
               }
-              var val = fields[key];
-              var optAmt = parseAmount(val);
-              if (optAmt > 0) {
-                var optLabel = formatFieldLabel(key, membershipLabel);
-                lines.push({
-                  label: optLabel,
-                  amount: optAmt,
-                  currency: currency,
-                  type: 'membership'
-                });
+              var resolved = resolveFieldItem(formEl, key, fields[key], membershipLabel, currency, 'membership');
+              if (resolved && resolved.amount > 0) {
+                lines.push(resolved);
               }
             });
           }
@@ -186,15 +165,76 @@
         return lines;
       }
 
+      function resolveFieldItem(formEl, fieldKey, rawValue, fallbackLabel, currency, itemType) {
+        if (rawValue === null || rawValue === undefined || rawValue === '') {
+          return null;
+        }
+
+        var fieldEl = formEl.querySelector('af-field[name="' + fieldKey + '"]');
+        var fieldCtrl = fieldEl ? angular.element(fieldEl).controller('afField') : null;
+        var defn = fieldCtrl ? fieldCtrl.defn : null;
+        var fieldLabel = (defn && defn.label) ? defn.label : formatFieldLabel(fieldKey, fallbackLabel);
+
+        // Check if the field definition has select/radio options
+        if (defn && Array.isArray(defn.options) && defn.options.length > 0) {
+          var option = null;
+          for (var i = 0; i < defn.options.length; i++) {
+            if (String(defn.options[i].id) === String(rawValue)) {
+              option = defn.options[i];
+              break;
+            }
+          }
+
+          if (option) {
+            var optAmount = (option.amount !== undefined && option.amount !== null)
+              ? parseAmount(option.amount)
+              : parseAmountFromText(option.label);
+
+            var optLabel = option.label || '';
+            var fullLabel = fieldLabel;
+            if (optLabel && optLabel !== fieldLabel) {
+              fullLabel = fieldLabel + ' : ' + optLabel;
+            }
+
+            return {
+              label: fullLabel,
+              amount: optAmount,
+              currency: currency,
+              type: itemType
+            };
+          }
+        }
+
+        // Direct numeric input (e.g. custom amount)
+        var directAmt = parseAmount(rawValue);
+        if (directAmt > 0) {
+          return {
+            label: fieldLabel,
+            amount: directAmt,
+            currency: currency,
+            type: itemType
+          };
+        }
+
+        return null;
+      }
+
+      function parseAmountFromText(text) {
+        if (!text) { return 0; }
+        // Match patterns like "2,00 €" or "2.00 EUR" or "2 €"
+        var match = String(text).match(/([0-9]+(?:[.,][0-9]{1,2})?)\s*(?:€|\$|EUR|USD)/i);
+        if (match && match[1]) {
+          return parseAmount(match[1]);
+        }
+        return parseAmount(text);
+      }
+
       function formatFieldLabel(key, defaultLabel) {
         if (!key) { return defaultLabel; }
-        // Clean dot notation like 'participant_fields.ticket_option' or 'donation_options.additional'
         var parts = key.split('.');
         var rawName = parts[parts.length - 1];
         if (!rawName) { return defaultLabel; }
-        // Humanize: 'ticket_option' -> 'Ticket Option'
-        var clean = rawName.replace(/_/g, ' ').replace(/\b\w/g, function (l) { return l.toUpperCase(); });
-        return clean || defaultLabel;
+        return rawName.replace(/_/g, ' ');
       }
 
       // ── Render ───────────────────────────────────────────────────────────
