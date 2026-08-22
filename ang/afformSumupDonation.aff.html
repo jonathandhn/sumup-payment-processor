@@ -1,6 +1,6 @@
 <af-form ctrl="afform">
   <af-entity data="{source: 'SumUp Donation'}" type="Individual" name="Individual1" label="Individual 1" actions="{create: true, update: false}" security="FBAC" contact-dedupe="Individual.Supervised" />
-  <af-entity data="{contact_id: 'Individual1', financial_type_id: 1}" type="Contribution" name="Contribution1" label="Contribution 1" actions="{create: true, update: false}" security="FBAC" />
+  <af-entity data="{contact_id: 'Individual1', financial_type_id: 1, 'default_contribution_amount.contribution_amount': 1}" type="Contribution" name="Contribution1" label="Contribution 1" actions="{create: true, update: false}" security="FBAC" />
 
   <div class="crm-sumup-bento-layout af-container">
 
@@ -18,7 +18,7 @@
       </fieldset>
 
       <fieldset af-fieldset="Contribution1" class="af-container crm-sumup-bento-panel crm-sumup-amount-panel" af-title="Votre don">
-        <af-field name="default_contribution_amount.contribution_amount" defn="{label: 'Montant', input_attrs: {}, required: true}" />
+        <af-field name="default_contribution_amount.contribution_amount" defn="{label: 'Montant', input_attrs: {min: 1, step: 0.01}, required: true}" />
         <crm-tax-reduction />
       </fieldset>
 
@@ -43,8 +43,7 @@
         Example: options="sumup_embedded_checkout_SumUP,pay_later"
       -->
       <crm-payment-orchestrator entity-name="Contribution1"
-        direct-mount="true"
-        options="stripe_embedded_checkout_Stripe">
+        options="sumup_embedded_checkout_SumUP,stripe_embedded_checkout_Stripe">
         <fieldset af-fieldset="Contribution1" class="crm-sumup-payment-fieldset">
           <af-field name="checkout_params" defn="{label: false}" />
         </fieldset>
