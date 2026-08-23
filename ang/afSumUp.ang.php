@@ -19,6 +19,7 @@ return [
     'partials' => ['ang/afSumUp'],
     'settings' => [],
     'requires' => ['afCheckout'],
+    'l10n' => TRUE,
     'exports' => [
         'af-sum-up-embedded-checkout' => 'E',
         'af-sum-up-payment-methods' => 'E',
