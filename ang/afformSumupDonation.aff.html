@@ -2,12 +2,12 @@
   <af-entity data="{source: 'SumUp Donation'}" type="Individual" name="Individual1" label="Individual 1" actions="{create: true, update: false}" security="FBAC" contact-dedupe="Individual.Supervised" />
   <af-entity data="{contact_id: 'Individual1', financial_type_id: 1, 'default_contribution_amount.contribution_amount': 1}" type="Contribution" name="Contribution1" label="Contribution 1" actions="{create: true, update: false}" security="FBAC" />
 
-  <div class="crm-sumup-bento-layout af-container">
+  <div class="crm-payment-layout af-container">
 
     <!-- LEFT COLUMN: Donor details + amount + submit -->
-    <div class="crm-sumup-bento-col crm-sumup-bento-col--form af-container">
+    <div class="crm-payment-layout__column crm-payment-layout__column--form af-container">
 
-      <fieldset af-fieldset="Individual1" class="af-container crm-sumup-bento-panel" af-title="Vos coordonnées">
+      <fieldset af-fieldset="Individual1" class="af-container crm-payment-layout__panel" af-title="Vos coordonnées">
         <div actions="{update: true, delete: true}" class="af-container">
           <af-field name="first_name" />
           <af-field name="last_name" />
@@ -17,12 +17,12 @@
         </div>
       </fieldset>
 
-      <fieldset af-fieldset="Contribution1" class="af-container crm-sumup-bento-panel crm-sumup-amount-panel" af-title="Votre don">
+      <fieldset af-fieldset="Contribution1" class="af-container crm-payment-layout__panel" af-title="Votre don">
         <af-field name="default_contribution_amount.contribution_amount" defn="{label: 'Montant', input_attrs: {min: 1, step: 0.01}, required: true}" />
         <crm-tax-reduction />
       </fieldset>
 
-      <button class="af-button btn btn-primary crm-sumup-continue-btn" crm-icon="fa-lock"
+      <button class="af-button btn btn-primary crm-payment-layout__continue" crm-icon="fa-lock"
         ng-click="afform.submit()"
         ng-if="afform.showSubmitButton">
         Continuer vers le paiement
@@ -31,7 +31,7 @@
     </div>
 
     <!-- RIGHT COLUMN: Order summary + payment orchestrator -->
-    <div class="crm-sumup-bento-col crm-sumup-bento-col--payment af-container">
+    <div class="crm-payment-layout__column crm-payment-layout__column--payment af-container">
 
       <!-- Order summary card (always visible) -->
       <crm-checkout-summary></crm-checkout-summary>
@@ -44,7 +44,7 @@
       -->
       <crm-payment-orchestrator entity-name="Contribution1"
         options="sumup_embedded_checkout_SumUP,stripe_embedded_checkout_STRIPEO">
-        <fieldset af-fieldset="Contribution1" class="crm-sumup-payment-fieldset">
+        <fieldset af-fieldset="Contribution1" class="crm-payment-fieldset">
           <af-field name="checkout_params" defn="{label: false}" />
         </fieldset>
       </crm-payment-orchestrator>

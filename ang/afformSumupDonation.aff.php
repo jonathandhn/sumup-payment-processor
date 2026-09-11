@@ -7,6 +7,7 @@ return [
   'description' => E::ts('Formulaire de don avec paiement SumUp integre (layout Bento 2 colonnes).'),
   'icon' => 'fa-credit-card',
   'server_route' => 'civicrm/sumup-donate',
+  'requires' => ['afSumUp', 'afCheckoutLayout'],
   'is_public' => TRUE,
   'permission' => [
     'make online contributions',
