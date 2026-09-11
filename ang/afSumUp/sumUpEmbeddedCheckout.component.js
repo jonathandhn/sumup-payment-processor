@@ -88,8 +88,6 @@
         }
         this.donorSummary = nameParts.join(' · ') || email || '';
 
-        form.addClass('crm-sumup-form--compact');
-
         this.active = true;
         this.completed = false;
         this.amount = checkout.amount || '';
@@ -131,7 +129,6 @@
           return;
         }
         var form = this.getFormElement();
-        form.removeClass('crm-sumup-form--compact');
         form.find('button[type="submit"]').show();
         this.active = false;
         this.completed = false;
