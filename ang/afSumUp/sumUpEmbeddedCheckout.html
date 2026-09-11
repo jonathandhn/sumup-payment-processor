@@ -20,8 +20,9 @@
   </div>
 
   <div ng-hide="$ctrl.completed">
-    <!-- Step 1: Summary Line with Edit Button to unlock and return to form -->
-    <div class="crm-sumup-accordion-item crm-sumup-accordion-item--collapsed" ng-click="$ctrl.cancelAndUnlock()">
+    <!-- Step 1: Summary Line. Editing after checkout creation requires a
+         server-side cancellation/replacement operation. -->
+    <div class="crm-sumup-accordion-item crm-sumup-accordion-item--collapsed">
       <div class="crm-sumup-accordion-header">
         <div class="crm-sumup-accordion-header__left">
           <span class="crm-sumup-step-badge crm-sumup-step-badge--done"><i class="crm-i fa-check"></i></span>
@@ -29,11 +30,6 @@
             <span class="crm-sumup-step-title">{{ts('Summary')}}</span>
             <span class="crm-sumup-step-subtitle" ng-if="$ctrl.donorSummary">{{$ctrl.donorSummary}}</span>
           </div>
-        </div>
-        <div class="crm-sumup-accordion-header__right">
-          <button type="button" class="crm-sumup-accordion-edit-btn" ng-click="$ctrl.cancelAndUnlock(); $event.stopPropagation();">
-            <i class="crm-i fa-pencil"></i> {{ts('Edit')}}
-          </button>
         </div>
       </div>
     </div>
