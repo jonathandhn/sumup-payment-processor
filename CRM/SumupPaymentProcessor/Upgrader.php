@@ -35,6 +35,7 @@ class CRM_SumupPaymentProcessor_Upgrader extends CRM_Extension_Upgrader_Base
             'SHOW COLUMNS FROM civicrm_sumup_checkout LIKE %1',
             [1 => ['checkout_mode', 'String']]
         );
+        assert($column instanceof CRM_Core_DAO);
         if (!$column->fetch()) {
             CRM_Core_DAO::executeQuery(
                 "ALTER TABLE civicrm_sumup_checkout
@@ -61,6 +62,7 @@ class CRM_SumupPaymentProcessor_Upgrader extends CRM_Extension_Upgrader_Base
             'SHOW COLUMNS FROM civicrm_sumup_checkout LIKE %1',
             [1 => ['reader_id', 'String']]
         );
+        assert($column instanceof CRM_Core_DAO);
         if (!$column->fetch()) {
             CRM_Core_DAO::executeQuery(
                 'ALTER TABLE civicrm_sumup_checkout
@@ -103,6 +105,7 @@ class CRM_SumupPaymentProcessor_Upgrader extends CRM_Extension_Upgrader_Base
                 'SHOW COLUMNS FROM civicrm_sumup_checkout LIKE %1',
                 [1 => [$name, 'String']]
             );
+            assert($column instanceof CRM_Core_DAO);
             if (!$column->fetch()) {
                 CRM_Core_DAO::executeQuery("ALTER TABLE civicrm_sumup_checkout ADD COLUMN {$definition}");
             }
@@ -110,6 +113,7 @@ class CRM_SumupPaymentProcessor_Upgrader extends CRM_Extension_Upgrader_Base
         $index = CRM_Core_DAO::executeQuery(
             "SHOW INDEX FROM civicrm_sumup_checkout WHERE Key_name = 'unique_sumup_setup_charge'"
         );
+        assert($index instanceof CRM_Core_DAO);
         if (!$index->fetch()) {
             CRM_Core_DAO::executeQuery(
                 'ALTER TABLE civicrm_sumup_checkout ADD UNIQUE KEY unique_sumup_setup_charge (setup_checkout_id)'

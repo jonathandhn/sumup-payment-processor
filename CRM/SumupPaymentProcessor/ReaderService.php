@@ -143,9 +143,14 @@ final class CRM_SumupPaymentProcessor_ReaderService
         if (!str_starts_with($returnUrl, 'https://')) {
             throw new PaymentProcessorException(E::ts('SumUp Solo return URLs must use HTTPS.'));
         }
-        if (!preg_match('/^[A-Za-z0-9._-]{3,100}$/', $affiliateAppId) || $affiliateKey === '' || strlen($affiliateKey) > 255) {
+        if (
+            !preg_match('/^[A-Za-z0-9._-]{3,100}$/', $affiliateAppId)
+            || $affiliateKey === ''
+            || strlen($affiliateKey) > 255
+        ) {
             throw new PaymentProcessorException(E::ts(
-                'SumUp Solo Cloud API settings are incomplete. Configure the Affiliate application ID and Affiliate key under Contributions > SumUp settings.'
+                'SumUp Solo Cloud API settings are incomplete.'
+                . ' Configure the Affiliate application ID and Affiliate key under Contributions > SumUp settings.'
             ));
         }
         if (!preg_match('/^CIVI-[1-9][0-9]*-[a-f0-9]{16}$/', $foreignTransactionId)) {

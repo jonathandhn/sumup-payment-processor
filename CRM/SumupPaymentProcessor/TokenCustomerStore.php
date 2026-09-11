@@ -44,6 +44,7 @@ final class CRM_SumupPaymentProcessor_TokenCustomerStore
              WHERE payment_token_id = %1',
             [1 => [$paymentTokenId, 'Integer']]
         );
+        assert($dao instanceof CRM_Core_DAO);
         $customerId = trim((string) $dao->fetchValue());
         return self::isValidCustomerId($customerId) ? $customerId : null;
     }

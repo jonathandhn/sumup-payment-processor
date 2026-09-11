@@ -39,11 +39,16 @@ final class ContributionRecurMapping extends MappingBase
 
     public function modifyApiSpec(RequestSpec $spec): void
     {
-        $spec->getFieldByName('entity_value')
-            ->setLabel(E::ts('SumUp payment processor'))
-            ->setRequired(false);
-        $spec->getFieldByName('entity_status')
-            ->setLabel(E::ts('Recurring contribution status'));
+        $entityValueField = $spec->getFieldByName('entity_value');
+        if ($entityValueField !== null) {
+            $entityValueField
+                ->setLabel(E::ts('SumUp payment processor'))
+                ->setRequired(false);
+        }
+        $entityStatusField = $spec->getFieldByName('entity_status');
+        if ($entityStatusField !== null) {
+            $entityStatusField->setLabel(E::ts('Recurring contribution status'));
+        }
     }
 
     /** @return array<int, string> */
@@ -72,11 +77,12 @@ final class ContributionRecurMapping extends MappingBase
      */
     public function getStatusLabels(?array $entityValue): array
     {
-        return \CRM_Contribute_BAO_ContributionRecur::buildOptions(
+        $options = \CRM_Contribute_BAO_ContributionRecur::buildOptions(
             'contribution_status_id',
             'get',
             []
         );
+        return is_array($options) ? $options : [];
     }
 
     /**
