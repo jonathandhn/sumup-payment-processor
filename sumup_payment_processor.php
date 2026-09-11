@@ -29,7 +29,6 @@ function sumup_payment_processor_civicrm_config(\CRM_Core_Config $config): void
         'sumup_payment_processor_decorate_contact_tab',
         -100
     );
-
 }
 
 /**

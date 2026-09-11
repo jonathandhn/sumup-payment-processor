@@ -38,7 +38,6 @@
   <comments>Supports SumUp Card Widget, wallets, Hosted Checkout, refunds and the first Solo reader-management slice. MJWShared is required for durable webhook processing.</comments>
   <requires>
     <ext>civi_contribute</ext>
-    <ext>formbuilder-payment-extra</ext>
     <ext>mjwshared</ext>
   </requires>
   <classloader>

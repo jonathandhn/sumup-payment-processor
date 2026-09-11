@@ -11,7 +11,7 @@ return [
     ],
     'partials' => ['ang/afSumUp'],
     'settings' => [],
-    'requires' => ['afCheckout', 'afCheckoutLayout'],
+    'requires' => ['afCheckout'],
     'l10n' => TRUE,
     'exports' => [
         'af-sum-up-embedded-checkout' => 'E',
