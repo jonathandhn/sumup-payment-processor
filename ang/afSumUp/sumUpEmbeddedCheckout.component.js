@@ -61,14 +61,9 @@
       this.currency = 'EUR';
       this.checkout = null;
       this.donorSummary = '';
-      // Filled by crm-checkout-summary via on-total-change binding.
-      this.summaryTotal = 0;
-      this.summaryCurrency = 'EUR';
 
-      // Called by crm-checkout-summary whenever the computed total changes.
-      this.onSummaryTotalChange = (total, currency) => {
-        this.summaryTotal = total || 0;
-        this.summaryCurrency = currency || 'EUR';
+      this.isDirect = () => {
+        return !!(this._orch && this._orch.directMount);
       };
 
       this.onAfformSuccess = (data) => {
@@ -92,8 +87,6 @@
           nameParts.push(email);
         }
         this.donorSummary = nameParts.join(' · ') || email || '';
-
-        form.addClass('crm-sumup-form--compact');
 
         this.active = true;
         this.completed = false;
@@ -127,9 +120,16 @@
       };
 
       this.cancelAndUnlock = () => {
+        // Once a SumUp checkout exists, do not merely reveal and resubmit the
+        // Afform create form: that would create another pending Contribution.
+        // The signed cancel URL verifies the checkout server-side before CiviCRM
+        // marks the existing Contribution as Cancelled.
+        if (this.checkout && this.checkout.cancel_url) {
+          window.location.assign(this.checkout.cancel_url);
+          return;
+        }
         var form = this.getFormElement();
-        form.removeClass('crm-sumup-form--compact');
-        form.find('button[type="submit"]').not($element.find('*')).show();
+        form.find('button[type="submit"]').show();
         this.active = false;
         this.completed = false;
         this.amount = '';

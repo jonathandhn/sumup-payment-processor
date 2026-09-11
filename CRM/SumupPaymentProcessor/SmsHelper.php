@@ -15,14 +15,12 @@ class CRM_SumupPaymentProcessor_SmsHelper
     {
         $options = [0 => (string) E::ts('- Default / System SMS Provider -')];
         try {
-            if (class_exists('\Civi\Api4\SmsProvider')) {
-                $providers = \Civi\Api4\SmsProvider::get(false)
-                    ->addSelect('id', 'title', 'name')
-                    ->addWhere('is_active', '=', true)
-                    ->execute();
-                foreach ($providers as $provider) {
-                    $options[(int) $provider['id']] = (string) ($provider['title'] ?: $provider['name']);
-                }
+            $providers = \Civi\Api4\SmsProvider::get(false)
+                ->addSelect('id', 'title', 'name')
+                ->addWhere('is_active', '=', true)
+                ->execute();
+            foreach ($providers as $provider) {
+                $options[(int) $provider['id']] = (string) ($provider['title'] ?: $provider['name']);
             }
         } catch (\Throwable $e) {
             // SMS component not enabled
@@ -44,11 +42,15 @@ class CRM_SumupPaymentProcessor_SmsHelper
         }
 
         $providerId = (int) Civi::settings()->get('sumup_qr_sms_provider_id');
-        if ($providerId <= 0 && class_exists('CRM_SMS_BAO_SmsProvider')) {
-            $active = \CRM_SMS_BAO_SmsProvider::activeProviders();
-            if (!empty($active)) {
-                $providerId = (int) array_key_first($active);
-            }
+        if ($providerId <= 0) {
+            $activeProvider = \Civi\Api4\SmsProvider::get(false)
+                ->addSelect('id')
+                ->addWhere('is_active', '=', true)
+                ->addOrderBy('id', 'ASC')
+                ->setLimit(1)
+                ->execute()
+                ->first();
+            $providerId = (int) ($activeProvider['id'] ?? 0);
         }
 
         if ($providerId <= 0) {
@@ -82,38 +84,24 @@ class CRM_SumupPaymentProcessor_SmsHelper
             'to' => $cleanPhone,
         ];
 
-        if (class_exists('CRM_SMS_Provider')) {
-            try {
-                $providerParams = ['id' => $providerId, 'provider_id' => $providerId];
-                if (class_exists('\Civi\Api4\SmsProvider')) {
-                    $providerData = \Civi\Api4\SmsProvider::get(false)
-                        ->addWhere('id', '=', $providerId)
-                        ->execute()
-                        ->first();
-                    if (!empty($providerData)) {
-                        $providerParams = array_merge($providerData, $providerParams);
-                    }
-                }
-
-                $provider = \CRM_SMS_Provider::singleton($providerParams);
-                if (is_object($provider) && method_exists($provider, 'send')) {
-                    try {
-                        $provider->send($recipients, $header, $messageText, null, null);
-                    } catch (\Throwable $e1) {
-                        try {
-                            $provider->send($cleanPhone, $header, $messageText, null, null);
-                        } catch (\Throwable $e2) {
-                            throw $e1;
-                        }
-                    }
-                    return;
-                }
-            } catch (\Throwable $e) {
-                \Civi::log()->warning('SumUp SMS sending failed via provider: ' . $e->getMessage());
-                throw new \CRM_Core_Exception(E::ts('Failed to send SMS: %1', [1 => $e->getMessage()]));
+        try {
+            $providerParams = ['id' => $providerId, 'provider_id' => $providerId];
+            $providerData = \Civi\Api4\SmsProvider::get(false)
+                ->addWhere('id', '=', $providerId)
+                ->execute()
+                ->first();
+            if (!empty($providerData)) {
+                $providerParams = array_merge($providerData, $providerParams);
             }
-        }
 
-        throw new \CRM_Core_Exception(E::ts('No active CiviCRM SMS Provider is configured.'));
+            $provider = \CRM_SMS_Provider::singleton($providerParams);
+            if (!method_exists($provider, 'send')) {
+                throw new \CRM_Core_Exception(E::ts('The configured SMS Provider cannot send messages.'));
+            }
+            $provider->send($recipients, $header, $messageText, null, null);
+        } catch (\Throwable $e) {
+            \Civi::log()->warning('SumUp SMS sending failed via provider: ' . $e->getMessage());
+            throw new \CRM_Core_Exception(E::ts('Failed to send SMS: %1', [1 => $e->getMessage()]));
+        }
     }
 }

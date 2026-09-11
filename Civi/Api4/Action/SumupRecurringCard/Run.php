@@ -148,8 +148,7 @@ final class Run extends AbstractAction
                 }
 
                 $processorId = (int) $schedule['payment_processor_id'];
-                $isTest = !empty($schedule['is_test']);
-                $provider = System::singleton()->getById($processorId, $isTest ? 'test' : 'live');
+                $provider = System::singleton()->getById($processorId);
                 if (!$provider instanceof CRM_Core_Payment_Sumup) {
                     throw new CRM_Core_Exception(E::ts(
                         'Unable to load the SumUp processor for schedule %1.',

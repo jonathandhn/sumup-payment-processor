@@ -39,8 +39,14 @@ final class RecurringExamples implements ExampleDataInterface
     {
         $workflow = (string) $example['workflow'];
         $message = WorkflowMessage::create($workflow);
+        if (!$message instanceof \CRM_Contribute_WorkflowMessage_RecurringEdit) {
+            throw new \UnexpectedValueException(sprintf(
+                'Workflow "%s" is not a recurring-contribution message.',
+                $workflow
+            ));
+        }
+        $message->receiptFromEmail = 'info@example.org';
         $message
-            ->setReceiptFromEmail('info@example.org')
             ->setContact(Test::example('entity/Contact/Barb'))
             ->setContributionRecur(Test::example('entity/ContributionRecur/Euro5990/pending'));
         if ($message instanceof ManagementInvitation) {

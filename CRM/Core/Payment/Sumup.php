@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Civi\Api4\Contribution;
 use Civi\Api4\ContributionRecur;
+use Civi\Api4\LineItem;
 use Civi\Api4\Payment;
 use Civi\Api4\PaymentToken;
 use Civi\Api4\PaymentProcessor;
@@ -19,6 +20,7 @@ use SumUp\Exception\SDKException;
 
 // phpcs:disable PSR1.Classes.ClassDeclaration.MissingNamespace
 // phpcs:disable Squiz.Classes.ValidClassName.NotCamelCaps
+// phpcs:disable PSR1.Files.SideEffects
 class CRM_Core_Payment_SumupBase extends CRM_Core_Payment
 {
     private const WIDGET_SIGNED_FIELDS = [
@@ -583,25 +585,40 @@ class CRM_Core_Payment_SumupBase extends CRM_Core_Payment
             throw new PaymentProcessorException(E::ts('Unable to prepare the SumUp payment reference.'));
         }
 
+        $requestedAmountValue = self::getPaymentParameter($params, ['amount']);
+        $requestedAmount = is_numeric($requestedAmountValue) && (float) $requestedAmountValue > 0
+            ? (float) $requestedAmountValue
+            : null;
+
         $legacyParams = is_array($params) ? $params : [];
         if ($this->isBackOffice()) {
-            return $this->startBackOfficeSoloPayment($propertyBag, $legacyParams);
+            return $this->startBackOfficeSoloPayment($propertyBag, $legacyParams, $requestedAmount);
         }
 
         $qfKeyValue = self::getPaymentParameter($params, ['qfKey']);
-        $qfKey = is_scalar($qfKeyValue) ? (string) $qfKeyValue : null;
+        $qfKey = is_scalar($qfKeyValue) && (string) $qfKeyValue !== ''
+            ? (string) $qfKeyValue
+            : null;
         $participantIdValue = self::getPaymentParameter($params, ['participantID', 'participant_id']);
         $participantId = is_numeric($participantIdValue) && (int) $participantIdValue > 0
             ? (int) $participantIdValue
             : null;
         $returnUrlValue = self::getPaymentParameter($params, ['return_url', 'returnURL']);
-        $returnUrl = is_string($returnUrlValue) && $returnUrlValue !== ''
-            ? $returnUrlValue
-            : $this->getReturnSuccessUrl($qfKey);
         $cancelUrlValue = self::getPaymentParameter($params, ['cancel_url', 'cancelURL']);
-        $cancelUrl = is_string($cancelUrlValue) && $cancelUrlValue !== ''
-            ? $cancelUrlValue
-            : $this->getCancelUrl($qfKey, $participantId);
+        $hasReturnUrl = is_string($returnUrlValue) && $returnUrlValue !== '';
+        $hasCancelUrl = is_string($cancelUrlValue) && $cancelUrlValue !== '';
+        if ($qfKey === null) {
+            if (!$hasReturnUrl || !$hasCancelUrl) {
+                throw new PaymentProcessorException(E::ts(
+                    'Unable to determine the CiviCRM return and cancellation URLs for this payment.'
+                ));
+            }
+            $returnUrl = $returnUrlValue;
+            $cancelUrl = $cancelUrlValue;
+        } else {
+            $returnUrl = $hasReturnUrl ? $returnUrlValue : $this->getReturnSuccessUrl($qfKey);
+            $cancelUrl = $hasCancelUrl ? $cancelUrlValue : $this->getCancelUrl($qfKey, $participantId);
+        }
         $checkoutMode = CRM_SumupPaymentProcessor_CheckoutMode::getConfiguredMode();
         $description = $this->paymentDescription($legacyParams, $contributionId);
         $result = $this->setStatusPaymentPending([]);
@@ -611,7 +628,8 @@ class CRM_Core_Payment_SumupBase extends CRM_Core_Payment
                 $contributionId,
                 $returnUrl,
                 $cancelUrl,
-                $description
+                $description,
+                $requestedAmount
             );
             $this->redirectToCheckout($paymentUrl);
             return $result;
@@ -621,7 +639,8 @@ class CRM_Core_Payment_SumupBase extends CRM_Core_Payment
             $contributionId,
             $returnUrl,
             $cancelUrl,
-            $description
+            $description,
+            $requestedAmount
         );
 
         if (self::isDrupalWebformAjaxRequest()) {
@@ -647,8 +666,11 @@ class CRM_Core_Payment_SumupBase extends CRM_Core_Payment
      * @param array<string, mixed> $legacyParams
      * @return array<string, mixed>
      */
-    private function startBackOfficeSoloPayment(PropertyBag $propertyBag, array $legacyParams): array
-    {
+    private function startBackOfficeSoloPayment(
+        PropertyBag $propertyBag,
+        array $legacyParams,
+        ?float $requestedAmount = null
+    ): array {
         $contributionId = (int) $propertyBag->getContributionID();
         $localReaderId = is_numeric($legacyParams['sumup_reader_id'] ?? null)
             ? (int) $legacyParams['sumup_reader_id']
@@ -656,7 +678,8 @@ class CRM_Core_Payment_SumupBase extends CRM_Core_Payment
         $clientTransactionId = $this->startSoloCheckoutForContribution(
             $contributionId,
             $localReaderId,
-            $this->paymentDescription($legacyParams, $contributionId)
+            $this->paymentDescription($legacyParams, $contributionId),
+            $requestedAmount
         );
 
         return $this->setStatusPaymentPending([
@@ -670,7 +693,8 @@ class CRM_Core_Payment_SumupBase extends CRM_Core_Payment
     public function startSoloCheckoutForContribution(
         int $contributionId,
         int $localReaderId,
-        ?string $description = null
+        ?string $description = null,
+        ?float $amount = null
     ): string {
         if ($contributionId <= 0) {
             throw new PaymentProcessorException(E::ts('Unable to prepare the SumUp terminal payment reference.'));
@@ -698,8 +722,8 @@ class CRM_Core_Payment_SumupBase extends CRM_Core_Payment
             ->addWhere('id', '=', $contributionId)
             ->execute()
             ->single();
-        $amount = (float) $contribution['total_amount'];
-        $amountMinor = (int) round($amount * 100);
+        $targetAmount = $amount !== null && $amount > 0.0 ? $amount : (float) $contribution['total_amount'];
+        $amountMinor = (int) round($targetAmount * 100);
         $currency = strtoupper((string) $contribution['currency']);
         $reference = sprintf('CIVI-%d-%s', $contributionId, bin2hex(random_bytes(8)));
         $response = $readerService->createCheckout(
@@ -720,7 +744,7 @@ class CRM_Core_Payment_SumupBase extends CRM_Core_Payment
             $reference,
             $contributionId,
             (int) $this->_paymentProcessor['id'],
-            $amount,
+            $targetAmount,
             $currency,
             CRM_SumupPaymentProcessor_CheckoutMode::SOLO,
             (string) $reader['reader_id']
@@ -788,14 +812,16 @@ class CRM_Core_Payment_SumupBase extends CRM_Core_Payment
         int $contributionId,
         string $returnUrl,
         string $cancelUrl,
-        ?string $description = null
+        ?string $description = null,
+        ?float $amount = null
     ): string {
         $checkoutData = $this->createCheckoutForContribution(
             $contributionId,
             $returnUrl,
             $cancelUrl,
             $description,
-            true
+            true,
+            $amount
         );
         $hostedUrl = (string) ($checkoutData['hosted_checkout_url'] ?? '');
         $parts = parse_url($hostedUrl);
@@ -828,14 +854,16 @@ class CRM_Core_Payment_SumupBase extends CRM_Core_Payment
         int $contributionId,
         string $returnUrl,
         string $cancelUrl,
-        ?string $description = null
+        ?string $description = null,
+        ?float $amount = null
     ): array {
         return $this->createCheckoutForContribution(
             $contributionId,
             $returnUrl,
             $cancelUrl,
             $description,
-            false
+            false,
+            $amount
         );
     }
 
@@ -863,7 +891,8 @@ class CRM_Core_Payment_SumupBase extends CRM_Core_Payment
         string $returnUrl,
         string $cancelUrl,
         ?string $description,
-        bool $hosted
+        bool $hosted,
+        ?float $amount = null
     ): array {
         $configurationError = $this->getOperationalConfigurationError();
         if ($configurationError !== null) {
@@ -887,8 +916,39 @@ class CRM_Core_Payment_SumupBase extends CRM_Core_Payment
             ->addWhere('is_test', 'IN', [true, false])
             ->execute()
             ->single();
-        $amount = (float) $contribution['total_amount'];
+        $targetAmount = $amount !== null && $amount > 0 ? $amount : (float) $contribution['total_amount'];
         $currency = strtoupper((string) $contribution['currency']);
+        if ($targetAmount <= 0) {
+            throw new PaymentProcessorException(E::ts('The CiviCRM contribution amount must be positive.'));
+        }
+
+        // CiviCRM is the accounting source of truth.
+        $lineItems = LineItem::get(false)
+            ->addWhere('contribution_id', '=', $contributionId)
+            ->addSelect('line_total', 'tax_amount')
+            ->execute();
+        if ($lineItems->count() > 0) {
+            $lineItemsInclusiveTotal = 0.0;
+            foreach ($lineItems as $item) {
+                $lineItemsInclusiveTotal += (float) ($item['line_total'] ?? 0)
+                    + (float) ($item['tax_amount'] ?? 0);
+            }
+            if (
+                $lineItemsInclusiveTotal > 0
+                && $amount === null
+                && !CRM_Utils_Money::equals($lineItemsInclusiveTotal, (float) $contribution['total_amount'], $currency)
+            ) {
+                Civi::log()->warning(sprintf(
+                    'SumUp line item total mismatch: '
+                        . 'contribution_id=%d contribution_amount=%s line_items_inclusive_total=%s currency=%s',
+                    $contributionId,
+                    (float) $contribution['total_amount'],
+                    $lineItemsInclusiveTotal,
+                    $currency
+                ));
+            }
+        }
+
         $merchantProfile = $this->getVerifiedMerchantProfile();
         if ($merchantProfile['currency'] !== $currency) {
             throw new PaymentProcessorException(E::ts(
@@ -933,7 +993,7 @@ class CRM_Core_Payment_SumupBase extends CRM_Core_Payment
 
         $checkout = $this->service()->create(
             contributionId: $contributionId,
-            amount: $amount,
+            amount: $targetAmount,
             currency: $currency,
             description: $providerDescription,
             webhookUrl: CRM_Mjwshared_Webhook::getWebhookPath((int) $this->_paymentProcessor['id']),
@@ -952,7 +1012,7 @@ class CRM_Core_Payment_SumupBase extends CRM_Core_Payment
             $checkoutReference,
             $contributionId,
             (int) $this->_paymentProcessor['id'],
-            $amount,
+            $targetAmount,
             $currency,
             $checkoutMode,
             null,
@@ -974,7 +1034,7 @@ class CRM_Core_Payment_SumupBase extends CRM_Core_Payment
 
         return [
             'checkout_id' => $checkoutId,
-            'amount' => number_format($amount, 2, '.', ''),
+            'amount' => number_format($targetAmount, 2, '.', ''),
             'currency' => $currency,
             'locale' => CRM_SumupPaymentProcessor_CheckoutMode::getLocale(),
             'mode' => $checkoutMode,
@@ -1061,7 +1121,7 @@ class CRM_Core_Payment_SumupBase extends CRM_Core_Payment
                     if ($value !== null && $value !== '') {
                         return $value;
                     }
-                } catch (BadMethodCallException | InvalidArgumentException) {
+                } catch (\Throwable) {
                     // Try the next legacy alias, then fall back to CiviCRM's URL helpers.
                 }
             }
@@ -1275,11 +1335,11 @@ class CRM_Core_Payment_SumupBase extends CRM_Core_Payment
         $this->service()->assertMatchesContribution(
             $checkout,
             $contributionId,
-            (float) $contribution['total_amount'],
+            (float) $registry['amount'],
             (string) $contribution['currency']
         );
         if (
-            (int) round($registry['amount'] * 100) !== (int) round((float) $contribution['total_amount'] * 100)
+            (int) round($registry['amount'] * 100) !== (int) round((float) $checkout->amount * 100)
             || strtoupper($registry['currency']) !== strtoupper((string) $contribution['currency'])
         ) {
             throw new PaymentProcessorException(
@@ -1301,7 +1361,7 @@ class CRM_Core_Payment_SumupBase extends CRM_Core_Payment
             if ($transactionId === null) {
                 throw new PaymentProcessorException(E::ts('Paid SumUp checkout has no transaction identifier.'));
             }
-            $this->completeContribution($contribution, $transactionId);
+            $this->completeContribution($contribution, $transactionId, (float) $registry['amount']);
         } elseif ($status === 'CANCELLED') {
             $this->cancelPendingContribution($contributionId, (string) $contribution['contribution_status_id:name']);
         } elseif (
@@ -2357,7 +2417,7 @@ class CRM_Core_Payment_SumupBase extends CRM_Core_Payment
             ->execute()
             ->single();
         if (
-            (int) round((float) $contribution['total_amount'] * 100) !== (int) round($registry['amount'] * 100)
+            (int) round((float) $transaction->amount * 100) !== (int) round($registry['amount'] * 100)
             || strtoupper((string) $contribution['currency']) !== strtoupper($registry['currency'])
         ) {
             throw new PaymentProcessorException(E::ts('SumUp terminal amount does not match the contribution.'));
@@ -2383,7 +2443,7 @@ class CRM_Core_Payment_SumupBase extends CRM_Core_Payment
             $transactionId
         );
         if ($status === 'PAID') {
-            $this->completeContribution($contribution, $transactionId);
+            $this->completeContribution($contribution, $transactionId, (float) $registry['amount']);
         } elseif ($status === 'CANCELLED') {
             $this->cancelPendingContribution(
                 (int) $contribution['id'],
@@ -2791,7 +2851,7 @@ class CRM_Core_Payment_SumupBase extends CRM_Core_Payment
     /**
      * @param array<string, mixed> $contribution
      */
-    private function completeContribution(array $contribution, string $transactionId): void
+    private function completeContribution(array $contribution, string $transactionId, ?float $amount = null): void
     {
         $contributionId = (int) $contribution['id'];
         $processorId = (int) $this->_paymentProcessor['id'];
@@ -2822,10 +2882,11 @@ class CRM_Core_Payment_SumupBase extends CRM_Core_Payment
                 ));
             }
 
+            $paidAmount = $amount !== null && $amount > 0.0 ? $amount : (float) $contribution['total_amount'];
             $financialDetails = $this->getFinancialDetails($transactionId);
             $values = [
                 'contribution_id' => $contributionId,
-                'total_amount' => (float) $contribution['total_amount'],
+                'total_amount' => $paidAmount,
                 'payment_processor_id' => $processorId,
                 'payment_instrument_id' => $this->getPaymentInstrumentID(),
                 'trxn_id' => $transactionId,

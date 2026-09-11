@@ -20,8 +20,9 @@
   </div>
 
   <div ng-hide="$ctrl.completed">
-    <!-- Accordion Step 1: Summary Recap Line (Adyen Bento Style) -->
-    <div class="crm-sumup-accordion-item crm-sumup-accordion-item--collapsed" ng-click="$ctrl.cancelAndUnlock()">
+    <!-- Step 1: Summary Line. Editing after checkout creation requires a
+         server-side cancellation/replacement operation. -->
+    <div class="crm-sumup-accordion-item crm-sumup-accordion-item--collapsed">
       <div class="crm-sumup-accordion-header">
         <div class="crm-sumup-accordion-header__left">
           <span class="crm-sumup-step-badge crm-sumup-step-badge--done"><i class="crm-i fa-check"></i></span>
@@ -30,28 +31,11 @@
             <span class="crm-sumup-step-subtitle" ng-if="$ctrl.donorSummary">{{$ctrl.donorSummary}}</span>
           </div>
         </div>
-        <div class="crm-sumup-accordion-header__right">
-          <button type="button" class="crm-sumup-accordion-edit-btn" ng-click="$ctrl.cancelAndUnlock(); $event.stopPropagation();">
-            <i class="crm-i fa-pencil"></i> {{ts('Edit')}}
-          </button>
-        </div>
       </div>
     </div>
 
-    <!-- Accordion Step 2: Choose a payment method -->
+    <!-- Step 2: Choose a payment method / Card Frame -->
     <div class="crm-sumup-accordion-item crm-sumup-accordion-item--active">
-      <div class="crm-sumup-accordion-header">
-        <div class="crm-sumup-accordion-header__left">
-          <span class="crm-sumup-step-badge crm-sumup-step-badge--active">2</span>
-          <div class="crm-sumup-step-info">
-            <span class="crm-sumup-step-title">{{ts('Choose a payment method')}}</span>
-          </div>
-        </div>
-        <div class="crm-sumup-accordion-header__right">
-          <span class="crm-sumup-total-amount">{{$ctrl.amount}} {{$ctrl.currency}}</span>
-        </div>
-      </div>
-
       <div class="crm-sumup-accordion-body">
         <div class="crm-sumup-payment-frame">
           <div class="crm-sumup-embedded-checkout" id="sumup-afform-mount-target"></div>
