@@ -2023,6 +2023,12 @@ body.sumup-checkout-page h1.crm-page-title {
   text-decoration: underline;
 }
 
+.crm-sumup-embedded-checkout__actions {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 0.75rem;
+}
+
 @media (max-width: 640px) {
   .crm-sumup-accordion-checkout,
   .crm-sumup-alma-container {
@@ -2068,3 +2074,282 @@ body.sumup-checkout-page h1.crm-page-title {
   padding: 0 !important;
 }
 
+/* ======================================================================
+   Shared SumUp presentation contract
+
+   The payment logic has several hosts (Afform, relay page, QR/Solo and
+   administration), but only three visual contexts. Keep their spacing,
+   states and actions coherent without styling inside the secure Widget.
+   ====================================================================== */
+
+.crm-sumup-ui {
+  --sumup-surface: #fff;
+  --sumup-surface-muted: #f7f7f5;
+  --sumup-text: #101010;
+  --sumup-text-muted: #5f6368;
+  --sumup-border: #dededb;
+  --sumup-focus: #006f69;
+  --sumup-success: #256f3a;
+  --sumup-danger: #b3261e;
+  --sumup-radius: 1rem;
+  --sumup-space: clamp(1rem, 3vw, 1.5rem);
+  box-sizing: border-box;
+  color: var(--sumup-text);
+  font-size: 1rem;
+  line-height: 1.45;
+  width: 100%;
+}
+
+.crm-sumup-ui *,
+.crm-sumup-ui *::before,
+.crm-sumup-ui *::after {
+  box-sizing: border-box;
+}
+
+.crm-sumup-ui--embedded {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  margin: 0;
+  max-width: none;
+  padding: 0;
+}
+
+.crm-sumup-ui--standalone {
+  margin-inline: auto;
+  max-width: 46rem;
+}
+
+.crm-sumup-ui--admin {
+  margin-inline: auto;
+  max-width: 72rem;
+}
+
+.crm-sumup-ui--embedded .crm-sumup-accordion-checkout,
+.crm-sumup-ui--embedded .crm-sumup-embedded-checkout {
+  margin-inline: 0;
+  max-width: none;
+  width: 100%;
+}
+
+.crm-sumup-ui--embedded .crm-sumup-accordion-item--active {
+  background: var(--sumup-surface);
+  border: 1px solid var(--sumup-border);
+  border-radius: var(--sumup-radius);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 5%);
+  overflow: hidden;
+}
+
+.crm-sumup-ui--embedded .crm-sumup-accordion-body,
+.crm-sumup-ui--embedded .crm-sumup-payment-frame,
+.crm-sumup-ui--embedded .crm-sumup-embedded-checkout {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.crm-sumup-ui--standalone.crm-sumup-checkout-block,
+.crm-sumup-ui--standalone.crm-sumup-kiosk,
+.crm-sumup-ui--standalone.crm-sumup-replace-card {
+  background: var(--sumup-surface);
+  border: 1px solid var(--sumup-border);
+  border-radius: var(--sumup-radius);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 5%), 0 12px 30px rgb(0 0 0 / 5%);
+  overflow: hidden;
+  padding: var(--sumup-space);
+}
+
+.crm-sumup-ui--admin.crm-sumup-payment-methods,
+.crm-sumup-ui--admin.crm-sumup-readers-admin {
+  display: grid;
+  gap: 1rem;
+}
+
+.crm-sumup-ui--admin > .crm-sumup-panel {
+  margin: 0;
+}
+
+.crm-sumup-ui .crm-sumup-kiosk__header {
+  margin-bottom: var(--sumup-space);
+  padding-bottom: 1rem;
+}
+
+.crm-sumup-ui .crm-sumup-kiosk__card {
+  background: var(--sumup-surface-muted);
+  border-color: var(--sumup-border);
+  border-radius: calc(var(--sumup-radius) - 0.25rem);
+  box-shadow: none;
+}
+
+.crm-sumup-ui .crm-sumup-kiosk__card:hover {
+  border-color: var(--sumup-border);
+  box-shadow: none;
+}
+
+.crm-sumup-ui .crm-sumup-kiosk__footer {
+  flex-wrap: wrap;
+}
+
+.crm-sumup-kiosk__footer--spaced {
+  margin-top: 1.5rem;
+}
+
+.crm-sumup-state {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(1.5rem, 6vw, 2.5rem) 1rem;
+  text-align: center;
+}
+
+.crm-sumup-state h2,
+.crm-sumup-state h3 {
+  color: var(--sumup-text, #101010);
+  font-size: clamp(1.25rem, 4vw, 1.6rem);
+  font-weight: 750;
+  margin: 0 0 0.5rem;
+}
+
+.crm-sumup-state__icon {
+  color: var(--sumup-text-muted, #5f6368);
+  font-size: 3rem;
+  line-height: 1;
+  margin-bottom: 1rem;
+}
+
+.crm-sumup-state--success .crm-sumup-state__icon {
+  color: var(--sumup-success, #256f3a);
+}
+
+.crm-sumup-state--error .crm-sumup-state__icon {
+  color: var(--sumup-danger, #b3261e);
+}
+
+.crm-sumup-state__message {
+  color: var(--sumup-text-muted, #5f6368);
+  margin: 0 0 1.25rem;
+  max-width: 32rem;
+}
+
+.crm-sumup-state__amount {
+  background: var(--sumup-surface-muted, #f7f7f5);
+  border: 1px solid var(--sumup-border, #dededb);
+  border-radius: 999px;
+  display: inline-flex;
+  font-size: 1.1rem;
+  font-weight: 700;
+  padding: 0.65rem 1.1rem;
+}
+
+.crm-sumup-ui .crm-sumup-btn-modify,
+.crm-sumup-ui .crm-sumup-checkout__cancel a {
+  color: #4b4f52;
+  min-height: 2.75rem;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+.crm-sumup-ui .crm-sumup-btn-modify:hover,
+.crm-sumup-ui .crm-sumup-checkout__cancel a:hover {
+  color: var(--sumup-text);
+}
+
+.crm-sumup-ui .crm-sumup-btn-modify:focus-visible,
+.crm-sumup-ui .crm-sumup-checkout__cancel a:focus-visible {
+  border-radius: 0.35rem;
+  outline: 3px solid color-mix(in srgb, var(--sumup-focus) 45%, transparent);
+  outline-offset: 2px;
+}
+
+.crm-sumup-ui .crm-sumup-embedded-checkout__actions {
+  margin: 0 0 0.75rem;
+}
+
+/* QuickForm/relay uses the same payment-method composition as Afform. */
+.crm-sumup-ui--standalone.crm-sumup-checkout-block .crm-sumup-method-selector {
+  border: 1px solid var(--sumup-border);
+  border-radius: var(--sumup-radius);
+  gap: 0;
+  margin-bottom: 1.25rem;
+  overflow: hidden;
+}
+
+.crm-sumup-ui--standalone.crm-sumup-checkout-block .crm-sumup-choice {
+  background: var(--sumup-surface);
+  border: 0;
+  border-bottom: 1px solid var(--sumup-border);
+  border-radius: 0;
+  box-shadow: none;
+  margin: 0;
+}
+
+.crm-sumup-ui--standalone.crm-sumup-checkout-block .crm-sumup-choice:last-child {
+  border-bottom: 0;
+}
+
+.crm-sumup-ui--standalone.crm-sumup-checkout-block .crm-sumup-choice:hover,
+.crm-sumup-ui--standalone.crm-sumup-checkout-block .crm-sumup-choice.crm-sumup-choice--selected {
+  background: var(--sumup-surface);
+  border-color: var(--sumup-border);
+  box-shadow: none;
+}
+
+.crm-sumup-ui--standalone.crm-sumup-checkout-block .crm-sumup-choice__header {
+  min-height: 3.75rem;
+  padding: 0.9rem 1.1rem;
+}
+
+.crm-sumup-ui--standalone.crm-sumup-checkout-block .crm-sumup-choice__drawer {
+  background: transparent;
+  border-top: 1px solid #f1f1ef;
+  padding: 1.25rem 1.1rem;
+}
+
+/* `hidden` must win over the component's flex display declaration. */
+.crm-sumup-status-message[hidden] {
+  display: none !important;
+}
+
+@media (max-width: 40rem) {
+  body.sumup-checkout-page main {
+    padding: 1rem max(0.75rem, env(safe-area-inset-left));
+  }
+
+  .crm-sumup-ui {
+    --sumup-radius: 0.875rem;
+    --sumup-space: 1rem;
+  }
+
+  .crm-sumup-ui--standalone.crm-sumup-checkout-block,
+  .crm-sumup-ui--standalone.crm-sumup-kiosk,
+  .crm-sumup-ui--standalone.crm-sumup-replace-card {
+    border-radius: var(--sumup-radius);
+    padding: var(--sumup-space);
+  }
+
+  .crm-sumup-ui .crm-sumup-kiosk__header {
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .crm-sumup-ui .crm-sumup-kiosk__grid {
+    gap: 1rem;
+  }
+
+  .crm-sumup-ui .crm-sumup-kiosk__card {
+    padding: 1.1rem 0.85rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crm-sumup-ui,
+  .crm-sumup-ui * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}

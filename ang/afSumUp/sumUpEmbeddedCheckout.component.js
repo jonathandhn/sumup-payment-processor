@@ -68,7 +68,6 @@
       this.amount = '';
       this.currency = 'EUR';
       this.checkout = null;
-      this.donorSummary = '';
       this.cancelling = false;
 
       this.isDirect = () => {
@@ -83,19 +82,6 @@
           this.error = ts('Unable to start the secure payment form. Please try again.');
           return;
         }
-
-        var form = this.getFormElement();
-        var nameParts = [];
-        var firstName = form.find('input[name*="first_name"]').val();
-        var lastName = form.find('input[name*="last_name"]').val();
-        var email = form.find('input[name*="email"], input[type="email"]').val();
-        if (firstName || lastName) {
-          nameParts.push([firstName, lastName].filter(Boolean).join(' '));
-        }
-        if (email) {
-          nameParts.push(email);
-        }
-        this.donorSummary = nameParts.join(' · ') || email || '';
 
         this.active = true;
         this.completed = false;
@@ -136,7 +122,6 @@
         this.amount = '';
         this.currency = 'EUR';
         this.checkout = null;
-        this.donorSummary = '';
         this.cancelling = false;
         this.error = '';
         var orch = this._orch || this.orchestrator;
