@@ -15,6 +15,14 @@
       this.$onInit = () => {
         loadSdkScript('https://gateway.sumup.com/gateway/ecom/card/v2/sdk.js');
         this.getFormElement().on('crmFormSuccess', listener);
+        $scope.$watch(
+          () => this.afCheckoutBlock.getCheckoutOptionKey(),
+          (checkoutOption) => {
+            if (checkoutOption) {
+              this.afCheckoutBlock.checkout_params.sumup_edit_return_url = window.location.href;
+            }
+          }
+        );
       };
       this.$onDestroy = () => this.getFormElement().off('crmFormSuccess', listener);
       this.$postLink = () => {
@@ -61,6 +69,7 @@
       this.currency = 'EUR';
       this.checkout = null;
       this.donorSummary = '';
+      this.cancelling = false;
 
       this.isDirect = () => {
         return !!(this._orch && this._orch.directMount);
@@ -119,30 +128,58 @@
         });
       };
 
-      this.cancelAndUnlock = () => {
-        // Once a SumUp checkout exists, do not merely reveal and resubmit the
-        // Afform create form: that would create another pending Contribution.
-        // The signed cancel URL verifies the checkout server-side before CiviCRM
-        // marks the existing Contribution as Cancelled.
-        if (this.checkout && this.checkout.cancel_url) {
-          window.location.assign(this.checkout.cancel_url);
-          return;
-        }
+      this.unlockForm = () => {
         var form = this.getFormElement();
         form.find('button[type="submit"]').show();
         this.active = false;
         this.completed = false;
         this.amount = '';
         this.currency = 'EUR';
+        this.checkout = null;
         this.donorSummary = '';
+        this.cancelling = false;
         this.error = '';
         var orch = this._orch || this.orchestrator;
-        if (orch) { orch.setActive(false); }
+        if (orch && typeof orch.cancelActive === 'function') {
+          // Reset both provider activity and the shared single-page layout.
+          // setActive(false) alone leaves the orchestrator in its submitted
+          // state, which keeps the Afform fields locked and its submit button hidden.
+          orch.cancelActive();
+        }
+        else if (orch) {
+          orch.setActive(false);
+        }
         var container = $element[0].querySelector('#sumup-afform-mount-target');
         if (container) {
           container.innerHTML = '';
         }
         $scope.$applyAsync();
+      };
+
+      this.cancelAndUnlock = () => {
+        // Cancel through the signed CiviCRM endpoint without navigating away.
+        // This keeps the live Afform models intact while the server verifies
+        // SumUp and cancels the existing pending Contribution.
+        if (this.checkout && this.checkout.cancel_url) {
+          this.cancelling = true;
+          this.error = '';
+          window.fetch(this.checkout.cancel_url, {
+            credentials: 'same-origin',
+            redirect: 'follow'
+          }).then((response) => {
+            if (!response.ok) {
+              throw new Error('Cancellation returned HTTP ' + response.status);
+            }
+            this.unlockForm();
+          }).catch((err) => {
+            console.error('SumUp Afform Cancellation Failure:', err);
+            this.cancelling = false;
+            this.error = ts('Unable to cancel the payment. Please try again.');
+            $scope.$applyAsync();
+          });
+          return;
+        }
+        this.unlockForm();
       };
     },
   });

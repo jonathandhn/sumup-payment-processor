@@ -109,6 +109,10 @@ if (
         public function startCheckout(CheckoutSession $session): void
         {
             $processor = $this->getProcessor($session);
+            $editReturnUrl = $this->getSafeEditReturnUrl($session);
+            if ($editReturnUrl !== null) {
+                $session->setCancelUrl($editReturnUrl);
+            }
             $session->setCheckoutParam('sumup_return', 'success');
             $returnUrl = $session->getLandingUrl();
             $session->setCheckoutParam('sumup_return', 'cancel');
@@ -222,6 +226,39 @@ if (
         private function getConnectionLabel(): string
         {
             return (string) ($this->getDisplayConnection()['title'] ?? 'SumUp');
+        }
+
+        private function getSafeEditReturnUrl(CheckoutSession $session): ?string
+        {
+            $candidate = $session->getCheckoutParam('sumup_edit_return_url');
+            if (!is_string($candidate) || $candidate === '') {
+                return null;
+            }
+
+            $target = parse_url($candidate);
+            $base = parse_url((string) \CRM_Utils_System::baseCMSURL());
+            if (!is_array($target) || !is_array($base) || isset($target['user']) || isset($target['pass'])) {
+                return null;
+            }
+
+            $targetScheme = strtolower((string) ($target['scheme'] ?? ''));
+            $baseScheme = strtolower((string) ($base['scheme'] ?? ''));
+            $targetHost = strtolower((string) ($target['host'] ?? ''));
+            $baseHost = strtolower((string) ($base['host'] ?? ''));
+            $targetPort = (int) ($target['port'] ?? ($targetScheme === 'https' ? 443 : 80));
+            $basePort = (int) ($base['port'] ?? ($baseScheme === 'https' ? 443 : 80));
+
+            if (
+                !in_array($targetScheme, ['http', 'https'], true)
+                || $targetScheme !== $baseScheme
+                || $targetHost === ''
+                || $targetHost !== $baseHost
+                || $targetPort !== $basePort
+            ) {
+                return null;
+            }
+
+            return $candidate;
         }
     }
 }
