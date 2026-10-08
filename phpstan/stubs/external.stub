@@ -97,6 +97,7 @@ namespace Civi\Checkout {
         public function isTestMode(): bool { return false; }
         public function setCheckoutParam(string $key, mixed $value): self { return $this; }
         public function getCheckoutParam(string $key): mixed { return null; }
+        public function setCancelUrl(string $url): self { return $this; }
         public function getLandingUrl(): string { return ''; }
         public function tokenise(): string { return ''; }
         public function setResponseItem(string $key, mixed $value): self { return $this; }

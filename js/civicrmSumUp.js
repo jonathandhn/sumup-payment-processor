@@ -142,7 +142,7 @@
 
       var section = document.createElement('section');
       section.id = 'sumup-webform-checkout';
-      section.className = 'crm-block crm-sumup-checkout-block';
+      section.className = 'crm-block crm-sumup-ui crm-sumup-ui--standalone crm-sumup-checkout-block';
       section.setAttribute('aria-busy', 'true');
       section.setAttribute('aria-label', ts('Payment'));
       var container = document.createElement('div');
