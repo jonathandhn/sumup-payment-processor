@@ -58,9 +58,10 @@ if (
             return !empty($instrument['name']) ? (string) $instrument['name'] : null;
         }
 
-        public function getPaymentProcessorId(): ?int
+        public function getPaymentProcessorId(bool $testMode = false): ?int
         {
-            $connection = $this->liveConnection ?: $this->testConnection;
+            $connection = $testMode ? $this->testConnection : $this->liveConnection;
+            $connection ??= $this->liveConnection ?: $this->testConnection;
             return !empty($connection['id']) ? (int) $connection['id'] : null;
         }
 
