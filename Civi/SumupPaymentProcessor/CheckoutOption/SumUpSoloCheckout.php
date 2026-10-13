@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Civi\SumupPaymentProcessor\CheckoutOption;
 
@@ -16,255 +16,246 @@ if (
     interface_exists('Civi\\Checkout\\CheckoutOptionInterface')
     && interface_exists('Civi\\Checkout\\AfformCheckoutOptionInterface')
 ) {
-    final class SumUpSoloCheckout implements CheckoutOptionInterface, AfformCheckoutOptionInterface
-    {
-        /**
-         * @param array<string, mixed>|null $liveConnection
-         * @param array<string, mixed>|null $testConnection
-         */
-        public function __construct(
-            private readonly ?array $liveConnection,
-            private readonly ?array $testConnection
-        ) {
-        }
+  final class SumUpSoloCheckout implements CheckoutOptionInterface, AfformCheckoutOptionInterface {
 
-        public function getLabel(): string
-        {
-            return E::ts('%1 (Card reader / Kiosk)', [1 => $this->getConnectionLabel()]);
-        }
-
-        public function getFrontendLabel(): string
-        {
-            return E::ts('%1 (Card reader)', [
-                1 => $this->getConnectionLabel(),
-            ]);
-        }
-
-        public function getPaymentMethod(): ?string
-        {
-            $connection = $this->getDisplayConnection();
-            if (empty($connection['payment_instrument_id'])) {
-                return null;
-            }
-            $instrument = OptionValue::get(false)
-                ->addSelect('name')
-                ->addWhere('option_group_id:name', '=', 'payment_instrument')
-                ->addWhere('value', '=', (int) $connection['payment_instrument_id'])
-                ->execute()
-                ->first();
-
-            return !empty($instrument['name']) ? (string) $instrument['name'] : null;
-        }
-
-        public function getPaymentProcessorId(bool $testMode = false): ?int
-        {
-            $connection = $testMode ? $this->testConnection : $this->liveConnection;
-            $connection ??= $this->liveConnection ?: $this->testConnection;
-            return !empty($connection['id']) ? (int) $connection['id'] : null;
-        }
-
-        public function supportsRecurring(): bool
-        {
-            return false;
-        }
-
-        public function validate(AfformValidateEvent $event): void
-        {
-            // The selected reader is revalidated after the contribution exists.
-        }
-
-        /**
-         * @return array<string, mixed>
-         */
-        public function getAfformSettings(bool $testMode): array
-        {
-            return [
-                'description' => E::ts('In-person payment on card reader.'),
-                'template' => '~/afSumUp/sumup_solo_checkout.html',
-            ];
-        }
-
-        public function getAfformModule(): string
-        {
-            return 'afSumUp';
-        }
-
-        public function startCheckout(CheckoutSession $session): void
-        {
-            $readerId = (int) $session->getCheckoutParam('sumup_reader_id');
-            $connection = $this->getConnectionDetails($session->isTestMode());
-
-            if ($readerId <= 0) {
-                $defaultReader = SumupReader::get(false)
-                    ->addSelect('id')
-                    ->addWhere('payment_processor_id', '=', (int) $connection['id'])
-                    ->addWhere('pairing_status', '=', 'paired')
-                    ->addWhere('is_active', '=', true)
-                    ->addOrderBy('site_code', 'ASC')
-                    ->addOrderBy('canonical_name', 'ASC')
-                    ->execute()
-                    ->first();
-                $readerId = !empty($defaultReader['id']) ? (int) $defaultReader['id'] : 0;
-            }
-
-            if ($readerId <= 0) {
-                throw new \CRM_Core_Exception(E::ts('No paired SumUp card reader is available.'));
-            }
-            $session->setCheckoutParam('sumup_reader_id', $readerId);
-
-            $reader = SumupReader::get(false)
-                ->addSelect('id', 'canonical_name', 'site_code')
-                ->addWhere('id', '=', $readerId)
-                ->addWhere('payment_processor_id', '=', (int) $connection['id'])
-                ->addWhere('pairing_status', '=', 'paired')
-                ->addWhere('is_active', '=', true)
-                ->execute()
-                ->first();
-            if (!$reader) {
-                throw new \CRM_Core_Exception(E::ts('The selected SumUp card reader is unavailable.'));
-            }
-
-            $contribution = \Civi\Api4\Contribution::get(false)
-                ->addSelect('id', 'total_amount', 'currency', 'contribution_recur_id')
-                ->addWhere('id', '=', $session->getContributionId())
-                ->execute()
-                ->single();
-
-            if (!empty($contribution['contribution_recur_id'])) {
-                throw new \CRM_Core_Exception(E::ts(
-                    'SumUp card readers only support one-time payments.'
-                    . ' Recurring contributions require online card checkout.'
-                ));
-            }
-
-            $processor = $this->getProcessor($session);
-            $clientTransactionId = $processor->startSoloCheckoutForContribution(
-                $session->getContributionId(),
-                $readerId
-            );
-            $session->setCheckoutParam('sumup_reader_checkout_id', $clientTransactionId);
-
-            $session->setResponseItem(
-                'sumup_solo_checkout',
-                [
-                    'token' => $session->tokenise(),
-                    'reader_id' => $readerId,
-                    'reader_name' => (string) ($reader['canonical_name'] ?? 'Solo'),
-                    'site_code' => (string) ($reader['site_code'] ?? ''),
-                    'solo_image_url' => E::url('images/sumup-solo.png'),
-                    'amount' => number_format((float) $contribution['total_amount'], 2, '.', ''),
-                    'currency' => (string) $contribution['currency'],
-                    'client_transaction_id' => $clientTransactionId,
-                    'message' => E::ts(
-                        'Payment of %1 %2 sent to card reader %3.',
-                        [
-                            1 => number_format((float) $contribution['total_amount'], 2, '.', ''),
-                            2 => (string) $contribution['currency'],
-                            3 => (string) ($reader['canonical_name'] ?? 'Solo'),
-                        ]
-                    ),
-                ]
-            );
-            $session->setResponseItem('redirect', false);
-            $session->setResponseItem('message', false);
-        }
-
-        public function continueCheckout(CheckoutSession $session): void
-        {
-            try {
-                $contribution = \Civi\Api4\Contribution::get(false)
-                    ->addSelect('contribution_status_id:name')
-                    ->addWhere('id', '=', $session->getContributionId())
-                    ->execute()
-                    ->single();
-                $status = (string) ($contribution['contribution_status_id:name'] ?? '');
-                if ($status === 'Completed') {
-                    $session->success();
-                    return;
-                }
-                if ($status === 'Cancelled') {
-                    $session->cancel();
-                    return;
-                }
-                if ($status === 'Failed') {
-                    $session->fail();
-                    return;
-                }
-
-                $clientTransactionId = (string) $session->getCheckoutParam('sumup_reader_checkout_id');
-                if (!\CRM_SumupPaymentProcessor_CheckoutService::isValidCheckoutId($clientTransactionId)) {
-                    throw new \CRM_Core_Exception(E::ts('The SumUp terminal transaction identifier is missing.'));
-                }
-                $result = $this->getProcessor($session)->verifyAndApplyReaderCheckout($clientTransactionId);
-            } catch (\SumUp\Exception\ApiException $exception) {
-                if (
-                    $exception->getCode() !== 404
-                    && !$session->getCheckoutParam('sumup_reader_status_error_logged')
-                ) {
-                    \Civi::log()->warning(
-                        'Unable to retrieve the SumUp terminal payment status: ' . $exception->getMessage()
-                    );
-                    $session->setCheckoutParam('sumup_reader_status_error_logged', true);
-                }
-                return;
-            } catch (\Throwable $exception) {
-                if (!$session->getCheckoutParam('sumup_reader_status_error_logged')) {
-                    \Civi::log()->warning(
-                        'Unable to retrieve the SumUp terminal payment status: ' . $exception->getMessage()
-                    );
-                    $session->setCheckoutParam('sumup_reader_status_error_logged', true);
-                }
-                return;
-            }
-
-            if ($result['status'] === 'PAID') {
-                $session->success();
-                return;
-            }
-            if (in_array($result['status'], ['FAILED', 'CANCELLED', 'EXPIRED'], true)) {
-                // A reader attempt may expire while the contribution and QR fallback remain payable.
-                // Keep the CheckoutSession pending so the operator can start a fresh Solo attempt.
-                $session->setCheckoutParam('sumup_reader_attempt_status', $result['status']);
-                return;
-            }
-        }
-
-        private function getProcessor(CheckoutSession $session): \CRM_Core_Payment_Sumup
-        {
-            $connection = $this->getConnectionDetails($session->isTestMode());
-            $processor = \Civi\Payment\System::singleton()->getByName(
-                (string) $connection['name'],
-                $session->isTestMode()
-            );
-            if (!$processor instanceof \CRM_Core_Payment_Sumup) {
-                throw new \CRM_Core_Exception(E::ts('Unable to load the SumUp payment processor.'));
-            }
-            return $processor;
-        }
-
-        /** @return array<string, mixed> */
-        private function getConnectionDetails(bool $testMode): array
-        {
-            $connection = $testMode ? $this->testConnection : $this->liveConnection;
-            if (!$connection) {
-                throw new \CRM_Core_Exception(E::ts('No active SumUp payment processor is available for this mode.'));
-            }
-            return $connection;
-        }
-
-        /** @return array<string, mixed> */
-        private function getDisplayConnection(): array
-        {
-            $connection = $this->liveConnection ?: $this->testConnection;
-            if (!$connection) {
-                throw new \CRM_Core_Exception(E::ts('No active SumUp payment processor is available.'));
-            }
-            return $connection;
-        }
-
-        private function getConnectionLabel(): string
-        {
-            return (string) ($this->getDisplayConnection()['title'] ?? 'SumUp');
-        }
+    /**
+     * @param array<string,mixed>|null $liveConnection
+     * @param array<string,mixed>|null $testConnection
+     */
+    public function __construct(
+        private readonly ?array $liveConnection,
+        private readonly ?array $testConnection
+    ) {
     }
+
+    public function getLabel(): string {
+      return E::ts('%1 (Card reader / Kiosk)', [1 => $this->getConnectionLabel()]);
+    }
+
+    public function getFrontendLabel(): string {
+      return E::ts('%1 (Card reader)', [
+        1 => $this->getConnectionLabel(),
+      ]);
+    }
+
+    public function getPaymentMethod(): ?string {
+      $connection = $this->getDisplayConnection();
+      if (empty($connection['payment_instrument_id'])) {
+        return NULL;
+      }
+      $instrument = OptionValue::get(FALSE)
+        ->addSelect('name')
+        ->addWhere('option_group_id:name', '=', 'payment_instrument')
+        ->addWhere('value', '=', (int) $connection['payment_instrument_id'])
+        ->execute()
+        ->first();
+
+      return !empty($instrument['name']) ? (string) $instrument['name'] : NULL;
+    }
+
+    public function getPaymentProcessorId(bool $testMode = FALSE): ?int {
+      $connection = $testMode ? $this->testConnection : $this->liveConnection;
+      $connection ??= $this->liveConnection ?: $this->testConnection;
+      return !empty($connection['id']) ? (int) $connection['id'] : NULL;
+    }
+
+    public function supportsRecurring(): bool {
+      return FALSE;
+    }
+
+    public function validate(AfformValidateEvent $event): void {
+      // The selected reader is revalidated after the contribution exists.
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    public function getAfformSettings(bool $testMode): array {
+      return [
+        'description' => E::ts('In-person payment on card reader.'),
+        'template' => '~/afSumUp/sumup_solo_checkout.html',
+      ];
+    }
+
+    public function getAfformModule(): string {
+      return 'afSumUp';
+    }
+
+    public function startCheckout(CheckoutSession $session): void {
+      $readerId = (int) $session->getCheckoutParam('sumup_reader_id');
+      $connection = $this->getConnectionDetails($session->isTestMode());
+
+      if ($readerId <= 0) {
+        $defaultReader = SumupReader::get(FALSE)
+          ->addSelect('id')
+          ->addWhere('payment_processor_id', '=', (int) $connection['id'])
+          ->addWhere('pairing_status', '=', 'paired')
+          ->addWhere('is_active', '=', TRUE)
+          ->addOrderBy('site_code', 'ASC')
+          ->addOrderBy('canonical_name', 'ASC')
+          ->execute()
+          ->first();
+        $readerId = !empty($defaultReader['id']) ? (int) $defaultReader['id'] : 0;
+      }
+
+      if ($readerId <= 0) {
+        throw new \CRM_Core_Exception(E::ts('No paired SumUp card reader is available.'));
+      }
+      $session->setCheckoutParam('sumup_reader_id', $readerId);
+
+      $reader = SumupReader::get(FALSE)
+        ->addSelect('id', 'canonical_name', 'site_code')
+        ->addWhere('id', '=', $readerId)
+        ->addWhere('payment_processor_id', '=', (int) $connection['id'])
+        ->addWhere('pairing_status', '=', 'paired')
+        ->addWhere('is_active', '=', TRUE)
+        ->execute()
+        ->first();
+      if (!$reader) {
+        throw new \CRM_Core_Exception(E::ts('The selected SumUp card reader is unavailable.'));
+      }
+
+      $contribution = \Civi\Api4\Contribution::get(FALSE)
+        ->addSelect('id', 'total_amount', 'currency', 'contribution_recur_id')
+        ->addWhere('id', '=', $session->getContributionId())
+        ->execute()
+        ->single();
+
+      if (!empty($contribution['contribution_recur_id'])) {
+        throw new \CRM_Core_Exception(E::ts(
+        'SumUp card readers only support one-time payments.'
+        . ' Recurring contributions require online card checkout.'
+        ));
+      }
+
+      $processor = $this->getProcessor($session);
+      $clientTransactionId = $processor->startSoloCheckoutForContribution(
+        $session->getContributionId(),
+        $readerId
+      );
+      $session->setCheckoutParam('sumup_reader_checkout_id', $clientTransactionId);
+
+      $session->setResponseItem(
+        'sumup_solo_checkout',
+        [
+          'token' => $session->tokenise(),
+          'reader_id' => $readerId,
+          'reader_name' => (string) ($reader['canonical_name'] ?? 'Solo'),
+          'site_code' => (string) ($reader['site_code'] ?? ''),
+          'solo_image_url' => E::url('images/sumup-solo.png'),
+          'amount' => number_format((float) $contribution['total_amount'], 2, '.', ''),
+          'currency' => (string) $contribution['currency'],
+          'client_transaction_id' => $clientTransactionId,
+          'message' => E::ts(
+                'Payment of %1 %2 sent to card reader %3.',
+                [
+                  1 => number_format((float) $contribution['total_amount'], 2, '.', ''),
+                  2 => (string) $contribution['currency'],
+                  3 => (string) ($reader['canonical_name'] ?? 'Solo'),
+                ]
+          ),
+        ]
+      );
+      $session->setResponseItem('redirect', FALSE);
+      $session->setResponseItem('message', FALSE);
+    }
+
+    public function continueCheckout(CheckoutSession $session): void {
+      try {
+        $contribution = \Civi\Api4\Contribution::get(FALSE)
+          ->addSelect('contribution_status_id:name')
+          ->addWhere('id', '=', $session->getContributionId())
+          ->execute()
+          ->single();
+        $status = (string) ($contribution['contribution_status_id:name'] ?? '');
+        if ($status === 'Completed') {
+          $session->success();
+          return;
+        }
+        if ($status === 'Cancelled') {
+          $session->cancel();
+          return;
+        }
+        if ($status === 'Failed') {
+          $session->fail();
+          return;
+        }
+
+        $clientTransactionId = (string) $session->getCheckoutParam('sumup_reader_checkout_id');
+        if (!\CRM_SumupPaymentProcessor_CheckoutService::isValidCheckoutId($clientTransactionId)) {
+          throw new \CRM_Core_Exception(E::ts('The SumUp terminal transaction identifier is missing.'));
+        }
+        $result = $this->getProcessor($session)->verifyAndApplyReaderCheckout($clientTransactionId);
+      }
+      catch (\SumUp\Exception\ApiException $exception) {
+        if (
+        $exception->getCode() !== 404
+        && !$session->getCheckoutParam('sumup_reader_status_error_logged')
+          ) {
+          \Civi::log()->warning(
+                'Unable to retrieve the SumUp terminal payment status: ' . $exception->getMessage()
+                );
+          $session->setCheckoutParam('sumup_reader_status_error_logged', TRUE);
+        }
+        return;
+      }
+      catch (\Throwable $exception) {
+        if (!$session->getCheckoutParam('sumup_reader_status_error_logged')) {
+          \Civi::log()->warning(
+          'Unable to retrieve the SumUp terminal payment status: ' . $exception->getMessage()
+          );
+          $session->setCheckoutParam('sumup_reader_status_error_logged', TRUE);
+        }
+        return;
+      }
+
+      if ($result['status'] === 'PAID') {
+        $session->success();
+        return;
+      }
+      if (in_array($result['status'], ['FAILED', 'CANCELLED', 'EXPIRED'], TRUE)) {
+        // A reader attempt may expire while the contribution and QR fallback remain payable.
+        // Keep the CheckoutSession pending so the operator can start a fresh Solo attempt.
+        $session->setCheckoutParam('sumup_reader_attempt_status', $result['status']);
+        return;
+      }
+    }
+
+    private function getProcessor(CheckoutSession $session): \CRM_Core_Payment_Sumup {
+      $connection = $this->getConnectionDetails($session->isTestMode());
+      $processor = \Civi\Payment\System::singleton()->getByName(
+        (string) $connection['name'],
+        $session->isTestMode()
+      );
+      if (!$processor instanceof \CRM_Core_Payment_Sumup) {
+        throw new \CRM_Core_Exception(E::ts('Unable to load the SumUp payment processor.'));
+      }
+      return $processor;
+    }
+
+    /**
+     * @return array<string,mixed> */
+    private function getConnectionDetails(bool $testMode): array {
+      $connection = $testMode ? $this->testConnection : $this->liveConnection;
+      if (!$connection) {
+        throw new \CRM_Core_Exception(E::ts('No active SumUp payment processor is available for this mode.'));
+      }
+      return $connection;
+    }
+
+    /**
+     * @return array<string,mixed> */
+    private function getDisplayConnection(): array {
+      $connection = $this->liveConnection ?: $this->testConnection;
+      if (!$connection) {
+        throw new \CRM_Core_Exception(E::ts('No active SumUp payment processor is available.'));
+      }
+      return $connection;
+    }
+
+    private function getConnectionLabel(): string {
+      return (string) ($this->getDisplayConnection()['title'] ?? 'SumUp');
+    }
+
+  }
 }

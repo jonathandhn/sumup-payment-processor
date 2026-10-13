@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Civi\Api4;
 
@@ -13,26 +13,25 @@ use Civi\Api4\Generic\BasicGetFieldsAction;
  *
  * @searchable none
  */
-final class SumupTerminalCheckout extends AbstractEntity
-{
-    /** @return array<string, list<string>> */
-    public static function permissions(): array
-    {
-        return [
-            'retry' => ['make online contributions'],
-            'meta' => ['make online contributions'],
-        ];
-    }
+final class SumupTerminalCheckout extends AbstractEntity {
 
-    public static function retry(bool $checkPermissions = true): Retry
-    {
-        return (new Retry(static::getEntityName(), __FUNCTION__))
-            ->setCheckPermissions($checkPermissions);
-    }
+  /**
+   * @return array<string,list<string>> */
+  public static function permissions(): array {
+    return [
+      'retry' => ['make online contributions'],
+      'meta' => ['make online contributions'],
+    ];
+  }
 
-    public static function getFields(bool $checkPermissions = true): BasicGetFieldsAction
-    {
-        return (new BasicGetFieldsAction(__CLASS__, __FUNCTION__, static fn(): array => []))
-            ->setCheckPermissions($checkPermissions);
-    }
+  public static function retry(bool $checkPermissions = TRUE): Retry {
+    return (new Retry(static::getEntityName(), __FUNCTION__))
+      ->setCheckPermissions($checkPermissions);
+  }
+
+  public static function getFields(bool $checkPermissions = TRUE): BasicGetFieldsAction {
+    return (new BasicGetFieldsAction(__CLASS__, __FUNCTION__, static fn(): array => []))
+      ->setCheckPermissions($checkPermissions);
+  }
+
 }

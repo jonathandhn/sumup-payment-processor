@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 // phpcs:disable PSR1.Classes.ClassDeclaration.MissingNamespace
 // phpcs:disable Squiz.Classes.ValidClassName.NotCamelCaps
@@ -9,144 +9,135 @@ declare(strict_types=1);
 /**
  * Install and upgrade SumUp operational tables.
  */
-class CRM_SumupPaymentProcessor_Upgrader extends CRM_Extension_Upgrader_Base
-{
-    public function postInstall(): void
-    {
-        $this->ensureCheckoutTable();
-        $this->ensureReaderTable();
-        $this->ensureRemediationTable();
-        $this->ensureTokenCustomerTable();
-    }
+class CRM_SumupPaymentProcessor_Upgrader extends CRM_Extension_Upgrader_Base {
 
-    public function upgrade_1001(): bool
-    {
-        $this->ctx->log->info('Applying SumUp update 1001: add checkout-attempt registry.');
-        $this->ensureCheckoutTable();
+  public function postInstall(): void {
+    $this->ensureCheckoutTable();
+    $this->ensureReaderTable();
+    $this->ensureRemediationTable();
+    $this->ensureTokenCustomerTable();
+    $this->ensureProcessorAuthTable();
+  }
 
-        return true;
-    }
+  public function upgrade_1001(): bool {
+    $this->ctx->log->info('Applying SumUp update 1001: add checkout-attempt registry.');
+    $this->ensureCheckoutTable();
 
-    public function upgrade_1002(): bool
-    {
-        $this->ctx->log->info('Applying SumUp update 1002: retain the checkout mode on each attempt.');
-        $this->ensureCheckoutTable();
-        $column = CRM_Core_DAO::executeQuery(
-            'SHOW COLUMNS FROM civicrm_sumup_checkout LIKE %1',
-            [1 => ['checkout_mode', 'String']]
-        );
-        assert($column instanceof CRM_Core_DAO);
-        if (!$column->fetch()) {
-            CRM_Core_DAO::executeQuery(
-                "ALTER TABLE civicrm_sumup_checkout
+    return TRUE;
+  }
+
+  public function upgrade_1002(): bool {
+    $this->ctx->log->info('Applying SumUp update 1002: retain the checkout mode on each attempt.');
+    $this->ensureCheckoutTable();
+    $column = CRM_Core_DAO::executeQuery(
+        'SHOW COLUMNS FROM civicrm_sumup_checkout LIKE %1',
+        [1 => ['checkout_mode', 'String']]
+    );
+    assert($column instanceof CRM_Core_DAO);
+    if (!$column->fetch()) {
+      CRM_Core_DAO::executeQuery(
+        "ALTER TABLE civicrm_sumup_checkout
                  ADD COLUMN checkout_mode varchar(32) NOT NULL DEFAULT 'widget' AFTER currency"
-            );
-        }
-
-        return true;
+      );
     }
 
-    public function upgrade_1003(): bool
-    {
-        $this->ctx->log->info('Applying SumUp update 1003: add Solo reader registry.');
-        $this->ensureReaderTable();
+    return TRUE;
+  }
 
-        return true;
-    }
+  public function upgrade_1003(): bool {
+    $this->ctx->log->info('Applying SumUp update 1003: add Solo reader registry.');
+    $this->ensureReaderTable();
 
-    public function upgrade_1004(): bool
-    {
-        $this->ctx->log->info('Applying SumUp update 1004: retain the Solo reader on checkout attempts.');
-        $this->ensureCheckoutTable();
-        $column = CRM_Core_DAO::executeQuery(
-            'SHOW COLUMNS FROM civicrm_sumup_checkout LIKE %1',
-            [1 => ['reader_id', 'String']]
-        );
-        assert($column instanceof CRM_Core_DAO);
-        if (!$column->fetch()) {
-            CRM_Core_DAO::executeQuery(
-                'ALTER TABLE civicrm_sumup_checkout
+    return TRUE;
+  }
+
+  public function upgrade_1004(): bool {
+    $this->ctx->log->info('Applying SumUp update 1004: retain the Solo reader on checkout attempts.');
+    $this->ensureCheckoutTable();
+    $column = CRM_Core_DAO::executeQuery(
+        'SHOW COLUMNS FROM civicrm_sumup_checkout LIKE %1',
+        [1 => ['reader_id', 'String']]
+    );
+    assert($column instanceof CRM_Core_DAO);
+    if (!$column->fetch()) {
+      CRM_Core_DAO::executeQuery(
+        'ALTER TABLE civicrm_sumup_checkout
                  ADD COLUMN reader_id varchar(100) NULL DEFAULT NULL AFTER transaction_id'
-            );
-        }
-
-        return true;
+      );
     }
 
-    public function upgrade_1005(): bool
-    {
-        $this->ctx->log->info('Applying SumUp update 1005: remove the obsolete Solo test collection menu item.');
-        \Civi\Api4\Navigation::delete(false)
-            ->addWhere('name', '=', 'Collect with SumUp Solo (test)')
-            ->execute();
-        CRM_Core_DAO::executeQuery(
-            'DELETE FROM civicrm_menu WHERE path = %1',
-            [1 => ['civicrm/admin/setting/sumup_payment_processor', 'String']]
-        );
+    return TRUE;
+  }
 
-        return true;
+  public function upgrade_1005(): bool {
+    $this->ctx->log->info('Applying SumUp update 1005: remove the obsolete Solo test collection menu item.');
+    \Civi\Api4\Navigation::delete(FALSE)
+      ->addWhere('name', '=', 'Collect with SumUp Solo (test)')
+      ->execute();
+    CRM_Core_DAO::executeQuery(
+        'DELETE FROM civicrm_menu WHERE path = %1',
+        [1 => ['civicrm/admin/setting/sumup_payment_processor', 'String']]
+    );
+
+    return TRUE;
+  }
+
+  public function upgrade_1006(): bool {
+    $this->ctx->log->info('Applying SumUp update 1006: add recurring-card checkout metadata.');
+    CRM_Core_DAO::executeQuery(
+        "UPDATE civicrm_payment_processor_type SET is_recur = 1 WHERE name = 'SumUp'"
+    );
+    $this->ensureCheckoutTable();
+    $columns = [
+      'purpose' => "purpose varchar(32) NOT NULL DEFAULT 'PAYMENT' AFTER reader_id",
+      'customer_id' => 'customer_id varchar(100) NULL DEFAULT NULL AFTER purpose',
+      'payment_token_id' => 'payment_token_id int unsigned NULL DEFAULT NULL AFTER customer_id',
+      'setup_checkout_id' => 'setup_checkout_id varchar(100) NULL DEFAULT NULL AFTER payment_token_id',
+    ];
+    foreach ($columns as $name => $definition) {
+      $column = CRM_Core_DAO::executeQuery(
+        'SHOW COLUMNS FROM civicrm_sumup_checkout LIKE %1',
+        [1 => [$name, 'String']]
+      );
+      assert($column instanceof CRM_Core_DAO);
+      if (!$column->fetch()) {
+        CRM_Core_DAO::executeQuery("ALTER TABLE civicrm_sumup_checkout ADD COLUMN {$definition}");
+      }
+    }
+    $index = CRM_Core_DAO::executeQuery(
+        "SHOW INDEX FROM civicrm_sumup_checkout WHERE Key_name = 'unique_sumup_setup_charge'"
+    );
+    assert($index instanceof CRM_Core_DAO);
+    if (!$index->fetch()) {
+      CRM_Core_DAO::executeQuery(
+        'ALTER TABLE civicrm_sumup_checkout ADD UNIQUE KEY unique_sumup_setup_charge (setup_checkout_id)'
+      );
     }
 
-    public function upgrade_1006(): bool
-    {
-        $this->ctx->log->info('Applying SumUp update 1006: add recurring-card checkout metadata.');
-        CRM_Core_DAO::executeQuery(
-            "UPDATE civicrm_payment_processor_type SET is_recur = 1 WHERE name = 'SumUp'"
-        );
-        $this->ensureCheckoutTable();
-        $columns = [
-            'purpose' => "purpose varchar(32) NOT NULL DEFAULT 'PAYMENT' AFTER reader_id",
-            'customer_id' => 'customer_id varchar(100) NULL DEFAULT NULL AFTER purpose',
-            'payment_token_id' => 'payment_token_id int unsigned NULL DEFAULT NULL AFTER customer_id',
-            'setup_checkout_id' => 'setup_checkout_id varchar(100) NULL DEFAULT NULL AFTER payment_token_id',
-        ];
-        foreach ($columns as $name => $definition) {
-            $column = CRM_Core_DAO::executeQuery(
-                'SHOW COLUMNS FROM civicrm_sumup_checkout LIKE %1',
-                [1 => [$name, 'String']]
-            );
-            assert($column instanceof CRM_Core_DAO);
-            if (!$column->fetch()) {
-                CRM_Core_DAO::executeQuery("ALTER TABLE civicrm_sumup_checkout ADD COLUMN {$definition}");
-            }
-        }
-        $index = CRM_Core_DAO::executeQuery(
-            "SHOW INDEX FROM civicrm_sumup_checkout WHERE Key_name = 'unique_sumup_setup_charge'"
-        );
-        assert($index instanceof CRM_Core_DAO);
-        if (!$index->fetch()) {
-            CRM_Core_DAO::executeQuery(
-                'ALTER TABLE civicrm_sumup_checkout ADD UNIQUE KEY unique_sumup_setup_charge (setup_checkout_id)'
-            );
-        }
+    return TRUE;
+  }
 
-        return true;
-    }
+  public function upgrade_1007(): bool {
+    $this->ctx->log->info('Applying SumUp update 1007: enable recurrence on existing processor instances.');
+    CRM_Core_DAO::executeQuery(
+        "UPDATE civicrm_payment_processor SET is_recur = 1 WHERE class_name = 'Payment_Sumup'"
+    );
 
-    public function upgrade_1007(): bool
-    {
-        $this->ctx->log->info('Applying SumUp update 1007: enable recurrence on existing processor instances.');
-        CRM_Core_DAO::executeQuery(
-            "UPDATE civicrm_payment_processor SET is_recur = 1 WHERE class_name = 'Payment_Sumup'"
-        );
+    return TRUE;
+  }
 
-        return true;
-    }
+  public function upgrade_1008(): bool {
+    $this->ctx->log->info('Applying SumUp update 1008: add recurring-card remediation registry.');
+    $this->ensureRemediationTable();
 
-    public function upgrade_1008(): bool
-    {
-        $this->ctx->log->info('Applying SumUp update 1008: add recurring-card remediation registry.');
-        $this->ensureRemediationTable();
+    return TRUE;
+  }
 
-        return true;
-    }
-
-    public function upgrade_1009(): bool
-    {
-        $this->ctx->log->info('Applying SumUp update 1009: retain the remote customer for each saved card.');
-        $this->ensureTokenCustomerTable();
-        CRM_Core_DAO::executeQuery(
-            'INSERT INTO civicrm_sumup_payment_token_customer
+  public function upgrade_1009(): bool {
+    $this->ctx->log->info('Applying SumUp update 1009: retain the remote customer for each saved card.');
+    $this->ensureTokenCustomerTable();
+    CRM_Core_DAO::executeQuery(
+        'INSERT INTO civicrm_sumup_payment_token_customer
                 (payment_token_id, customer_id, modified_date)
              SELECT checkout.payment_token_id, checkout.customer_id, NOW()
              FROM civicrm_sumup_checkout checkout
@@ -161,15 +152,21 @@ class CRM_SumupPaymentProcessor_Upgrader extends CRM_Extension_Upgrader_Base
              ON DUPLICATE KEY UPDATE
                 customer_id = VALUES(customer_id),
                 modified_date = VALUES(modified_date)'
-        );
+    );
 
-        return true;
-    }
+    return TRUE;
+  }
 
-    private function ensureCheckoutTable(): void
-    {
-        CRM_Core_DAO::executeQuery(
-            'CREATE TABLE IF NOT EXISTS civicrm_sumup_checkout (
+  public function upgrade_1010(): bool {
+    $this->ctx->log->info('Applying SumUp update 1010: add per-processor OAuth authorization state.');
+    $this->ensureProcessorAuthTable();
+
+    return TRUE;
+  }
+
+  private function ensureCheckoutTable(): void {
+    CRM_Core_DAO::executeQuery(
+        'CREATE TABLE IF NOT EXISTS civicrm_sumup_checkout (
                 id int unsigned NOT NULL AUTO_INCREMENT,
                 checkout_id varchar(100) NOT NULL,
                 checkout_reference varchar(100) NOT NULL,
@@ -199,13 +196,12 @@ class CRM_SumupPaymentProcessor_Upgrader extends CRM_Extension_Upgrader_Base
                 CONSTRAINT FK_sumup_checkout_processor
                   FOREIGN KEY (payment_processor_id) REFERENCES civicrm_payment_processor(id) ON DELETE CASCADE
             ) ENGINE=InnoDB'
-        );
-    }
+    );
+  }
 
-    private function ensureReaderTable(): void
-    {
-        CRM_Core_DAO::executeQuery(
-            'CREATE TABLE IF NOT EXISTS civicrm_sumup_reader (
+  private function ensureReaderTable(): void {
+    CRM_Core_DAO::executeQuery(
+        'CREATE TABLE IF NOT EXISTS civicrm_sumup_reader (
                 id int unsigned NOT NULL AUTO_INCREMENT,
                 payment_processor_id int unsigned NOT NULL,
                 reader_id varchar(100) NOT NULL,
@@ -227,13 +223,12 @@ class CRM_SumupPaymentProcessor_Upgrader extends CRM_Extension_Upgrader_Base
                 CONSTRAINT FK_sumup_reader_processor
                   FOREIGN KEY (payment_processor_id) REFERENCES civicrm_payment_processor(id) ON DELETE CASCADE
             ) ENGINE=InnoDB'
-        );
-    }
+    );
+  }
 
-    private function ensureRemediationTable(): void
-    {
-        CRM_Core_DAO::executeQuery(
-            'CREATE TABLE IF NOT EXISTS civicrm_sumup_remediation (
+  private function ensureRemediationTable(): void {
+    CRM_Core_DAO::executeQuery(
+        'CREATE TABLE IF NOT EXISTS civicrm_sumup_remediation (
                 id int unsigned NOT NULL AUTO_INCREMENT,
                 contribution_recur_id int unsigned NOT NULL,
                 contribution_id int unsigned NOT NULL,
@@ -258,13 +253,12 @@ class CRM_SumupPaymentProcessor_Upgrader extends CRM_Extension_Upgrader_Base
                 CONSTRAINT FK_sumup_remediation_processor
                   FOREIGN KEY (payment_processor_id) REFERENCES civicrm_payment_processor(id) ON DELETE CASCADE
             ) ENGINE=InnoDB'
-        );
-    }
+    );
+  }
 
-    private function ensureTokenCustomerTable(): void
-    {
-        CRM_Core_DAO::executeQuery(
-            'CREATE TABLE IF NOT EXISTS civicrm_sumup_payment_token_customer (
+  private function ensureTokenCustomerTable(): void {
+    CRM_Core_DAO::executeQuery(
+        'CREATE TABLE IF NOT EXISTS civicrm_sumup_payment_token_customer (
                 payment_token_id int unsigned NOT NULL,
                 customer_id varchar(100) NOT NULL,
                 created_date timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -274,6 +268,31 @@ class CRM_SumupPaymentProcessor_Upgrader extends CRM_Extension_Upgrader_Base
                 CONSTRAINT FK_sumup_token_customer_payment_token
                   FOREIGN KEY (payment_token_id) REFERENCES civicrm_payment_token(id) ON DELETE CASCADE
             ) ENGINE=InnoDB'
-        );
-    }
+    );
+  }
+
+  private function ensureProcessorAuthTable(): void {
+    CRM_Core_DAO::executeQuery(
+        'CREATE TABLE IF NOT EXISTS civicrm_sumup_processor_auth (
+                id int unsigned NOT NULL AUTO_INCREMENT,
+                payment_processor_id int unsigned NOT NULL,
+                merchant_code varchar(100) NOT NULL,
+                access_token text NOT NULL,
+                refresh_token text NOT NULL,
+                scope text NULL DEFAULT NULL,
+                expires_at int unsigned NOT NULL,
+                status varchar(32) NOT NULL DEFAULT \'connected\',
+                linked_at datetime NOT NULL,
+                last_refresh_at datetime NULL DEFAULT NULL,
+                last_error text NULL DEFAULT NULL,
+                created_date timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                modified_date datetime NULL DEFAULT NULL,
+                PRIMARY KEY (id),
+                UNIQUE KEY unique_sumup_processor_auth (payment_processor_id),
+                CONSTRAINT FK_sumup_processor_auth_processor
+                  FOREIGN KEY (payment_processor_id) REFERENCES civicrm_payment_processor(id) ON DELETE CASCADE
+            ) ENGINE=InnoDB'
+    );
+  }
+
 }

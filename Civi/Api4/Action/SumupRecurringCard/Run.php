@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Civi\Api4\Action\SumupRecurringCard;
 
@@ -26,348 +26,352 @@ use Throwable;
  * @method $this setStaleLimit(int $staleLimit)
  * @method $this setDryRun(bool $dryRun)
  */
-final class Run extends AbstractAction
-{
-    protected ?int $recurId = null;
+final class Run extends AbstractAction {
+  protected ?int $recurId = NULL;
 
-    protected int $limit = 25;
+  protected int $limit = 25;
 
-    protected int $staleLimit = 7;
+  protected int $staleLimit = 7;
 
-    protected bool $dryRun = false;
+  protected bool $dryRun = FALSE;
 
     // phpcs:disable PSR2.Methods.MethodDeclaration.Underscore
-    public function _run(Result $result): void
-    {
-        $lock = new CRM_Core_Lock('civicrm.job.SumupRecurringCard');
-        if (!$lock->acquire()) {
-            $result[] = ['message' => E::ts('A SumUp recurring-card job is already running.')];
-            return;
-        }
-
-        try {
-            $result[] = $this->runSchedules();
-        } finally {
-            $lock->release();
-        }
+  public function _run(Result $result): void {
+    $lock = new CRM_Core_Lock('civicrm.job.SumupRecurringCard');
+    if (!$lock->acquire()) {
+      $result[] = ['message' => E::ts('A SumUp recurring-card job is already running.')];
+      return;
     }
+
+    try {
+      $result[] = $this->runSchedules();
+    } finally {
+      $lock->release();
+    }
+  }
+
     // phpcs:enable PSR2.Methods.MethodDeclaration.Underscore
 
-    /** @return array<string, bool|int|list<string>> */
-    private function runSchedules(): array
-    {
-        $limit = max(1, min($this->limit, 100));
-        $staleLimit = max(0, min($this->staleLimit, 365));
-        $now = new DateTimeImmutable('now');
-        $todayEnd = $now->setTime(23, 59, 59)->format('Y-m-d H:i:s');
-        $staleDate = $now->modify('-' . $staleLimit . ' days')->setTime(0, 0)->format('Y-m-d H:i:s');
-        $outcome = [
-            'dry_run' => $this->dryRun,
-            'eligible' => 0,
-            'charged' => 0,
-            'failed' => 0,
-            'pending' => 0,
-            'requires_customer' => 0,
-            'skipped_stale' => 0,
-            'skipped_retry_delay' => 0,
-            'errors' => [],
-        ];
+  /**
+   * @return array<string,bool|int|list<string>> */
+  private function runSchedules(): array {
+    $limit = max(1, min($this->limit, 100));
+    $staleLimit = max(0, min($this->staleLimit, 365));
+    $now = new DateTimeImmutable('now');
+    $todayEnd = $now->setTime(23, 59, 59)->format('Y-m-d H:i:s');
+    $staleDate = $now->modify('-' . $staleLimit . ' days')->setTime(0, 0)->format('Y-m-d H:i:s');
+    $outcome = [
+      'dry_run' => $this->dryRun,
+      'eligible' => 0,
+      'charged' => 0,
+      'failed' => 0,
+      'pending' => 0,
+      'requires_customer' => 0,
+      'skipped_stale' => 0,
+      'skipped_retry_delay' => 0,
+      'errors' => [],
+    ];
 
-        $processors = PaymentProcessor::get(false)
-            ->addSelect('id', 'class_name', 'is_test', 'name')
-            ->addWhere('class_name', '=', 'Payment_Sumup')
-            ->addWhere('is_active', '=', true)
-            ->addWhere('is_test', 'IN', [true, false])
-            ->execute();
-        $processorById = [];
-        foreach ($processors as $processor) {
-            $processorById[(int) $processor['id']] = $processor;
-        }
-        if ($processorById === []) {
-            $outcome['errors'][] = E::ts('No active SumUp payment processor is configured.');
-            return $outcome;
-        }
-
-        $query = ContributionRecur::get(false)
-            ->addSelect(
-                'id',
-                'contact_id',
-                'amount',
-                'currency',
-                'financial_type_id',
-                'payment_instrument_id',
-                'payment_processor_id',
-                'payment_token_id',
-                'next_sched_contribution_date',
-                'frequency_interval',
-                'frequency_unit',
-                'installments',
-                'failure_count',
-                'failure_retry_date',
-                'is_test',
-                'is_email_receipt'
-            )
-            ->addWhere('next_sched_contribution_date', '<=', $todayEnd)
-            ->addWhere('payment_processor_id', 'IN', array_keys($processorById))
-            ->addWhere('contribution_status_id:name', '=', 'In Progress')
-            ->addWhere('is_test', 'IN', [true, false])
-            ->addOrderBy('next_sched_contribution_date', 'ASC')
-            ->setLimit($limit);
-        if ($this->recurId !== null) {
-            $query->addWhere('id', '=', $this->recurId);
-        }
-
-        foreach ($query->execute() as $schedule) {
-            $scheduleId = (int) $schedule['id'];
-            $dueDate = (string) $schedule['next_sched_contribution_date'];
-            if (\CRM_SumupPaymentProcessor_RemediationStore::getBlocking($scheduleId) !== null) {
-                ++$outcome['requires_customer'];
-                continue;
-            }
-            if ($dueDate < $staleDate) {
-                ++$outcome['skipped_stale'];
-                $outcome['errors'][] = E::ts(
-                    'Schedule %1 is overdue since %2 and was not charged.',
-                    [1 => $scheduleId, 2 => $dueDate]
-                );
-                continue;
-            }
-            if (
-                !empty($schedule['failure_retry_date'])
-                && (string) $schedule['failure_retry_date'] > $now->format('Y-m-d H:i:s')
-            ) {
-                ++$outcome['skipped_retry_delay'];
-                continue;
-            }
-
-            try {
-                self::assertPaymentToken($schedule);
-                ++$outcome['eligible'];
-                if ($this->dryRun) {
-                    continue;
-                }
-
-                $processorId = (int) $schedule['payment_processor_id'];
-                $provider = System::singleton()->getById($processorId);
-                if (!$provider instanceof CRM_Core_Payment_Sumup) {
-                    throw new CRM_Core_Exception(E::ts(
-                        'Unable to load the SumUp processor for schedule %1.',
-                        [1 => $scheduleId]
-                    ));
-                }
-
-                $contribution = self::findOrCreateContribution($schedule, $dueDate);
-                $result = $provider->chargeRecurringContribution(
-                    (int) $contribution['id'],
-                    $scheduleId,
-                    (int) $schedule['payment_token_id'],
-                    self::occurrenceKey($dueDate)
-                );
-                if ($result['status'] === 'PAID') {
-                    self::advanceSchedule($schedule, $dueDate);
-                    ++$outcome['charged'];
-                } elseif ($result['status'] === 'CUSTOMER_ACTION_REQUIRED') {
-                    self::recordCustomerActionRequired($schedule);
-                    ++$outcome['requires_customer'];
-                } elseif (in_array($result['status'], ['FAILED', 'EXPIRED'], true)) {
-                    self::recordCustomerActionRequired($schedule);
-                    ++$outcome['requires_customer'];
-                } else {
-                    ++$outcome['pending'];
-                }
-            } catch (Throwable $exception) {
-                \Civi::log()->warning(sprintf(
-                    'SumUp recurring-card job failed for schedule %d: %s',
-                    $scheduleId,
-                    $exception->getMessage()
-                ));
-                $outcome['errors'][] = E::ts(
-                    'Schedule %1: %2',
-                    [1 => $scheduleId, 2 => $exception->getMessage()]
-                );
-            }
-        }
-
-        return $outcome;
+    $processors = PaymentProcessor::get(FALSE)
+      ->addSelect('id', 'class_name', 'is_test', 'name')
+      ->addWhere('class_name', '=', 'Payment_Sumup')
+      ->addWhere('is_active', '=', TRUE)
+      ->addWhere('is_test', 'IN', [TRUE, FALSE])
+      ->execute();
+    $processorById = [];
+    foreach ($processors as $processor) {
+      $processorById[(int) $processor['id']] = $processor;
+    }
+    if ($processorById === []) {
+      $outcome['errors'][] = E::ts('No active SumUp payment processor is configured.');
+      return $outcome;
     }
 
-    /** @param array<string, mixed> $schedule */
-    private static function resolvePaymentTokenId(array &$schedule): int
-    {
-        $tokenId = (int) ($schedule['payment_token_id'] ?? 0);
-        if ($tokenId > 0) {
-            return $tokenId;
-        }
-
-        $token = PaymentToken::get(false)
-            ->addSelect('id', 'token')
-            ->addWhere('contact_id', '=', (int) $schedule['contact_id'])
-            ->addWhere('payment_processor_id', '=', (int) $schedule['payment_processor_id'])
-            ->addOrderBy('id', 'DESC')
-            ->execute()
-            ->first();
-
-        if ($token && !empty($token['id'])) {
-            $tokenId = (int) $token['id'];
-            $schedule['payment_token_id'] = $tokenId;
-            ContributionRecur::update(false)
-                ->addValue('payment_token_id', $tokenId)
-                ->addWhere('id', '=', (int) $schedule['id'])
-                ->execute();
-            return $tokenId;
-        }
-
-        return 0;
+    $query = ContributionRecur::get(FALSE)
+      ->addSelect(
+            'id',
+            'contact_id',
+            'amount',
+            'currency',
+            'financial_type_id',
+            'payment_instrument_id',
+            'payment_processor_id',
+            'payment_token_id',
+            'next_sched_contribution_date',
+            'frequency_interval',
+            'frequency_unit',
+            'installments',
+            'failure_count',
+            'failure_retry_date',
+            'is_test',
+            'is_email_receipt'
+        )
+      ->addWhere('next_sched_contribution_date', '<=', $todayEnd)
+      ->addWhere('payment_processor_id', 'IN', array_keys($processorById))
+      ->addWhere('contribution_status_id:name', '=', 'In Progress')
+      ->addWhere('is_test', 'IN', [TRUE, FALSE])
+      ->addOrderBy('next_sched_contribution_date', 'ASC')
+      ->setLimit($limit);
+    if ($this->recurId !== NULL) {
+      $query->addWhere('id', '=', $this->recurId);
     }
 
-    /** @param array<string, mixed> $schedule */
-    private static function assertPaymentToken(array &$schedule): void
-    {
-        $tokenId = self::resolvePaymentTokenId($schedule);
-        if ($tokenId <= 0) {
-            throw new CRM_Core_Exception(E::ts(
-                'Schedule %1 has no linked SumUp card token.',
-                [1 => (int) $schedule['id']]
-            ));
+    foreach ($query->execute() as $schedule) {
+      $scheduleId = (int) $schedule['id'];
+      $dueDate = (string) $schedule['next_sched_contribution_date'];
+      if (\CRM_SumupPaymentProcessor_RemediationStore::getBlocking($scheduleId) !== NULL) {
+        ++$outcome['requires_customer'];
+        continue;
+      }
+      if ($dueDate < $staleDate) {
+        ++$outcome['skipped_stale'];
+        $outcome['errors'][] = E::ts(
+        'Schedule %1 is overdue since %2 and was not charged.',
+        [1 => $scheduleId, 2 => $dueDate]
+        );
+        continue;
+      }
+      if (
+        !empty($schedule['failure_retry_date'])
+        && (string) $schedule['failure_retry_date'] > $now->format('Y-m-d H:i:s')
+      ) {
+        ++$outcome['skipped_retry_delay'];
+        continue;
+      }
+
+      try {
+        self::assertPaymentToken($schedule);
+        ++$outcome['eligible'];
+        if ($this->dryRun) {
+          continue;
         }
 
-        $token = PaymentToken::get(false)
-            ->addSelect('id', 'contact_id', 'payment_processor_id', 'token')
-            ->addWhere('id', '=', $tokenId)
-            ->execute()
-            ->single();
-        $tokenProcessor = PaymentProcessor::get(false)
-            ->addSelect('class_name')
-            ->addWhere('id', '=', (int) $token['payment_processor_id'])
-            ->addWhere('is_test', 'IN', [true, false])
-            ->execute()
-            ->first();
-        if (
-            (int) $token['contact_id'] !== (int) $schedule['contact_id']
-            || ($tokenProcessor['class_name'] ?? '') !== 'Payment_Sumup'
-            || !preg_match('/^[A-Za-z0-9_-]{8,255}$/', (string) $token['token'])
-        ) {
-            throw new CRM_Core_Exception(E::ts(
-                'Schedule %1 has no valid SumUp card token.',
-                [1 => (int) $schedule['id']]
-            ));
-        }
-    }
-
-    /**
-     * @param array<string, mixed> $schedule
-     * @return array<string, mixed>
-     */
-    private static function findOrCreateContribution(array $schedule, string $dueDate): array
-    {
-        $invoiceId = self::invoiceId((int) $schedule['id'], $dueDate);
-        $existing = Contribution::get(false)
-            ->addSelect('id', 'trxn_id')
-            ->addWhere('contribution_recur_id', '=', (int) $schedule['id'])
-            ->addWhere('invoice_id', '=', $invoiceId)
-            ->addWhere('is_test', 'IN', [true, false])
-            ->setLimit(1)
-            ->execute()
-            ->first();
-        if ($existing) {
-            return $existing;
+        $processorId = (int) $schedule['payment_processor_id'];
+        $provider = System::singleton()->getById($processorId);
+        if (!$provider instanceof CRM_Core_Payment_Sumup) {
+          throw new CRM_Core_Exception(E::ts(
+          'Unable to load the SumUp processor for schedule %1.',
+          [1 => $scheduleId]
+          ));
         }
 
-        return Contribution::create(false)
-            ->setValues([
-                'contact_id' => (int) $schedule['contact_id'],
-                'receive_date' => $dueDate,
-                'total_amount' => (float) $schedule['amount'],
-                'currency' => (string) $schedule['currency'],
-                'financial_type_id' => (int) $schedule['financial_type_id'],
-                'payment_instrument_id' => (int) $schedule['payment_instrument_id'],
-                'payment_processor_id' => (int) $schedule['payment_processor_id'],
-                'contribution_recur_id' => (int) $schedule['id'],
-                'contribution_status_id:name' => 'Pending',
-                'is_test' => !empty($schedule['is_test']),
-                'is_email_receipt' => !empty($schedule['is_email_receipt']),
-                'invoice_id' => $invoiceId,
-                'source' => E::ts('SumUp recurring card charge (schedule %1)', [1 => (int) $schedule['id']]),
-            ])
-            ->execute()
-            ->single();
-    }
-
-    /** @param array<string, mixed> $schedule */
-    private static function advanceSchedule(array $schedule, string $dueDate): void
-    {
-        $completedCount = Contribution::get(false)
-            ->addSelect('id')
-            ->addWhere('contribution_recur_id', '=', (int) $schedule['id'])
-            ->addWhere('contribution_status_id:name', '=', 'Completed')
-            ->addWhere('is_test', 'IN', [true, false])
-            ->execute()
-            ->count();
-        $installments = (int) ($schedule['installments'] ?? 0);
-        $values = [
-            'failure_count' => 0,
-            'failure_retry_date' => null,
-        ];
-        if ($installments > 0 && $completedCount >= $installments) {
-            $values['contribution_status_id:name'] = 'Completed';
-            $values['next_sched_contribution_date'] = null;
-        } else {
-            $values['next_sched_contribution_date'] = self::nextDueDate(
-                $dueDate,
-                (int) $schedule['frequency_interval'],
-                (string) $schedule['frequency_unit']
-            );
+        $contribution = self::findOrCreateContribution($schedule, $dueDate);
+        $result = $provider->chargeRecurringContribution(
+        (int) $contribution['id'],
+        $scheduleId,
+        (int) $schedule['payment_token_id'],
+        self::occurrenceKey($dueDate)
+        );
+        if ($result['status'] === 'PAID') {
+          self::advanceSchedule($schedule, $dueDate);
+          ++$outcome['charged'];
         }
-        ContributionRecur::update(false)
-            ->addWhere('id', '=', (int) $schedule['id'])
-            ->setValues($values)
-            ->execute();
-    }
-
-    private static function nextDueDate(string $dueDate, int $interval, string $unit): string
-    {
-        $allowedUnits = ['day', 'week', 'month', 'year'];
-        if ($interval <= 0 || !in_array($unit, $allowedUnits, true)) {
-            throw new CRM_Core_Exception(E::ts('The recurring schedule frequency is invalid.'));
+        elseif ($result['status'] === 'CUSTOMER_ACTION_REQUIRED') {
+          self::recordCustomerActionRequired($schedule);
+          ++$outcome['requires_customer'];
         }
-        $current = new DateTimeImmutable($dueDate);
-        if (in_array($unit, ['day', 'week'], true)) {
-            return $current->modify(sprintf('+%d %s', $interval, $unit))->format('Y-m-d H:i:s');
+        elseif (in_array($result['status'], ['FAILED', 'EXPIRED'], TRUE)) {
+          self::recordCustomerActionRequired($schedule);
+          ++$outcome['requires_customer'];
         }
-
-        $months = $unit === 'year' ? $interval * 12 : $interval;
-        $targetMonth = $current->modify('first day of this month')->modify('+' . $months . ' months');
-        $targetDay = min((int) $current->format('d'), (int) $targetMonth->format('t'));
-        return $targetMonth
-            ->setDate((int) $targetMonth->format('Y'), (int) $targetMonth->format('m'), $targetDay)
-            ->setTime(
-                (int) $current->format('H'),
-                (int) $current->format('i'),
-                (int) $current->format('s')
-            )
-            ->format('Y-m-d H:i:s');
+        else {
+          ++$outcome['pending'];
+        }
+      }
+      catch (Throwable $exception) {
+        \Civi::log()->warning(sprintf(
+        'SumUp recurring-card job failed for schedule %d: %s',
+        $scheduleId,
+        $exception->getMessage()
+          ));
+        $outcome['errors'][] = E::ts(
+              'Schedule %1: %2',
+              [1 => $scheduleId, 2 => $exception->getMessage()]
+          );
+      }
     }
 
-    /** @param array<string, mixed> $schedule */
-    private static function recordCustomerActionRequired(array $schedule): void
-    {
-        $failureCount = (int) ($schedule['failure_count'] ?? 0) + 1;
-        ContributionRecur::update(false)
-            ->addWhere('id', '=', (int) $schedule['id'])
-            ->setValues([
-                'failure_count' => $failureCount,
-                'failure_retry_date' => null,
-            ])
-            ->execute();
+    return $outcome;
+  }
+
+  /**
+   * @param array<string,mixed> $schedule */
+  private static function resolvePaymentTokenId(array &$schedule): int {
+    $tokenId = (int) ($schedule['payment_token_id'] ?? 0);
+    if ($tokenId > 0) {
+      return $tokenId;
     }
 
-    private static function occurrenceKey(string $dueDate): string
-    {
-        return preg_replace('/[^0-9]/', '', substr($dueDate, 0, 10)) ?? '';
+    $token = PaymentToken::get(FALSE)
+      ->addSelect('id', 'token')
+      ->addWhere('contact_id', '=', (int) $schedule['contact_id'])
+      ->addWhere('payment_processor_id', '=', (int) $schedule['payment_processor_id'])
+      ->addOrderBy('id', 'DESC')
+      ->execute()
+      ->first();
+
+    if ($token && !empty($token['id'])) {
+      $tokenId = (int) $token['id'];
+      $schedule['payment_token_id'] = $tokenId;
+      ContributionRecur::update(FALSE)
+        ->addValue('payment_token_id', $tokenId)
+        ->addWhere('id', '=', (int) $schedule['id'])
+        ->execute();
+      return $tokenId;
     }
 
-    private static function invoiceId(int $scheduleId, string $dueDate): string
-    {
-        return sprintf('sumup-r-%d-%s', $scheduleId, self::occurrenceKey($dueDate));
+    return 0;
+  }
+
+  /**
+   * @param array<string,mixed> $schedule */
+  private static function assertPaymentToken(array &$schedule): void {
+    $tokenId = self::resolvePaymentTokenId($schedule);
+    if ($tokenId <= 0) {
+      throw new CRM_Core_Exception(E::ts(
+        'Schedule %1 has no linked SumUp card token.',
+        [1 => (int) $schedule['id']]
+      ));
     }
+
+    $token = PaymentToken::get(FALSE)
+      ->addSelect('id', 'contact_id', 'payment_processor_id', 'token')
+      ->addWhere('id', '=', $tokenId)
+      ->execute()
+      ->single();
+    $tokenProcessor = PaymentProcessor::get(FALSE)
+      ->addSelect('class_name')
+      ->addWhere('id', '=', (int) $token['payment_processor_id'])
+      ->addWhere('is_test', 'IN', [TRUE, FALSE])
+      ->execute()
+      ->first();
+    if (
+        (int) $token['contact_id'] !== (int) $schedule['contact_id']
+        || ($tokenProcessor['class_name'] ?? '') !== 'Payment_Sumup'
+        || !preg_match('/^[A-Za-z0-9_-]{8,255}$/', (string) $token['token'])
+    ) {
+      throw new CRM_Core_Exception(E::ts(
+        'Schedule %1 has no valid SumUp card token.',
+        [1 => (int) $schedule['id']]
+      ));
+    }
+  }
+
+  /**
+   * @param array<string,mixed> $schedule
+   * @param string $dueDate
+   * @return array<string,mixed>
+   */
+  private static function findOrCreateContribution(array $schedule, string $dueDate): array {
+    $invoiceId = self::invoiceId((int) $schedule['id'], $dueDate);
+    $existing = Contribution::get(FALSE)
+      ->addSelect('id', 'trxn_id')
+      ->addWhere('contribution_recur_id', '=', (int) $schedule['id'])
+      ->addWhere('invoice_id', '=', $invoiceId)
+      ->addWhere('is_test', 'IN', [TRUE, FALSE])
+      ->setLimit(1)
+      ->execute()
+      ->first();
+    if ($existing) {
+      return $existing;
+    }
+
+    return Contribution::create(FALSE)
+      ->setValues([
+        'contact_id' => (int) $schedule['contact_id'],
+        'receive_date' => $dueDate,
+        'total_amount' => (float) $schedule['amount'],
+        'currency' => (string) $schedule['currency'],
+        'financial_type_id' => (int) $schedule['financial_type_id'],
+        'payment_instrument_id' => (int) $schedule['payment_instrument_id'],
+        'payment_processor_id' => (int) $schedule['payment_processor_id'],
+        'contribution_recur_id' => (int) $schedule['id'],
+        'contribution_status_id:name' => 'Pending',
+        'is_test' => !empty($schedule['is_test']),
+        'is_email_receipt' => !empty($schedule['is_email_receipt']),
+        'invoice_id' => $invoiceId,
+        'source' => E::ts('SumUp recurring card charge (schedule %1)', [1 => (int) $schedule['id']]),
+      ])
+      ->execute()
+      ->single();
+  }
+
+  /**
+   * @param array<string,mixed> $schedule
+   * @param string $dueDate
+   */
+  private static function advanceSchedule(array $schedule, string $dueDate): void {
+    $completedCount = Contribution::get(FALSE)
+      ->addSelect('id')
+      ->addWhere('contribution_recur_id', '=', (int) $schedule['id'])
+      ->addWhere('contribution_status_id:name', '=', 'Completed')
+      ->addWhere('is_test', 'IN', [TRUE, FALSE])
+      ->execute()
+      ->count();
+    $installments = (int) ($schedule['installments'] ?? 0);
+    $values = [
+      'failure_count' => 0,
+      'failure_retry_date' => NULL,
+    ];
+    if ($installments > 0 && $completedCount >= $installments) {
+      $values['contribution_status_id:name'] = 'Completed';
+      $values['next_sched_contribution_date'] = NULL;
+    }
+    else {
+      $values['next_sched_contribution_date'] = self::nextDueDate(
+        $dueDate,
+        (int) $schedule['frequency_interval'],
+        (string) $schedule['frequency_unit']
+        );
+    }
+    ContributionRecur::update(FALSE)
+      ->addWhere('id', '=', (int) $schedule['id'])
+      ->setValues($values)
+      ->execute();
+  }
+
+  private static function nextDueDate(string $dueDate, int $interval, string $unit): string {
+    $allowedUnits = ['day', 'week', 'month', 'year'];
+    if ($interval <= 0 || !in_array($unit, $allowedUnits, TRUE)) {
+      throw new CRM_Core_Exception(E::ts('The recurring schedule frequency is invalid.'));
+    }
+    $current = new DateTimeImmutable($dueDate);
+    if (in_array($unit, ['day', 'week'], TRUE)) {
+      return $current->modify(sprintf('+%d %s', $interval, $unit))->format('Y-m-d H:i:s');
+    }
+
+    $months = $unit === 'year' ? $interval * 12 : $interval;
+    $targetMonth = $current->modify('first day of this month')->modify('+' . $months . ' months');
+    $targetDay = min((int) $current->format('d'), (int) $targetMonth->format('t'));
+    return $targetMonth
+      ->setDate((int) $targetMonth->format('Y'), (int) $targetMonth->format('m'), $targetDay)
+      ->setTime(
+            (int) $current->format('H'),
+            (int) $current->format('i'),
+            (int) $current->format('s')
+        )
+      ->format('Y-m-d H:i:s');
+  }
+
+  /**
+   * @param array<string,mixed> $schedule */
+  private static function recordCustomerActionRequired(array $schedule): void {
+    $failureCount = (int) ($schedule['failure_count'] ?? 0) + 1;
+    ContributionRecur::update(FALSE)
+      ->addWhere('id', '=', (int) $schedule['id'])
+      ->setValues([
+        'failure_count' => $failureCount,
+        'failure_retry_date' => NULL,
+      ])
+      ->execute();
+  }
+
+  private static function occurrenceKey(string $dueDate): string {
+    return preg_replace('/[^0-9]/', '', substr($dueDate, 0, 10)) ?? '';
+  }
+
+  private static function invoiceId(int $scheduleId, string $dueDate): string {
+    return sprintf('sumup-r-%d-%s', $scheduleId, self::occurrenceKey($dueDate));
+  }
+
 }

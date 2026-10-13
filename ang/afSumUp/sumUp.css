@@ -535,7 +535,9 @@ body.sumup-checkout-page h1.crm-page-title {
 }
 
 @keyframes crm-sumup-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+}
 }
 
 
@@ -1453,7 +1455,6 @@ body.sumup-checkout-page h1.crm-page-title {
 .crm-sumup-bento-layout af-field:last-child {
   margin-bottom: 0;
 }
-
 
 
 .crm-sumup-bento-panel legend.af-title {

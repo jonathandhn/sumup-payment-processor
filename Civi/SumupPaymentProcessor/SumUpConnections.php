@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Civi\SumupPaymentProcessor;
 
@@ -17,63 +17,61 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
  *
  * @service sumup.connections
  */
-class SumUpConnections extends AutoService implements EventSubscriberInterface
-{
-    /**
-     * @return array<string, string|array{0: string, 1: int}>
-     */
-    public static function getSubscribedEvents(): array
-    {
-        return [
-            'civi.checkout.options' => 'getCheckoutOptions',
-        ];
+class SumUpConnections extends AutoService implements EventSubscriberInterface {
+
+  /**
+   * @return array<string,string|array{0: string, 1: int}>
+   */
+  public static function getSubscribedEvents(): array {
+    return [
+      'civi.checkout.options' => 'getCheckoutOptions',
+    ];
+  }
+
+  public function getCheckoutOptions(GenericHookEvent $e): void {
+    if (
+        !interface_exists('Civi\\Checkout\\CheckoutOptionInterface')
+        || !interface_exists('Civi\\Checkout\\AfformCheckoutOptionInterface')
+    ) {
+      return;
     }
 
-    public function getCheckoutOptions(GenericHookEvent $e): void
-    {
-        if (
-            !interface_exists('Civi\\Checkout\\CheckoutOptionInterface')
-            || !interface_exists('Civi\\Checkout\\AfformCheckoutOptionInterface')
-        ) {
-            return;
-        }
+    foreach ($this->getPaymentProcessorPairs() as $name => $pair) {
+      $e->options['sumup_embedded_checkout_' . $name] = new SumUpEmbeddedCheckout(
+        $pair['live'] ?? NULL,
+        $pair['test'] ?? NULL
+      );
+      $e->options['sumup_solo_checkout_' . $name] = new SumUpSoloCheckout(
+        $pair['live'] ?? NULL,
+        $pair['test'] ?? NULL
+      );
+      $e->options['sumup_qr_checkout_' . $name] = new SumUpQrCheckout(
+        $pair['live'] ?? NULL,
+        $pair['test'] ?? NULL
+      );
+      $e->options['sumup_hybrid_checkout_' . $name] = new SumUpHybridCheckout(
+        $pair['live'] ?? NULL,
+        $pair['test'] ?? NULL
+      );
+    }
+  }
 
-        foreach ($this->getPaymentProcessorPairs() as $name => $pair) {
-            $e->options['sumup_embedded_checkout_' . $name] = new SumUpEmbeddedCheckout(
-                $pair['live'] ?? null,
-                $pair['test'] ?? null
-            );
-            $e->options['sumup_solo_checkout_' . $name] = new SumUpSoloCheckout(
-                $pair['live'] ?? null,
-                $pair['test'] ?? null
-            );
-            $e->options['sumup_qr_checkout_' . $name] = new SumUpQrCheckout(
-                $pair['live'] ?? null,
-                $pair['test'] ?? null
-            );
-            $e->options['sumup_hybrid_checkout_' . $name] = new SumUpHybridCheckout(
-                $pair['live'] ?? null,
-                $pair['test'] ?? null
-            );
-        }
+  /**
+   * @return array<string,array{live?: array<string,mixed>, test?: array<string,mixed>}>
+   */
+  private function getPaymentProcessorPairs(): array {
+    $all = \Civi\Api4\PaymentProcessor::get(FALSE)
+      ->addWhere('class_name', 'LIKE', 'Payment_Sum%')
+      ->addWhere('is_active', '=', TRUE)
+      ->addWhere('is_test', 'IN', [TRUE, FALSE])
+      ->execute();
+
+    $pairs = [];
+    foreach ($all as $processor) {
+      $pairs[$processor['name']][$processor['is_test'] ? 'test' : 'live'] = $processor;
     }
 
-    /**
-     * @return array<string, array{live?: array<string, mixed>, test?: array<string, mixed>}>
-     */
-    private function getPaymentProcessorPairs(): array
-    {
-        $all = \Civi\Api4\PaymentProcessor::get(false)
-            ->addWhere('class_name', 'LIKE', 'Payment_Sum%')
-            ->addWhere('is_active', '=', true)
-            ->addWhere('is_test', 'IN', [true, false])
-            ->execute();
+    return $pairs;
+  }
 
-        $pairs = [];
-        foreach ($all as $processor) {
-            $pairs[$processor['name']][$processor['is_test'] ? 'test' : 'live'] = $processor;
-        }
-
-        return $pairs;
-    }
 }
