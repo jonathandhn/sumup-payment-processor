@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Civi\Api4;
 
@@ -19,68 +19,61 @@ use Civi\Api4\Generic\BasicGetFieldsAction;
  *
  * @searchable none
  */
-final class SumupPaymentMethod extends AbstractEntity
-{
-    /** @return array<string, list<string>> */
-    public static function permissions(): array
-    {
-        return [
-            'get' => ['make online contributions'],
-            'listCards' => ['make online contributions'],
-            'startReplacement' => ['make online contributions'],
-            'continueReplacement' => ['make online contributions'],
-            'deactivateCard' => ['make online contributions'],
-            'payContribution' => ['make online contributions'],
-            'sendManagementLink' => ['access CiviContribute'],
-            'meta' => ['make online contributions'],
-        ];
-    }
+final class SumupPaymentMethod extends AbstractEntity {
 
-    public static function get(bool $checkPermissions = true): Get
-    {
-        return (new Get(static::getEntityName(), __FUNCTION__))
-            ->setCheckPermissions($checkPermissions);
-    }
+  /**
+   * @return array<string,list<string>> */
+  public static function permissions(): array {
+    return [
+      'get' => ['make online contributions'],
+      'listCards' => ['make online contributions'],
+      'startReplacement' => ['make online contributions'],
+      'continueReplacement' => ['make online contributions'],
+      'deactivateCard' => ['make online contributions'],
+      'payContribution' => ['make online contributions'],
+      'sendManagementLink' => ['access CiviContribute'],
+      'meta' => ['make online contributions'],
+    ];
+  }
 
-    public static function listCards(bool $checkPermissions = true): ListCards
-    {
-        return (new ListCards(static::getEntityName(), __FUNCTION__))
-            ->setCheckPermissions($checkPermissions);
-    }
+  public static function get(bool $checkPermissions = TRUE): Get {
+    return (new Get(static::getEntityName(), __FUNCTION__))
+      ->setCheckPermissions($checkPermissions);
+  }
 
-    public static function startReplacement(bool $checkPermissions = true): StartReplacement
-    {
-        return (new StartReplacement(static::getEntityName(), __FUNCTION__))
-            ->setCheckPermissions($checkPermissions);
-    }
+  public static function listCards(bool $checkPermissions = TRUE): ListCards {
+    return (new ListCards(static::getEntityName(), __FUNCTION__))
+      ->setCheckPermissions($checkPermissions);
+  }
 
-    public static function continueReplacement(bool $checkPermissions = true): ContinueReplacement
-    {
-        return (new ContinueReplacement(static::getEntityName(), __FUNCTION__))
-            ->setCheckPermissions($checkPermissions);
-    }
+  public static function startReplacement(bool $checkPermissions = TRUE): StartReplacement {
+    return (new StartReplacement(static::getEntityName(), __FUNCTION__))
+      ->setCheckPermissions($checkPermissions);
+  }
 
-    public static function deactivateCard(bool $checkPermissions = true): DeactivateCard
-    {
-        return (new DeactivateCard(static::getEntityName(), __FUNCTION__))
-            ->setCheckPermissions($checkPermissions);
-    }
+  public static function continueReplacement(bool $checkPermissions = TRUE): ContinueReplacement {
+    return (new ContinueReplacement(static::getEntityName(), __FUNCTION__))
+      ->setCheckPermissions($checkPermissions);
+  }
 
-    public static function payContribution(bool $checkPermissions = true): PayContribution
-    {
-        return (new PayContribution(static::getEntityName(), __FUNCTION__))
-            ->setCheckPermissions($checkPermissions);
-    }
+  public static function deactivateCard(bool $checkPermissions = TRUE): DeactivateCard {
+    return (new DeactivateCard(static::getEntityName(), __FUNCTION__))
+      ->setCheckPermissions($checkPermissions);
+  }
 
-    public static function sendManagementLink(bool $checkPermissions = true): SendManagementLink
-    {
-        return (new SendManagementLink(static::getEntityName(), __FUNCTION__))
-            ->setCheckPermissions($checkPermissions);
-    }
+  public static function payContribution(bool $checkPermissions = TRUE): PayContribution {
+    return (new PayContribution(static::getEntityName(), __FUNCTION__))
+      ->setCheckPermissions($checkPermissions);
+  }
 
-    public static function getFields(bool $checkPermissions = true): BasicGetFieldsAction
-    {
-        return (new BasicGetFieldsAction(__CLASS__, __FUNCTION__, static fn(): array => []))
-            ->setCheckPermissions($checkPermissions);
-    }
+  public static function sendManagementLink(bool $checkPermissions = TRUE): SendManagementLink {
+    return (new SendManagementLink(static::getEntityName(), __FUNCTION__))
+      ->setCheckPermissions($checkPermissions);
+  }
+
+  public static function getFields(bool $checkPermissions = TRUE): BasicGetFieldsAction {
+    return (new BasicGetFieldsAction(__CLASS__, __FUNCTION__, static fn(): array => []))
+      ->setCheckPermissions($checkPermissions);
+  }
+
 }

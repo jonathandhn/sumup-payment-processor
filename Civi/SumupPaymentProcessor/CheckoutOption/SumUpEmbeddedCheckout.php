@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Civi\SumupPaymentProcessor\CheckoutOption;
 
@@ -14,252 +14,241 @@ if (
     interface_exists('Civi\\Checkout\\CheckoutOptionInterface')
     && interface_exists('Civi\\Checkout\\AfformCheckoutOptionInterface')
 ) {
-    final class SumUpEmbeddedCheckout implements CheckoutOptionInterface, AfformCheckoutOptionInterface
-    {
-        /**
-         * @param array<string, mixed>|null $liveConnection
-         * @param array<string, mixed>|null $testConnection
-         */
-        public function __construct(
-            private readonly ?array $liveConnection,
-            private readonly ?array $testConnection
-        ) {
-        }
+  final class SumUpEmbeddedCheckout implements CheckoutOptionInterface, AfformCheckoutOptionInterface {
 
-        public function getLabel(): string
-        {
-            if (
-                \CRM_SumupPaymentProcessor_CheckoutMode::usesHosted(
-                    \CRM_SumupPaymentProcessor_CheckoutMode::getConfiguredMode()
-                )
-            ) {
-                return E::ts('%1 (Hosted Checkout)', [1 => $this->getConnectionLabel()]);
-            }
-            return E::ts('%1 (Credit Card / Wallets)', [1 => $this->getConnectionLabel()]);
-        }
-
-        public function getFrontendLabel(): string
-        {
-            if (
-                \CRM_SumupPaymentProcessor_CheckoutMode::usesHosted(
-                    \CRM_SumupPaymentProcessor_CheckoutMode::getConfiguredMode()
-                )
-            ) {
-                return E::ts('%1 (Online payment)', [1 => $this->getConnectionLabel()]);
-            }
-            return E::ts('%1 (Credit card, Apple Pay, Google Pay)', [
-                1 => $this->getConnectionLabel(),
-            ]);
-        }
-
-        public function getPaymentMethod(): ?string
-        {
-            $connection = $this->getDisplayConnection();
-            if (empty($connection['payment_instrument_id'])) {
-                return null;
-            }
-            $instrument = \Civi\Api4\OptionValue::get(false)
-                ->addSelect('name')
-                ->addWhere('option_group_id:name', '=', 'payment_instrument')
-                ->addWhere('value', '=', (int) $connection['payment_instrument_id'])
-                ->execute()
-                ->first();
-
-            return !empty($instrument['name']) ? (string) $instrument['name'] : null;
-        }
-
-        public function getPaymentProcessorId(bool $testMode = false): ?int
-        {
-            $connection = $testMode ? $this->testConnection : $this->liveConnection;
-            $connection ??= $this->liveConnection ?: $this->testConnection;
-            return !empty($connection['id']) ? (int) $connection['id'] : null;
-        }
-
-        public function supportsRecurring(): bool
-        {
-            return true;
-        }
-
-        public function validate(AfformValidateEvent $event): void
-        {
-            // CiviCRM validates the contribution. SumUp validates payment details.
-        }
-
-        /**
-         * @return array<string, mixed>
-         */
-        public function getAfformSettings(bool $testMode): array
-        {
-            if (
-                \CRM_SumupPaymentProcessor_CheckoutMode::usesHosted(
-                    \CRM_SumupPaymentProcessor_CheckoutMode::getConfiguredMode()
-                )
-            ) {
-                return ['description' => E::ts('You will be redirected to complete your payment.')];
-            }
-            return ['template' => '~/afSumUp/sumup_embedded_checkout.html'];
-        }
-
-        public function getAfformModule(): ?string
-        {
-            return \CRM_SumupPaymentProcessor_CheckoutMode::usesHosted(
-                \CRM_SumupPaymentProcessor_CheckoutMode::getConfiguredMode()
-            ) ? null : 'afSumUp';
-        }
-
-        public function startCheckout(CheckoutSession $session): void
-        {
-            $processor = $this->getProcessor($session);
-            $editReturnUrl = $this->getSafeEditReturnUrl($session);
-            if ($editReturnUrl !== null) {
-                $session->setCancelUrl($editReturnUrl);
-            }
-            $session->setCheckoutParam('sumup_return', 'success');
-            $returnUrl = $session->getLandingUrl();
-            $session->setCheckoutParam('sumup_return', 'cancel');
-            $cancelUrl = $session->getLandingUrl();
-            $session->setCheckoutParam('sumup_return', null);
-
-            if (
-                \CRM_SumupPaymentProcessor_CheckoutMode::usesHosted(
-                    \CRM_SumupPaymentProcessor_CheckoutMode::getConfiguredMode()
-                )
-            ) {
-                $session->setResponseItem('redirect', $processor->startHostedCheckoutForContribution(
-                    $session->getContributionId(),
-                    $returnUrl,
-                    $cancelUrl
-                ));
-                return;
-            }
-            $session->setResponseItem(
-                'sumup_embedded_checkout',
-                $processor->startEmbeddedCheckoutForContribution(
-                    $session->getContributionId(),
-                    $returnUrl,
-                    $cancelUrl
-                )
-            );
-            $session->setResponseItem('message', false);
-        }
-
-        public function continueCheckout(CheckoutSession $session): void
-        {
-            try {
-                $contribution = \Civi\Api4\Contribution::get(false)
-                    ->addSelect('contribution_status_id:name')
-                    ->addWhere('id', '=', $session->getContributionId())
-                    ->addWhere('is_test', 'IN', [true, false])
-                    ->execute()
-                    ->single();
-                if (($contribution['contribution_status_id:name'] ?? '') === 'Completed') {
-                    $session->success();
-                    return;
-                }
-                $processor = $this->getProcessor($session);
-                $checkout = \CRM_SumupPaymentProcessor_CheckoutStore::getLatestByContributionId(
-                    $session->getContributionId(),
-                    $processor->getProcessorId()
-                );
-                $result = $processor->verifyAndApplyCheckout(
-                    $checkout['checkout_id'],
-                    $session->getContributionId()
-                );
-            } catch (\Throwable $exception) {
-                \Civi::log()->warning('Unable to retrieve the SumUp checkout status: ' . $exception->getMessage());
-                // The restored CheckoutSession is already pending. Do not write
-                // Pending back to a contribution that a webhook may have just completed.
-                return;
-            }
-
-            if ($result['status'] === 'PAID') {
-                $session->success();
-                return;
-            }
-            if ($result['status'] === 'FAILED') {
-                $session->fail();
-                return;
-            }
-            if ($result['status'] === 'EXPIRED') {
-                $session->cancel();
-                return;
-            }
-            if ($session->getCheckoutParam('sumup_return') === 'cancel') {
-                $session->cancel();
-                return;
-            }
-            // Keep the restored pending session without rewriting contribution status.
-        }
-
-        private function getProcessor(CheckoutSession $session): \CRM_Core_Payment_Sumup
-        {
-            $connection = $this->getConnectionDetails($session->isTestMode());
-            $processor = \Civi\Payment\System::singleton()->getByName(
-                (string) $connection['name'],
-                $session->isTestMode()
-            );
-            if (!$processor instanceof \CRM_Core_Payment_Sumup) {
-                throw new \CRM_Core_Exception(E::ts('Unable to load the SumUp payment processor.'));
-            }
-            return $processor;
-        }
-
-        /** @return array<string, mixed> */
-        private function getConnectionDetails(bool $testMode): array
-        {
-            $connection = $testMode ? $this->testConnection : $this->liveConnection;
-            if (!$connection) {
-                throw new \CRM_Core_Exception(E::ts('No active SumUp payment processor is available for this mode.'));
-            }
-            return $connection;
-        }
-
-        /** @return array<string, mixed> */
-        private function getDisplayConnection(): array
-        {
-            $connection = $this->liveConnection ?: $this->testConnection;
-            if (!$connection) {
-                throw new \CRM_Core_Exception(E::ts('No active SumUp payment processor is available.'));
-            }
-            return $connection;
-        }
-
-        private function getConnectionLabel(): string
-        {
-            return (string) ($this->getDisplayConnection()['title'] ?? 'SumUp');
-        }
-
-        private function getSafeEditReturnUrl(CheckoutSession $session): ?string
-        {
-            $candidate = $session->getCheckoutParam('sumup_edit_return_url');
-            if (!is_string($candidate) || $candidate === '') {
-                return null;
-            }
-
-            $target = parse_url($candidate);
-            $base = parse_url((string) \CRM_Utils_System::baseCMSURL());
-            if (!is_array($target) || !is_array($base) || isset($target['user']) || isset($target['pass'])) {
-                return null;
-            }
-
-            $targetScheme = strtolower((string) ($target['scheme'] ?? ''));
-            $baseScheme = strtolower((string) ($base['scheme'] ?? ''));
-            $targetHost = strtolower((string) ($target['host'] ?? ''));
-            $baseHost = strtolower((string) ($base['host'] ?? ''));
-            $targetPort = (int) ($target['port'] ?? ($targetScheme === 'https' ? 443 : 80));
-            $basePort = (int) ($base['port'] ?? ($baseScheme === 'https' ? 443 : 80));
-
-            if (
-                !in_array($targetScheme, ['http', 'https'], true)
-                || $targetScheme !== $baseScheme
-                || $targetHost === ''
-                || $targetHost !== $baseHost
-                || $targetPort !== $basePort
-            ) {
-                return null;
-            }
-
-            return $candidate;
-        }
+    /**
+     * @param array<string,mixed>|null $liveConnection
+     * @param array<string,mixed>|null $testConnection
+     */
+    public function __construct(
+        private readonly ?array $liveConnection,
+        private readonly ?array $testConnection
+    ) {
     }
+
+    public function getLabel(): string {
+      if (
+        \CRM_SumupPaymentProcessor_CheckoutMode::usesHosted(
+            \CRM_SumupPaymentProcessor_CheckoutMode::getConfiguredMode()
+        )
+      ) {
+        return E::ts('%1 (Hosted Checkout)', [1 => $this->getConnectionLabel()]);
+      }
+      return E::ts('%1 (Credit Card / Wallets)', [1 => $this->getConnectionLabel()]);
+    }
+
+    public function getFrontendLabel(): string {
+      if (
+        \CRM_SumupPaymentProcessor_CheckoutMode::usesHosted(
+            \CRM_SumupPaymentProcessor_CheckoutMode::getConfiguredMode()
+        )
+      ) {
+        return E::ts('%1 (Online payment)', [1 => $this->getConnectionLabel()]);
+      }
+      return E::ts('%1 (Credit card, Apple Pay, Google Pay)', [
+        1 => $this->getConnectionLabel(),
+      ]);
+    }
+
+    public function getPaymentMethod(): ?string {
+      $connection = $this->getDisplayConnection();
+      if (empty($connection['payment_instrument_id'])) {
+        return NULL;
+      }
+      $instrument = \Civi\Api4\OptionValue::get(FALSE)
+        ->addSelect('name')
+        ->addWhere('option_group_id:name', '=', 'payment_instrument')
+        ->addWhere('value', '=', (int) $connection['payment_instrument_id'])
+        ->execute()
+        ->first();
+
+      return !empty($instrument['name']) ? (string) $instrument['name'] : NULL;
+    }
+
+    public function getPaymentProcessorId(bool $testMode = FALSE): ?int {
+      $connection = $testMode ? $this->testConnection : $this->liveConnection;
+      $connection ??= $this->liveConnection ?: $this->testConnection;
+      return !empty($connection['id']) ? (int) $connection['id'] : NULL;
+    }
+
+    public function supportsRecurring(): bool {
+      return TRUE;
+    }
+
+    public function validate(AfformValidateEvent $event): void {
+      // CiviCRM validates the contribution. SumUp validates payment details.
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    public function getAfformSettings(bool $testMode): array {
+      if (
+        \CRM_SumupPaymentProcessor_CheckoutMode::usesHosted(
+            \CRM_SumupPaymentProcessor_CheckoutMode::getConfiguredMode()
+        )
+      ) {
+        return ['description' => E::ts('You will be redirected to complete your payment.')];
+      }
+      return ['template' => '~/afSumUp/sumup_embedded_checkout.html'];
+    }
+
+    public function getAfformModule(): ?string {
+      return \CRM_SumupPaymentProcessor_CheckoutMode::usesHosted(
+        \CRM_SumupPaymentProcessor_CheckoutMode::getConfiguredMode()
+      ) ? NULL : 'afSumUp';
+    }
+
+    public function startCheckout(CheckoutSession $session): void {
+      $processor = $this->getProcessor($session);
+      $editReturnUrl = $this->getSafeEditReturnUrl($session);
+      if ($editReturnUrl !== NULL) {
+        $session->setCancelUrl($editReturnUrl);
+      }
+      $session->setCheckoutParam('sumup_return', 'success');
+      $returnUrl = $session->getLandingUrl();
+      $session->setCheckoutParam('sumup_return', 'cancel');
+      $cancelUrl = $session->getLandingUrl();
+      $session->setCheckoutParam('sumup_return', NULL);
+
+      if (
+        \CRM_SumupPaymentProcessor_CheckoutMode::usesHosted(
+            \CRM_SumupPaymentProcessor_CheckoutMode::getConfiguredMode()
+        )
+      ) {
+        $session->setResponseItem('redirect', $processor->startHostedCheckoutForContribution(
+        $session->getContributionId(),
+        $returnUrl,
+        $cancelUrl
+        ));
+        return;
+      }
+      $session->setResponseItem(
+        'sumup_embedded_checkout',
+        $processor->startEmbeddedCheckoutForContribution(
+            $session->getContributionId(),
+            $returnUrl,
+            $cancelUrl
+        )
+      );
+      $session->setResponseItem('message', FALSE);
+    }
+
+    public function continueCheckout(CheckoutSession $session): void {
+      try {
+        $contribution = \Civi\Api4\Contribution::get(FALSE)
+          ->addSelect('contribution_status_id:name')
+          ->addWhere('id', '=', $session->getContributionId())
+          ->addWhere('is_test', 'IN', [TRUE, FALSE])
+          ->execute()
+          ->single();
+        if (($contribution['contribution_status_id:name'] ?? '') === 'Completed') {
+          $session->success();
+          return;
+        }
+        $processor = $this->getProcessor($session);
+        $checkout = \CRM_SumupPaymentProcessor_CheckoutStore::getLatestByContributionId(
+        $session->getContributionId(),
+        $processor->getProcessorId()
+        );
+        $result = $processor->verifyAndApplyCheckout(
+        $checkout['checkout_id'],
+        $session->getContributionId()
+        );
+      }
+      catch (\Throwable $exception) {
+        \Civi::log()->warning('Unable to retrieve the SumUp checkout status: ' . $exception->getMessage());
+        // The restored CheckoutSession is already pending. Do not write
+        // Pending back to a contribution that a webhook may have just completed.
+        return;
+      }
+
+      if ($result['status'] === 'PAID') {
+        $session->success();
+        return;
+      }
+      if ($result['status'] === 'FAILED') {
+        $session->fail();
+        return;
+      }
+      if ($result['status'] === 'EXPIRED') {
+        $session->cancel();
+        return;
+      }
+      if ($session->getCheckoutParam('sumup_return') === 'cancel') {
+        $session->cancel();
+        return;
+      }
+      // Keep the restored pending session without rewriting contribution status.
+    }
+
+    private function getProcessor(CheckoutSession $session): \CRM_Core_Payment_Sumup {
+      $connection = $this->getConnectionDetails($session->isTestMode());
+      $processor = \Civi\Payment\System::singleton()->getByName(
+        (string) $connection['name'],
+        $session->isTestMode()
+      );
+      if (!$processor instanceof \CRM_Core_Payment_Sumup) {
+        throw new \CRM_Core_Exception(E::ts('Unable to load the SumUp payment processor.'));
+      }
+      return $processor;
+    }
+
+    /**
+     * @return array<string,mixed> */
+    private function getConnectionDetails(bool $testMode): array {
+      $connection = $testMode ? $this->testConnection : $this->liveConnection;
+      if (!$connection) {
+        throw new \CRM_Core_Exception(E::ts('No active SumUp payment processor is available for this mode.'));
+      }
+      return $connection;
+    }
+
+    /**
+     * @return array<string,mixed> */
+    private function getDisplayConnection(): array {
+      $connection = $this->liveConnection ?: $this->testConnection;
+      if (!$connection) {
+        throw new \CRM_Core_Exception(E::ts('No active SumUp payment processor is available.'));
+      }
+      return $connection;
+    }
+
+    private function getConnectionLabel(): string {
+      return (string) ($this->getDisplayConnection()['title'] ?? 'SumUp');
+    }
+
+    private function getSafeEditReturnUrl(CheckoutSession $session): ?string {
+      $candidate = $session->getCheckoutParam('sumup_edit_return_url');
+      if (!is_string($candidate) || $candidate === '') {
+        return NULL;
+      }
+
+      $target = parse_url($candidate);
+      $base = parse_url((string) \CRM_Utils_System::baseCMSURL());
+      if (!is_array($target) || !is_array($base) || isset($target['user']) || isset($target['pass'])) {
+        return NULL;
+      }
+
+      $targetScheme = strtolower((string) ($target['scheme'] ?? ''));
+      $baseScheme = strtolower((string) ($base['scheme'] ?? ''));
+      $targetHost = strtolower((string) ($target['host'] ?? ''));
+      $baseHost = strtolower((string) ($base['host'] ?? ''));
+      $targetPort = (int) ($target['port'] ?? ($targetScheme === 'https' ? 443 : 80));
+      $basePort = (int) ($base['port'] ?? ($baseScheme === 'https' ? 443 : 80));
+
+      if (
+        !in_array($targetScheme, ['http', 'https'], TRUE)
+        || $targetScheme !== $baseScheme
+        || $targetHost === ''
+        || $targetHost !== $baseHost
+        || $targetPort !== $basePort
+      ) {
+        return NULL;
+      }
+
+      return $candidate;
+    }
+
+  }
 }

@@ -1,107 +1,109 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 use CRM_SumupPaymentProcessor_ExtensionUtil as E;
 
 // phpcs:disable PSR1.Classes.ClassDeclaration.MissingNamespace
 // phpcs:disable Squiz.Classes.ValidClassName.NotCamelCaps
-class CRM_SumupPaymentProcessor_SmsHelper
-{
-    /**
-     * @return array<int, string>
-     */
-    public static function getProviderOptions(): array
-    {
-        $options = [0 => (string) E::ts('- Default / System SMS Provider -')];
-        try {
-            $providers = \Civi\Api4\SmsProvider::get(false)
-                ->addSelect('id', 'title', 'name')
-                ->addWhere('is_active', '=', true)
-                ->execute();
-            foreach ($providers as $provider) {
-                $options[(int) $provider['id']] = (string) ($provider['title'] ?: $provider['name']);
-            }
-        } catch (\Throwable $e) {
-            // SMS component not enabled
-        }
+class CRM_SumupPaymentProcessor_SmsHelper {
 
-        return $options;
+  /**
+   * @return array<int,string>
+   */
+  public static function getProviderOptions(): array {
+    $options = [0 => (string) E::ts('- Default / System SMS Provider -')];
+    try {
+      $providers = \Civi\Api4\SmsProvider::get(FALSE)
+        ->addSelect('id', 'title', 'name')
+        ->addWhere('is_active', '=', TRUE)
+        ->execute();
+      foreach ($providers as $provider) {
+        $options[(int) $provider['id']] = (string) ($provider['title'] ?: $provider['name']);
+      }
+    }
+    catch (\Throwable $e) {
+      // SMS component not enabled
     }
 
-    /**
-     * Send an SMS payment link to a phone number.
-     *
-     * @throws \CRM_Core_Exception
-     */
-    public static function sendSms(string $toPhone, string $messageText): void
-    {
-        $toPhone = preg_replace('/[^0-9+]/', '', trim($toPhone)) ?? '';
-        if (strlen($toPhone) < 8) {
-            throw new \CRM_Core_Exception(E::ts('Invalid recipient phone number.'));
-        }
+    return $options;
+  }
 
-        $providerId = (int) Civi::settings()->get('sumup_qr_sms_provider_id');
-        if ($providerId <= 0) {
-            $activeProvider = \Civi\Api4\SmsProvider::get(false)
-                ->addSelect('id')
-                ->addWhere('is_active', '=', true)
-                ->addOrderBy('id', 'ASC')
-                ->setLimit(1)
-                ->execute()
-                ->first();
-            $providerId = (int) ($activeProvider['id'] ?? 0);
-        }
+  /**
+   * Send an SMS payment link to a phone number.
+   *
+   * @throws \CRM_Core_Exception
+   */
+  public static function sendSms(string $toPhone, string $messageText): void {
+    $toPhone = preg_replace('/[^0-9+]/', '', trim($toPhone)) ?? '';
+    if (strlen($toPhone) < 8) {
+      throw new \CRM_Core_Exception(E::ts('Invalid recipient phone number.'));
+    }
 
-        if ($providerId <= 0) {
-            throw new \CRM_Core_Exception(E::ts('No active CiviCRM SMS Provider is configured or selected.'));
-        }
+    $providerId = (int) Civi::settings()->get('sumup_qr_sms_provider_id');
+    if ($providerId <= 0) {
+      $activeProvider = \Civi\Api4\SmsProvider::get(FALSE)
+        ->addSelect('id')
+        ->addWhere('is_active', '=', TRUE)
+        ->addOrderBy('id', 'ASC')
+        ->setLimit(1)
+        ->execute()
+        ->first();
+      $providerId = (int) ($activeProvider['id'] ?? 0);
+    }
 
-        // Normalize phone number (E.164 without internal spaces/dashes)
-        $cleanPhone = (string) preg_replace('/[^0-9+]/', '', trim($toPhone));
-        if (str_starts_with($cleanPhone, '00')) {
-            $cleanPhone = '+' . substr($cleanPhone, 2);
-        } elseif (
-            !str_starts_with($cleanPhone, '+')
-            && strlen($cleanPhone) === 10
-            && str_starts_with($cleanPhone, '0')
-        ) {
-            // French standard mobile (06 / 07) -> +336 / +337
-            $cleanPhone = '+33' . substr($cleanPhone, 1);
-        }
+    if ($providerId <= 0) {
+      throw new \CRM_Core_Exception(E::ts('No active CiviCRM SMS Provider is configured or selected.'));
+    }
 
-        $recipients = [
+    // Normalize phone number (E.164 without internal spaces/dashes)
+    $cleanPhone = (string) preg_replace('/[^0-9+]/', '', trim($toPhone));
+    if (str_starts_with($cleanPhone, '00')) {
+      $cleanPhone = '+' . substr($cleanPhone, 2);
+    }
+    elseif (
+        !str_starts_with($cleanPhone, '+')
+        && strlen($cleanPhone) === 10
+        && str_starts_with($cleanPhone, '0')
+    ) {
+      // French standard mobile (06 / 07) -> +336 / +337
+      $cleanPhone = '+33' . substr($cleanPhone, 1);
+    }
+
+    $recipients = [
             [
-                'to' => $cleanPhone,
-                'phone' => $cleanPhone,
-                'number' => $cleanPhone,
+              'to' => $cleanPhone,
+              'phone' => $cleanPhone,
+              'number' => $cleanPhone,
             ],
-        ];
-        $header = [
-            'From' => 'SumUp',
-            'from' => 'SumUp',
-            'To' => $cleanPhone,
-            'to' => $cleanPhone,
-        ];
+    ];
+    $header = [
+      'From' => 'SumUp',
+      'from' => 'SumUp',
+      'To' => $cleanPhone,
+      'to' => $cleanPhone,
+    ];
 
-        try {
-            $providerParams = ['id' => $providerId, 'provider_id' => $providerId];
-            $providerData = \Civi\Api4\SmsProvider::get(false)
-                ->addWhere('id', '=', $providerId)
-                ->execute()
-                ->first();
-            if (!empty($providerData)) {
-                $providerParams = array_merge($providerData, $providerParams);
-            }
+    try {
+      $providerParams = ['id' => $providerId, 'provider_id' => $providerId];
+      $providerData = \Civi\Api4\SmsProvider::get(FALSE)
+        ->addWhere('id', '=', $providerId)
+        ->execute()
+        ->first();
+      if (!empty($providerData)) {
+        $providerParams = array_merge($providerData, $providerParams);
+      }
 
-            $provider = \CRM_SMS_Provider::singleton($providerParams);
-            if (!method_exists($provider, 'send')) {
-                throw new \CRM_Core_Exception(E::ts('The configured SMS Provider cannot send messages.'));
-            }
-            $provider->send($recipients, $header, $messageText, null, null);
-        } catch (\Throwable $e) {
-            \Civi::log()->warning('SumUp SMS sending failed via provider: ' . $e->getMessage());
-            throw new \CRM_Core_Exception(E::ts('Failed to send SMS: %1', [1 => $e->getMessage()]));
-        }
+      $provider = \CRM_SMS_Provider::singleton($providerParams);
+      if (!method_exists($provider, 'send')) {
+        throw new \CRM_Core_Exception(E::ts('The configured SMS Provider cannot send messages.'));
+      }
+      $provider->send($recipients, $header, $messageText, NULL, NULL);
     }
+    catch (\Throwable $e) {
+      \Civi::log()->warning('SumUp SMS sending failed via provider: ' . $e->getMessage());
+      throw new \CRM_Core_Exception(E::ts('Failed to send SMS: %1', [1 => $e->getMessage()]));
+    }
+  }
+
 }

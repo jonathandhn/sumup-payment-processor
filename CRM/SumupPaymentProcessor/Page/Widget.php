@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 use Civi\Api4\Contribution;
 use Civi\Payment\Exception\PaymentProcessorException;
@@ -8,303 +8,304 @@ use CRM_SumupPaymentProcessor_ExtensionUtil as E;
 
 // phpcs:disable PSR1.Classes.ClassDeclaration.MissingNamespace
 // phpcs:disable Squiz.Classes.ValidClassName.NotCamelCaps
-class CRM_SumupPaymentProcessor_Page_Widget extends CRM_Core_Page
-{
-    private const SIGNED_FIELDS = [
-        'cancel_url',
-        'contribution_id',
-        'expires',
-        'processor_id',
-        'return_url',
-    ];
+class CRM_SumupPaymentProcessor_Page_Widget extends CRM_Core_Page {
+  private const SIGNED_FIELDS = [
+    'cancel_url',
+    'contribution_id',
+    'expires',
+    'processor_id',
+    'return_url',
+  ];
 
-    public function run(): void
-    {
-        try {
-            $params = $this->signedParameters();
-            $processor = \Civi\Payment\System::singleton()->getById($params['processor_id']);
-            if (!$processor instanceof CRM_Core_Payment_Sumup) {
-                throw new PaymentProcessorException(E::ts('Invalid SumUp payment processor.'));
-            }
-            $contribution = Contribution::get(false)
-                ->addSelect(
-                    'id',
-                    'total_amount',
-                    'currency',
-                    'payment_processor_id',
-                    'contribution_status_id:name'
-                )
-                ->addWhere('id', '=', $params['contribution_id'])
-                ->addWhere('is_test', 'IN', [true, false])
-                ->execute()
-                ->single();
+  public function run(): void {
+    try {
+      $params = $this->signedParameters();
+      $processor = \Civi\Payment\System::singleton()->getById($params['processor_id']);
+      if (!$processor instanceof CRM_Core_Payment_Sumup) {
+        throw new PaymentProcessorException(E::ts('Invalid SumUp payment processor.'));
+      }
+      $contribution = Contribution::get(FALSE)
+        ->addSelect(
+            'id',
+            'total_amount',
+            'currency',
+            'payment_processor_id',
+            'contribution_status_id:name'
+        )
+        ->addWhere('id', '=', $params['contribution_id'])
+        ->addWhere('is_test', 'IN', [TRUE, FALSE])
+        ->execute()
+        ->single();
 
-            $isQrFlow = !empty($params['is_qr_flow']);
-            $this->assign('sumupPaid', false);
+      $isQrFlow = !empty($params['is_qr_flow']);
+      $this->assign('sumupPaid', FALSE);
 
-            if (($contribution['contribution_status_id:name'] ?? '') === 'Completed') {
-                if ($isQrFlow) {
-                    $this->assign('sumupPaid', true);
-                    $this->assign('sumupAmount', number_format((float) $contribution['total_amount'], 2, '.', ''));
-                    $this->assign('sumupCurrency', strtoupper((string) $contribution['currency']));
-                    parent::run();
-                    return;
-                }
-                CRM_Core_Config::singleton()->userSystem->prePostRedirect();
-                CRM_Utils_System::redirect($params['return_url']);
-                return;
-            }
-            if (($contribution['contribution_status_id:name'] ?? '') !== 'Pending') {
-                throw new PaymentProcessorException(E::ts(
-                    'This contribution is no longer available for payment.'
-                ));
-            }
-            if (
-                !empty($contribution['payment_processor_id'])
-                && (int) $contribution['payment_processor_id'] !== $params['processor_id']
-            ) {
-                throw new PaymentProcessorException(E::ts(
-                    'The contribution uses another payment processor.'
-                ));
-            }
+      if (($contribution['contribution_status_id:name'] ?? '') === 'Completed') {
+        if ($isQrFlow) {
+          $this->assign('sumupPaid', TRUE);
+          $this->assign('sumupAmount', number_format((float) $contribution['total_amount'], 2, '.', ''));
+          $this->assign('sumupCurrency', strtoupper((string) $contribution['currency']));
+          parent::run();
+          return;
+        }
+        CRM_Core_Config::singleton()->userSystem->prePostRedirect();
+        CRM_Utils_System::redirect($params['return_url']);
+        return;
+      }
+      if (($contribution['contribution_status_id:name'] ?? '') !== 'Pending') {
+        throw new PaymentProcessorException(E::ts(
+        'This contribution is no longer available for payment.'
+        ));
+      }
+      if (
+        !empty($contribution['payment_processor_id'])
+        && (int) $contribution['payment_processor_id'] !== $params['processor_id']
+      ) {
+        throw new PaymentProcessorException(E::ts(
+        'The contribution uses another payment processor.'
+        ));
+      }
 
-            $checkoutRecord = CRM_SumupPaymentProcessor_CheckoutStore::findLatestOnlineByContributionId(
-                $params['contribution_id'],
-                $params['processor_id']
-            );
+      $checkoutRecord = CRM_SumupPaymentProcessor_CheckoutStore::findLatestOnlineByContributionId(
+        $params['contribution_id'],
+        $params['processor_id']
+      );
 
-            if ($checkoutRecord === null || $checkoutRecord['state'] === 'EXPIRED') {
-                $processor->startEmbeddedCheckoutForContribution(
-                    $params['contribution_id'],
-                    $params['return_url'],
-                    $params['cancel_url']
-                );
-                $checkoutRecord = CRM_SumupPaymentProcessor_CheckoutStore::getLatestOnlineByContributionId(
-                    $params['contribution_id'],
-                    $params['processor_id']
-                );
-            }
+      if ($checkoutRecord === NULL || $checkoutRecord['state'] === 'EXPIRED') {
+        $processor->startEmbeddedCheckoutForContribution(
+        $params['contribution_id'],
+        $params['return_url'],
+        $params['cancel_url']
+        );
+        $checkoutRecord = CRM_SumupPaymentProcessor_CheckoutStore::getLatestOnlineByContributionId(
+        $params['contribution_id'],
+        $params['processor_id']
+        );
+      }
 
-            $checkoutId = $checkoutRecord['checkout_id'];
-            $checkoutMode = $checkoutRecord['checkout_mode'];
+      $checkoutId = $checkoutRecord['checkout_id'];
+      $checkoutMode = $checkoutRecord['checkout_mode'];
 
-            if ($checkoutMode !== CRM_SumupPaymentProcessor_CheckoutMode::SOLO) {
-                $result = $processor->verifyAndApplyCheckout($checkoutId, $params['contribution_id']);
-                if ($result['status'] === 'PAID') {
-                    if ($isQrFlow) {
-                        $this->assign('sumupPaid', true);
-                        $this->assign('sumupAmount', number_format((float) $contribution['total_amount'], 2, '.', ''));
-                        $this->assign('sumupCurrency', strtoupper((string) $contribution['currency']));
-                        parent::run();
-                        return;
-                    }
-                    CRM_Utils_System::redirect($params['return_url']);
-                }
-                if (in_array($result['status'], ['FAILED', 'EXPIRED'], true)) {
-                    CRM_Utils_System::redirect($params['cancel_url']);
-                }
-            }
-
-            $this->assign('sumupCheckoutId', $checkoutId);
-            $merchantProfile = $processor->getVerifiedMerchantProfile();
-            $this->assign('sumupCancelUrl', $params['cancel_url']);
-            $this->assign('sumupBrowserReturnUrl', CRM_Utils_System::url(
-                'civicrm/sumup/widget',
-                $_GET,
-                true,
-                null,
-                false,
-                true
-            ));
+      if ($checkoutMode !== CRM_SumupPaymentProcessor_CheckoutMode::SOLO) {
+        $result = $processor->verifyAndApplyCheckout($checkoutId, $params['contribution_id']);
+        if ($result['status'] === 'PAID') {
+          if ($isQrFlow) {
+            $this->assign('sumupPaid', TRUE);
             $this->assign('sumupAmount', number_format((float) $contribution['total_amount'], 2, '.', ''));
             $this->assign('sumupCurrency', strtoupper((string) $contribution['currency']));
-            $this->assign('sumupLocale', CRM_SumupPaymentProcessor_CheckoutMode::getLocale());
-            $configuredMode = CRM_SumupPaymentProcessor_CheckoutMode::getConfiguredMode();
-            $walletsAllowed = ($checkoutRecord['purpose'] === 'PAYMENT')
+            parent::run();
+            return;
+          }
+          CRM_Utils_System::redirect($params['return_url']);
+        }
+        if (in_array($result['status'], ['FAILED', 'EXPIRED'], TRUE)) {
+          CRM_Utils_System::redirect($params['cancel_url']);
+        }
+      }
+
+      $this->assign('sumupCheckoutId', $checkoutId);
+      $merchantProfile = $processor->getVerifiedMerchantProfile();
+      $this->assign('sumupCancelUrl', $params['cancel_url']);
+      $this->assign('sumupBrowserReturnUrl', CRM_Utils_System::url(
+        'civicrm/sumup/widget',
+        $_GET,
+        TRUE,
+        NULL,
+        FALSE,
+        TRUE
+      ));
+      $this->assign('sumupAmount', number_format((float) $contribution['total_amount'], 2, '.', ''));
+      $this->assign('sumupCurrency', strtoupper((string) $contribution['currency']));
+      $this->assign('sumupLocale', CRM_SumupPaymentProcessor_CheckoutMode::getLocale());
+      $configuredMode = CRM_SumupPaymentProcessor_CheckoutMode::getConfiguredMode();
+      $walletsAllowed = ($checkoutRecord['purpose'] === 'PAYMENT')
                 && CRM_SumupPaymentProcessor_CheckoutMode::usesWallet($configuredMode);
 
-            $this->assign('sumupCheckoutMode', $configuredMode);
-            $this->assign('sumupWalletsAllowed', $walletsAllowed);
-            $this->assign(
-                'sumupUsesWidget',
-                CRM_SumupPaymentProcessor_CheckoutMode::usesWidget($configuredMode)
-            );
-            $this->assign(
-                'sumupUsesWallet',
-                $walletsAllowed
-            );
-            $this->assign('sumupPublicMerchantKey', $walletsAllowed ? $processor->getPublicMerchantKey() : '');
-            $this->assign('sumupBusinessName', $merchantProfile['business_name']);
-            $this->assign(
-                'sumupMerchantCountryCode',
-                CRM_SumupPaymentProcessor_CheckoutMode::getMerchantCountryCode($merchantProfile['country'])
-            );
+      $this->assign('sumupCheckoutMode', $configuredMode);
+      $this->assign('sumupWalletsAllowed', $walletsAllowed);
+      $this->assign(
+        'sumupUsesWidget',
+        CRM_SumupPaymentProcessor_CheckoutMode::usesWidget($configuredMode)
+      );
+      $this->assign(
+        'sumupUsesWallet',
+        $walletsAllowed
+      );
+      $this->assign('sumupPublicMerchantKey', $walletsAllowed ? $processor->getPublicMerchantKey() : '');
+      $this->assign('sumupBusinessName', $merchantProfile['business_name']);
+      $this->assign(
+        'sumupMerchantCountryCode',
+        CRM_SumupPaymentProcessor_CheckoutMode::getMerchantCountryCode($merchantProfile['country'])
+      );
 
-            $acceptedCardNames = [];
-            if (class_exists('CRM_Financial_BAO_PaymentProcessor')) {
-                $rawCards = (array) \CRM_Financial_BAO_PaymentProcessor::getCreditCards($params['processor_id']);
-                if (!empty($rawCards)) {
-                    $allOptionValues = \Civi\Api4\OptionValue::get(false)
-                        ->addSelect('value', 'name', 'label')
-                        ->addWhere('option_group_id:name', '=', 'accept_credit_cards')
-                        ->execute();
-                    $allTypes = [];
-                    foreach ($allOptionValues as $opt) {
-                        $allTypes[(string) $opt['value']] = (string) $opt['name'];
-                    }
-                    foreach ($rawCards as $cardKey) {
-                        $cardKeyStr = (string) $cardKey;
-                        if (isset($allTypes[$cardKeyStr])) {
-                            $acceptedCardNames[] = $allTypes[$cardKeyStr];
-                        } elseif (!is_numeric($cardKey)) {
-                            $acceptedCardNames[] = (string) $cardKey;
-                        }
-                    }
-                }
+      $acceptedCardNames = [];
+      if (class_exists('CRM_Financial_BAO_PaymentProcessor')) {
+        $rawCards = (array) \CRM_Financial_BAO_PaymentProcessor::getCreditCards($params['processor_id']);
+        if (!empty($rawCards)) {
+          $allOptionValues = \Civi\Api4\OptionValue::get(FALSE)
+            ->addSelect('value', 'name', 'label')
+            ->addWhere('option_group_id:name', '=', 'accept_credit_cards')
+            ->execute();
+          $allTypes = [];
+          foreach ($allOptionValues as $opt) {
+            $allTypes[(string) $opt['value']] = (string) $opt['name'];
+          }
+          foreach ($rawCards as $cardKey) {
+            $cardKeyStr = (string) $cardKey;
+            if (isset($allTypes[$cardKeyStr])) {
+              $acceptedCardNames[] = $allTypes[$cardKeyStr];
             }
-            if (empty($acceptedCardNames)) {
-                $acceptedCardNames = ['Visa', 'MasterCard'];
+            elseif (!is_numeric($cardKey)) {
+              $acceptedCardNames[] = (string) $cardKey;
             }
-            $this->assign('sumupAcceptedCards', $acceptedCardNames);
-
-            CRM_Core_Resources::singleton()->addVars(
-                'sumupSavedPayment',
-                ['checkout_id' => $checkoutId] + $processor->getSavedCardCheckoutConfig(
-                    $checkoutId,
-                    $params['contribution_id']
-                )
-            );
-
-            CRM_Core_Resources::singleton()->addStyleFile(E::LONG_NAME, 'ang/afSumUp/sumUp.css');
-            CRM_Core_Resources::singleton()->addScriptUrl('https://gateway.sumup.com/gateway/ecom/card/v2/sdk.js', 90);
-            if ($walletsAllowed) {
-                CRM_Core_Resources::singleton()->addScriptUrl('https://js.sumup.com/swift-checkout/v1/sdk.js', 95);
-            }
-            CRM_Core_Resources::singleton()->addScriptFile(E::LONG_NAME, 'js/checkout.js', 110);
-        } catch (Throwable $exception) {
-            Civi::log()->warning(sprintf(
-                "Unable to render SumUp checkout: %s\n%s",
-                $exception->getMessage(),
-                $exception->getTraceAsString()
-            ));
-            CRM_Core_Session::setStatus(
-                E::ts('The secure payment form is temporarily unavailable. Please try again.'),
-                E::ts('SumUp'),
-                'error'
-            );
+          }
         }
+      }
+      if (empty($acceptedCardNames)) {
+        $acceptedCardNames = ['Visa', 'MasterCard'];
+      }
+      $this->assign('sumupAcceptedCards', $acceptedCardNames);
 
-        parent::run();
+      CRM_Core_Resources::singleton()->addVars(
+        'sumupSavedPayment',
+        ['checkout_id' => $checkoutId] + $processor->getSavedCardCheckoutConfig(
+            $checkoutId,
+            $params['contribution_id']
+        )
+      );
+
+      CRM_Core_Resources::singleton()->addStyleFile(E::LONG_NAME, 'ang/afSumUp/sumUp.css');
+      CRM_Core_Resources::singleton()->addScriptUrl('https://gateway.sumup.com/gateway/ecom/card/v2/sdk.js', 90);
+      if ($walletsAllowed) {
+        CRM_Core_Resources::singleton()->addScriptUrl('https://js.sumup.com/swift-checkout/v1/sdk.js', 95);
+      }
+      CRM_Core_Resources::singleton()->addScriptFile(E::LONG_NAME, 'js/checkout.js', 110);
+    }
+    catch (Throwable $exception) {
+      Civi::log()->warning(sprintf(
+        "Unable to render SumUp checkout: %s\n%s",
+        $exception->getMessage(),
+        $exception->getTraceAsString()
+        ));
+      CRM_Core_Session::setStatus(
+            E::ts('The secure payment form is temporarily unavailable. Please try again.'),
+            E::ts('SumUp'),
+            'error'
+        );
     }
 
-    /**
-     * @return array{
-     *   contribution_id: int,
-     *   processor_id: int,
-     *   return_url: string,
-     *   cancel_url: string,
-     *   expires: int,
-     *   is_qr_flow?: bool
-     * }
-     */
-    private function signedParameters(): array
-    {
-        $shortC = CRM_Utils_Request::retrieve('c', 'Positive', $this, false);
-        $shortP = CRM_Utils_Request::retrieve('p', 'Positive', $this, false);
-        $shortS = CRM_Utils_Request::retrieve('s', 'String', $this, false);
-        if (!empty($shortC) && !empty($shortS)) {
-            $contributionId = (int) $shortC;
-            $sig = (string) $shortS;
-            $key = CRM_Core_Payment_Sumup::getBrowserReturnSigningKey();
+    parent::run();
+  }
 
-            if (!empty($shortP)) {
-                $processorId = (int) $shortP;
-                $expected = substr(hash_hmac('sha256', $contributionId . ':' . $processorId, $key), 0, 12);
-                if (!hash_equals($expected, $sig)) {
-                    throw new PaymentProcessorException(E::ts('The SumUp payment link signature is invalid.'));
-                }
-            } else {
-                $expected = substr(hash_hmac('sha256', (string) $contributionId, $key), 0, 12);
-                if (!hash_equals($expected, $sig)) {
-                    throw new PaymentProcessorException(E::ts('The SumUp payment link signature is invalid.'));
-                }
-                $latestRecord = \Civi\Api4\SumupCheckout::get(false)
-                    ->addSelect('payment_processor_id')
-                    ->addWhere('contribution_id', '=', $contributionId)
-                    ->addOrderBy('id', 'DESC')
-                    ->setLimit(1)
-                    ->execute()
-                    ->first();
-                $processorId = !empty($latestRecord['payment_processor_id'])
+  /**
+   * @return array{
+   *   contribution_id: int,
+   *   processor_id: int,
+   *   return_url: string,
+   *   cancel_url: string,
+   *   expires: int,
+   *   is_qr_flow?: bool
+   *   }
+   */
+  private function signedParameters(): array {
+    $shortC = CRM_Utils_Request::retrieve('c', 'Positive', $this, FALSE);
+    $shortP = CRM_Utils_Request::retrieve('p', 'Positive', $this, FALSE);
+    $shortS = CRM_Utils_Request::retrieve('s', 'String', $this, FALSE);
+    if (!empty($shortC) && !empty($shortS)) {
+      $contributionId = (int) $shortC;
+      $sig = (string) $shortS;
+      $key = CRM_Core_Payment_Sumup::getBrowserReturnSigningKey();
+
+      if (!empty($shortP)) {
+        $processorId = (int) $shortP;
+        $expected = substr(hash_hmac('sha256', $contributionId . ':' . $processorId, $key), 0, 12);
+        if (!hash_equals($expected, $sig)) {
+          throw new PaymentProcessorException(E::ts('The SumUp payment link signature is invalid.'));
+        }
+      }
+      else {
+        $expected = substr(hash_hmac('sha256', (string) $contributionId, $key), 0, 12);
+        if (!hash_equals($expected, $sig)) {
+          throw new PaymentProcessorException(E::ts('The SumUp payment link signature is invalid.'));
+        }
+        $latestRecord = \Civi\Api4\SumupCheckout::get(FALSE)
+          ->addSelect('payment_processor_id')
+          ->addWhere('contribution_id', '=', $contributionId)
+          ->addOrderBy('id', 'DESC')
+          ->setLimit(1)
+          ->execute()
+          ->first();
+        $processorId = !empty($latestRecord['payment_processor_id'])
                     ? (int) $latestRecord['payment_processor_id']
                     : 0;
-            }
+      }
 
-            if ($processorId <= 0) {
-                $contribution = Contribution::get(false)
-                    ->addSelect('payment_processor_id')
-                    ->addWhere('id', '=', $contributionId)
-                    ->execute()
-                    ->single();
-                $processorId = !empty($contribution['payment_processor_id'])
+      if ($processorId <= 0) {
+        $contribution = Contribution::get(FALSE)
+          ->addSelect('payment_processor_id')
+          ->addWhere('id', '=', $contributionId)
+          ->execute()
+          ->single();
+        $processorId = !empty($contribution['payment_processor_id'])
                     ? (int) $contribution['payment_processor_id']
                     : 0;
-            }
+      }
 
-            if ($processorId <= 0) {
-                $activeProc = \Civi\Api4\PaymentProcessor::get(false)
-                    ->addSelect('id')
-                    ->addWhere('class_name', 'LIKE', 'Payment_Sum%')
-                    ->addWhere('is_active', '=', true)
-                    ->setLimit(1)
-                    ->execute()
-                    ->first();
-                $processorId = !empty($activeProc['id']) ? (int) $activeProc['id'] : 0;
-            }
+      if ($processorId <= 0) {
+        $activeProc = \Civi\Api4\PaymentProcessor::get(FALSE)
+          ->addSelect('id')
+          ->addWhere('class_name', 'LIKE', 'Payment_Sum%')
+          ->addWhere('is_active', '=', TRUE)
+          ->setLimit(1)
+          ->execute()
+          ->first();
+        $processorId = !empty($activeProc['id']) ? (int) $activeProc['id'] : 0;
+      }
 
-            if ($processorId <= 0) {
-                throw new PaymentProcessorException(E::ts('Payment processor not found for this contribution.'));
-            }
+      if ($processorId <= 0) {
+        throw new PaymentProcessorException(E::ts('Payment processor not found for this contribution.'));
+      }
 
-            $returnUrl = CRM_Utils_System::url('civicrm/donate', '', true, null, false, true);
-            $cancelUrl = CRM_Utils_System::url('civicrm/donate', '', true, null, false, true);
+      $returnUrl = CRM_Utils_System::url('civicrm/donate', '', TRUE, NULL, FALSE, TRUE);
+      $cancelUrl = CRM_Utils_System::url('civicrm/donate', '', TRUE, NULL, FALSE, TRUE);
 
-            return [
-                'contribution_id' => $contributionId,
-                'processor_id' => $processorId,
-                'return_url' => $returnUrl,
-                'cancel_url' => $cancelUrl,
-                'expires' => time() + 7200,
-                'is_qr_flow' => true,
-            ];
-        }
-
-        $params = [
-            'contribution_id' => (int) CRM_Utils_Request::retrieve('contribution_id', 'Positive', $this, true),
-            'processor_id' => (int) CRM_Utils_Request::retrieve('processor_id', 'Positive', $this, true),
-            'return_url' => (string) CRM_Utils_Request::retrieve('return_url', 'String', $this, true),
-            'cancel_url' => (string) CRM_Utils_Request::retrieve('cancel_url', 'String', $this, true),
-            'expires' => (int) CRM_Utils_Request::retrieve('expires', 'Positive', $this, true),
-            'is_qr_flow' => false,
-        ];
-        $signature = (string) CRM_Utils_Request::retrieve('_sgn', 'String', $this, true);
-        if (!preg_match('/^[A-Za-z0-9]{4}_[a-f0-9]{32}$/', $signature)) {
-            throw new PaymentProcessorException(E::ts('The SumUp payment link signature is invalid.'));
-        }
-        $signer = new CRM_Utils_Signer(
-            CRM_Core_Payment_Sumup::getBrowserReturnSigningKey(),
-            self::SIGNED_FIELDS
-        );
-        if (!$signer->validate($signature, $params) || $params['expires'] < time()) {
-            throw new PaymentProcessorException(E::ts('The SumUp payment link is invalid or expired.'));
-        }
-        if (
-            !str_starts_with($params['return_url'], 'https://')
-            || !str_starts_with($params['cancel_url'], 'https://')
-        ) {
-            throw new PaymentProcessorException(E::ts('SumUp return URLs must use HTTPS.'));
-        }
-
-        return $params;
+      return [
+        'contribution_id' => $contributionId,
+        'processor_id' => $processorId,
+        'return_url' => $returnUrl,
+        'cancel_url' => $cancelUrl,
+        'expires' => time() + 7200,
+        'is_qr_flow' => TRUE,
+      ];
     }
+
+    $params = [
+      'contribution_id' => (int) CRM_Utils_Request::retrieve('contribution_id', 'Positive', $this, TRUE),
+      'processor_id' => (int) CRM_Utils_Request::retrieve('processor_id', 'Positive', $this, TRUE),
+      'return_url' => (string) CRM_Utils_Request::retrieve('return_url', 'String', $this, TRUE),
+      'cancel_url' => (string) CRM_Utils_Request::retrieve('cancel_url', 'String', $this, TRUE),
+      'expires' => (int) CRM_Utils_Request::retrieve('expires', 'Positive', $this, TRUE),
+      'is_qr_flow' => FALSE,
+    ];
+    $signature = (string) CRM_Utils_Request::retrieve('_sgn', 'String', $this, TRUE);
+    if (!preg_match('/^[A-Za-z0-9]{4}_[a-f0-9]{32}$/', $signature)) {
+      throw new PaymentProcessorException(E::ts('The SumUp payment link signature is invalid.'));
+    }
+    $signer = new CRM_Utils_Signer(
+        CRM_Core_Payment_Sumup::getBrowserReturnSigningKey(),
+        self::SIGNED_FIELDS
+    );
+    if (!$signer->validate($signature, $params) || $params['expires'] < time()) {
+      throw new PaymentProcessorException(E::ts('The SumUp payment link is invalid or expired.'));
+    }
+    if (
+        !str_starts_with($params['return_url'], 'https://')
+        || !str_starts_with($params['cancel_url'], 'https://')
+    ) {
+      throw new PaymentProcessorException(E::ts('SumUp return URLs must use HTTPS.'));
+    }
+
+    return $params;
+  }
+
 }

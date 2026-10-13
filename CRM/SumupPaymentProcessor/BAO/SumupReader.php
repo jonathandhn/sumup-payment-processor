@@ -1,10 +1,9 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 // phpcs:disable PSR1.Classes.ClassDeclaration.MissingNamespace
 // phpcs:disable Squiz.Classes.ValidClassName.NotCamelCaps
 
-class CRM_SumupPaymentProcessor_BAO_SumupReader extends CRM_SumupPaymentProcessor_DAO_SumupReader
-{
+class CRM_SumupPaymentProcessor_BAO_SumupReader extends CRM_SumupPaymentProcessor_DAO_SumupReader {
 }

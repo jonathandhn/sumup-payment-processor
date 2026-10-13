@@ -14,6 +14,8 @@ parameters:
       - mixin (?)
       - vendor
   scanDirectories:
+    - ../standalone/vendor/guzzlehttp/guzzle/src
+    - ../standalone/vendor/psr/http-message/src
     - ../standalone/vendor/civicrm/civicrm-core/CRM
     - ../standalone/vendor/civicrm/civicrm-core/Civi
     - ../standalone/vendor/civicrm/civicrm-core/ext/civi_contribute/Civi
