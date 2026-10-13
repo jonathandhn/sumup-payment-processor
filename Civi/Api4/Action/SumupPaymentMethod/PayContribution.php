@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Civi\Api4\Action\SumupPaymentMethod;
 
@@ -18,34 +18,33 @@ use CRM_SumupPaymentProcessor_ExtensionUtil as E;
  * @method $this setExpires(int $expires)
  * @method $this setSignature(string $signature)
  */
-final class PayContribution extends \Civi\Api4\Generic\AbstractAction
-{
-    protected int $contributionId = 0;
+final class PayContribution extends \Civi\Api4\Generic\AbstractAction {
+  protected int $contributionId = 0;
 
-    protected string $checkoutId = '';
+  protected string $checkoutId = '';
 
-    protected int $paymentTokenId = 0;
+  protected int $paymentTokenId = 0;
 
-    protected int $processorId = 0;
+  protected int $processorId = 0;
 
-    protected int $expires = 0;
+  protected int $expires = 0;
 
-    protected string $signature = '';
+  protected string $signature = '';
 
     // phpcs:disable PSR2.Methods.MethodDeclaration.Underscore
-    public function _run(Result $result): void
-    {
-        $processor = System::singleton()->getById($this->processorId);
-        if (!$processor instanceof CRM_Core_Payment_Sumup) {
-            throw new PaymentProcessorException(E::ts('Invalid SumUp payment processor.'));
-        }
-        $result[] = $processor->payContributionWithSavedCard(
-            $this->contributionId,
-            $this->checkoutId,
-            $this->paymentTokenId,
-            $this->expires,
-            $this->signature
-        );
+  public function _run(Result $result): void {
+    $processor = System::singleton()->getById($this->processorId);
+    if (!$processor instanceof CRM_Core_Payment_Sumup) {
+      throw new PaymentProcessorException(E::ts('Invalid SumUp payment processor.'));
     }
+    $result[] = $processor->payContributionWithSavedCard(
+        $this->contributionId,
+        $this->checkoutId,
+        $this->paymentTokenId,
+        $this->expires,
+        $this->signature
+    );
+  }
+
     // phpcs:enable PSR2.Methods.MethodDeclaration.Underscore
 }

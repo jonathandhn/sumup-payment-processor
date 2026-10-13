@@ -15,6 +15,14 @@
       this.$onInit = () => {
         loadSdkScript('https://gateway.sumup.com/gateway/ecom/card/v2/sdk.js');
         this.getFormElement().on('crmFormSuccess', listener);
+        $scope.$watch(
+          () => this.afCheckoutBlock.getCheckoutOptionKey(),
+          (checkoutOption) => {
+            if (checkoutOption) {
+              this.afCheckoutBlock.checkout_params.sumup_edit_return_url = window.location.href;
+            }
+          }
+        );
       };
       this.$onDestroy = () => this.getFormElement().off('crmFormSuccess', listener);
       this.$postLink = () => {
@@ -60,19 +68,10 @@
       this.amount = '';
       this.currency = 'EUR';
       this.checkout = null;
-      this.donorSummary = '';
-      // Filled by crm-checkout-summary via on-total-change binding.
-      this.summaryTotal = 0;
-      this.summaryCurrency = 'EUR';
+      this.cancelling = false;
 
       this.isDirect = () => {
         return !!(this._orch && this._orch.directMount);
-      };
-
-      // Called by crm-checkout-summary whenever the computed total changes.
-      this.onSummaryTotalChange = (total, currency) => {
-        this.summaryTotal = total || 0;
-        this.summaryCurrency = currency || 'EUR';
       };
 
       this.onAfformSuccess = (data) => {
@@ -83,21 +82,6 @@
           this.error = ts('Unable to start the secure payment form. Please try again.');
           return;
         }
-
-        var form = this.getFormElement();
-        var nameParts = [];
-        var firstName = form.find('input[name*="first_name"]').val();
-        var lastName = form.find('input[name*="last_name"]').val();
-        var email = form.find('input[name*="email"], input[type="email"]').val();
-        if (firstName || lastName) {
-          nameParts.push([firstName, lastName].filter(Boolean).join(' '));
-        }
-        if (email) {
-          nameParts.push(email);
-        }
-        this.donorSummary = nameParts.join(' · ') || email || '';
-
-        form.addClass('crm-sumup-form--compact');
 
         this.active = true;
         this.completed = false;
@@ -130,24 +114,57 @@
         });
       };
 
-      this.cancelAndUnlock = () => {
+      this.unlockForm = () => {
         var form = this.getFormElement();
-        form.removeClass('crm-sumup-form--compact');
-        form.find('.crm-sumup-continue-btn').show();
         form.find('button[type="submit"]').show();
         this.active = false;
         this.completed = false;
         this.amount = '';
         this.currency = 'EUR';
-        this.donorSummary = '';
+        this.checkout = null;
+        this.cancelling = false;
         this.error = '';
         var orch = this._orch || this.orchestrator;
-        if (orch) { orch.setActive(false); }
+        if (orch && typeof orch.cancelActive === 'function') {
+          // Reset both provider activity and the shared single-page layout.
+          // setActive(false) alone leaves the orchestrator in its submitted
+          // state, which keeps the Afform fields locked and its submit button hidden.
+          orch.cancelActive();
+        }
+        else if (orch) {
+          orch.setActive(false);
+        }
         var container = $element[0].querySelector('#sumup-afform-mount-target');
         if (container) {
           container.innerHTML = '';
         }
         $scope.$applyAsync();
+      };
+
+      this.cancelAndUnlock = () => {
+        // Cancel through the signed CiviCRM endpoint without navigating away.
+        // This keeps the live Afform models intact while the server verifies
+        // SumUp and cancels the existing pending Contribution.
+        if (this.checkout && this.checkout.cancel_url) {
+          this.cancelling = true;
+          this.error = '';
+          window.fetch(this.checkout.cancel_url, {
+            credentials: 'same-origin',
+            redirect: 'follow'
+          }).then((response) => {
+            if (!response.ok) {
+              throw new Error('Cancellation returned HTTP ' + response.status);
+            }
+            this.unlockForm();
+          }).catch((err) => {
+            console.error('SumUp Afform Cancellation Failure:', err);
+            this.cancelling = false;
+            this.error = ts('Unable to cancel the payment. Please try again.');
+            $scope.$applyAsync();
+          });
+          return;
+        }
+        this.unlockForm();
       };
     },
   });

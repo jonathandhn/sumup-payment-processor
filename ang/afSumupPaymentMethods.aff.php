@@ -1,20 +1,20 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 use CRM_SumupPaymentProcessor_ExtensionUtil as E;
 
 return [
-    'type' => 'form',
-    'title' => E::ts('SumUp'),
-    'requires' => ['afSumUp'],
-    'server_route' => 'civicrm/sumup/payment-methods',
-    'placement' => ['contact_summary_tab'],
-    'placement_weight' => 75,
-    'icon' => 'fa-credit-card',
-    'is_public' => true,
-    'permission' => ['make online contributions', 'access CiviContribute'],
-    'permission_operator' => 'OR',
-    'submit_enabled' => false,
-    'create_submission' => false,
+  'type' => 'form',
+  'title' => E::ts('SumUp'),
+  'requires' => ['afSumUp'],
+  'server_route' => 'civicrm/sumup/payment-methods',
+  'placement' => ['contact_summary_tab'],
+  'placement_weight' => 75,
+  'icon' => 'fa-credit-card',
+  'is_public' => TRUE,
+  'permission' => ['make online contributions', 'access CiviContribute'],
+  'permission_operator' => 'OR',
+  'submit_enabled' => FALSE,
+  'create_submission' => FALSE,
 ];

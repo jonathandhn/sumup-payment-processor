@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Civi\Api4;
 
@@ -13,17 +13,16 @@ use Civi\Api4\Generic\BasicGetFieldsAction;
  *
  * @searchable none
  */
-final class SumupRecurringCard extends AbstractEntity
-{
-    public static function run(bool $checkPermissions = true): Run
-    {
-        return (new Run(static::getEntityName(), __FUNCTION__))
-            ->setCheckPermissions($checkPermissions);
-    }
+final class SumupRecurringCard extends AbstractEntity {
 
-    public static function getFields(bool $checkPermissions = true): BasicGetFieldsAction
-    {
-        return (new BasicGetFieldsAction(__CLASS__, __FUNCTION__, static fn(): array => []))
-            ->setCheckPermissions($checkPermissions);
-    }
+  public static function run(bool $checkPermissions = TRUE): Run {
+    return (new Run(static::getEntityName(), __FUNCTION__))
+      ->setCheckPermissions($checkPermissions);
+  }
+
+  public static function getFields(bool $checkPermissions = TRUE): BasicGetFieldsAction {
+    return (new BasicGetFieldsAction(__CLASS__, __FUNCTION__, static fn(): array => []))
+      ->setCheckPermissions($checkPermissions);
+  }
+
 }

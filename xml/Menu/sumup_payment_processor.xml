@@ -8,6 +8,20 @@
     <adminGroup>System Settings</adminGroup>
   </item>
   <item>
+    <path>civicrm/admin/sumup/oauth</path>
+    <page_callback>CRM_SumupPaymentProcessor_Page_OAuth</page_callback>
+    <title>SumUp OAuth connection</title>
+    <access_arguments>administer CiviCRM system</access_arguments>
+    <is_ssl>true</is_ssl>
+  </item>
+  <item>
+    <path>civicrm/sumup/oauth/callback</path>
+    <page_callback>CRM_SumupPaymentProcessor_Page_OAuth</page_callback>
+    <title>SumUp OAuth callback</title>
+    <access_arguments>administer CiviCRM system</access_arguments>
+    <is_ssl>true</is_ssl>
+  </item>
+  <item>
     <path>civicrm/sumup/widget</path>
     <page_callback>CRM_SumupPaymentProcessor_Page_Widget</page_callback>
     <title>Secure card payment</title>

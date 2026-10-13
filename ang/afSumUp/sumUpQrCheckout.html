@@ -1,4 +1,4 @@
-<div class="crm-sumup-kiosk crm-sumup-qr-kiosk" ng-if="$ctrl.active">
+<div class="crm-sumup-ui crm-sumup-ui--standalone crm-sumup-kiosk crm-sumup-qr-kiosk" ng-if="$ctrl.active">
   <!-- Active / In-progress Standalone QR View -->
   <div class="crm-sumup-kiosk__body" ng-if="$ctrl.waiting">
     <div class="crm-sumup-kiosk__header">
@@ -117,7 +117,7 @@
       <small>{{:: ts('Transaction reference:') }} <code>{{$ctrl.receiptRef}}</code></small>
     </div>
 
-    <div class="crm-sumup-kiosk__footer" style="margin-top: 2rem;">
+    <div class="crm-sumup-kiosk__footer crm-sumup-kiosk__footer--spaced">
       <button class="button btn btn-primary btn-lg" type="button" ng-click="$ctrl.resetKiosk()">
         <i class="crm-i fa-check" aria-hidden="true"></i> {{:: ts('Finish / Next payment') }}
       </button>
@@ -134,7 +134,7 @@
       {{$ctrl.errorMessage || ts('The QR payment session timed out or was not completed.')}}
     </p>
 
-    <div class="crm-sumup-kiosk__footer" style="margin-top: 1.5rem; display: flex; gap: 1rem; justify-content: center;">
+    <div class="crm-sumup-kiosk__footer crm-sumup-kiosk__footer--spaced">
       <button class="button btn btn-secondary" type="button" ng-click="$ctrl.resetKiosk()">
         <i class="crm-i fa-arrow-left" aria-hidden="true"></i> {{:: ts('Back to form') }}
       </button>

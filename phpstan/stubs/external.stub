@@ -1,0 +1,119 @@
+<?php
+
+namespace {
+    /** Runtime dependency provided by PEAR in CiviCRM installations. */
+    class DB_DataObject {
+        public function fetch(): bool { return false; }
+        public function fetchValue(): mixed { return null; }
+    }
+
+    /** Runtime dependency provided by phpqrcode in CiviCRM installations. */
+    class QRcode {
+        public function __construct(string $code, string $eclevel = 'L') {}
+
+        /** @return array<string, mixed> */
+        public function getBarcodeArray(): array { return []; }
+    }
+
+    /** Runtime dependency provided by the mjwshared extension. */
+    class CRM_Mjwshared_Webhook {
+        public static function getWebhookPath(int $paymentProcessorId): string { return ''; }
+    }
+
+    /** Static representation of the class_alias declared in Sumup.php. */
+    class CRM_Core_Payment_Sumup extends CRM_Core_Payment_SumupBase {}
+
+    class CRM_Contact_BAO_Contact_Utils {
+        /**
+         * @param int $contactId
+         * @param string|null $hashDate
+         * @param int|string|null $life
+         */
+        public static function generateChecksum(int $contactId, ?string $hashDate = null, mixed $life = null): string { return ''; }
+
+        /**
+         * @param int $contactId
+         * @param string $checksum
+         * @param string|null $hashDate
+         * @param int|string|null $life
+         */
+        public static function validChecksum(int $contactId, string $checksum, ?string $hashDate = null, mixed $life = null): bool { return true; }
+    }
+
+    class Log {
+        public function info(string $message): void {}
+        public function warning(string $message): void {}
+        public function error(string $message): void {}
+    }
+
+    class CRM_Extension_Upgrader_Context {
+        public Log $log;
+    }
+
+    abstract class CRM_Extension_Upgrader_Base {
+        public CRM_Extension_Upgrader_Context $ctx;
+    }
+
+    class CRM_Core_DAO_ActionSchedule {
+        public ?string $entity_value = null;
+        public ?string $entity_status = null;
+    }
+}
+
+namespace Civi\Api4 {
+    /** API4 entity provided by the mjwshared extension. */
+    class PaymentprocessorWebhook extends Generic\DAOEntity {}
+}
+
+namespace Civi\Mjwshared {
+    /** Runtime compatibility interface provided by mjwshared 1.6 and later. */
+    interface PaymentProcessorWebhookInterface {}
+}
+
+namespace Civi\Afform\Event {
+    class AfformValidateEvent {}
+}
+
+namespace Civi\Checkout {
+    interface CheckoutOptionInterface {
+        public function getLabel(): string;
+        public function getFrontendLabel(): string;
+        public function getPaymentMethod(): ?string;
+        public function getPaymentProcessorId(): ?int;
+        public function startCheckout(CheckoutSession $session): void;
+        public function continueCheckout(CheckoutSession $session): void;
+    }
+
+    interface AfformCheckoutOptionInterface {
+        public function validate(\Civi\Afform\Event\AfformValidateEvent $event): void;
+        /** @return array<string, mixed> */
+        public function getAfformSettings(bool $testMode): array;
+        public function getAfformModule(): ?string;
+    }
+
+    class CheckoutSession {
+        public static function restoreFromToken(string $token): self { return new self(); }
+        public function getContributionId(): int { return 0; }
+        public function isTestMode(): bool { return false; }
+        public function setCheckoutParam(string $key, mixed $value): self { return $this; }
+        public function getCheckoutParam(string $key): mixed { return null; }
+        public function setCancelUrl(string $url): self { return $this; }
+        public function getLandingUrl(): string { return ''; }
+        public function tokenise(): string { return ''; }
+        public function setResponseItem(string $key, mixed $value): self { return $this; }
+        public function success(): self { return $this; }
+        public function fail(): self { return $this; }
+        public function cancel(): self { return $this; }
+        public function pending(): self { return $this; }
+    }
+}
+
+namespace Drupal\webform\Ajax {
+    /** Optional Drupal Webform integration. */
+    class WebformRefreshCommand {
+        public function __construct(string $url) {}
+
+        /** @return array<string, mixed> */
+        public function render(): array { return []; }
+    }
+}
