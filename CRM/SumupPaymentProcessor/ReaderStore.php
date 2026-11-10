@@ -11,6 +11,44 @@ use SumUp\Types\StatusResponse;
 final class CRM_SumupPaymentProcessor_ReaderStore {
 
   /**
+   * Return the paired readers that may be selected by an Afform checkout.
+   *
+   * The local record ID is the only browser-submitted value. The checkout
+   * action revalidates processor ownership and availability before use.
+   *
+   * @return list<array{id: string, label: string}>
+   */
+  public static function getCheckoutOptions(int $paymentProcessorId): array {
+    if ($paymentProcessorId <= 0) {
+      return [];
+    }
+
+    $readers = SumupReader::get(FALSE)
+      ->addSelect('id', 'canonical_name', 'site_code')
+      ->addWhere('payment_processor_id', '=', $paymentProcessorId)
+      ->addWhere('pairing_status', '=', 'paired')
+      ->addWhere('is_active', '=', TRUE)
+      ->addOrderBy('site_code', 'ASC')
+      ->addOrderBy('canonical_name', 'ASC')
+      ->execute();
+
+    $options = [];
+    foreach ($readers as $reader) {
+      $siteCode = trim((string) ($reader['site_code'] ?? ''));
+      $readerName = trim((string) ($reader['canonical_name'] ?? ''));
+      $label = $siteCode !== ''
+        ? sprintf('%s - %s', $siteCode, $readerName)
+        : $readerName;
+      $options[] = [
+        'id' => (string) $reader['id'],
+        'label' => $label,
+      ];
+    }
+
+    return $options;
+  }
+
+  /**
    * @return array<string,mixed>
    */
   public static function upsert(

@@ -100,6 +100,7 @@ if (
       $processor = $this->getProcessor($session);
       $contributionId = $session->getContributionId();
       $processorId = (int) $processor->getProcessorId();
+      $session->setCheckoutParam('payment_processor_id', $processorId);
       $key = \CRM_Core_Payment_Sumup::getBrowserReturnSigningKey();
       $sig = substr(hash_hmac('sha256', $contributionId . ':' . $processorId, $key), 0, 12);
       $qrUrl = \CRM_Utils_System::url(

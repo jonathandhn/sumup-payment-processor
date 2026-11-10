@@ -25,12 +25,28 @@ final class Synchronise extends AbstractAction {
 
     $cloudReaderIds = [];
     $cloudDeviceIds = [];
+    $localReaders = SumupReader::get(FALSE)
+      ->addWhere('payment_processor_id', '=', $this->paymentProcessorId)
+      ->execute();
+    $localByReaderId = [];
+    $localByDeviceId = [];
+    foreach ($localReaders as $localReader) {
+      $localByReaderId[(string) $localReader['reader_id']] = $localReader;
+      $localByDeviceId[(string) $localReader['device_identifier']] = $localReader;
+    }
 
     foreach ($service->list()->items as $reader) {
       $cloudReaderIds[] = $reader->id;
-      $cloudDeviceIds[] = trim($reader->device->identifier);
+      $deviceIdentifier = trim($reader->device->identifier);
+      $cloudDeviceIds[] = $deviceIdentifier;
 
       $siteCode = strtoupper(trim((string) ($reader->metadata['civi_site_code'] ?? '')));
+      if ($siteCode === '') {
+        $localReader = $localByReaderId[$reader->id]
+          ?? $localByDeviceId[$deviceIdentifier]
+          ?? NULL;
+        $siteCode = strtoupper(trim((string) ($localReader['site_code'] ?? '')));
+      }
       if ($siteCode === '') {
         $result[] = [
           'reader_id' => $reader->id,
@@ -45,7 +61,7 @@ final class Synchronise extends AbstractAction {
         $reader->device->identifier
       );
       if ($reader->name !== $canonicalName) {
-        $reader = $service->rename($reader, $canonicalName, $siteCode);
+        $reader = $service->renameBestEffort($reader, $canonicalName, $siteCode);
       }
       $status = NULL;
       if ($reader->status->value === 'paired') {
@@ -65,12 +81,10 @@ final class Synchronise extends AbstractAction {
     }
 
     // Deactivate local readers that no longer exist in SumUp Cloud
-    $localReaders = SumupReader::get(FALSE)
-      ->addWhere('payment_processor_id', '=', $this->paymentProcessorId)
-      ->addWhere('is_active', '=', TRUE)
-      ->execute();
-
     foreach ($localReaders as $local) {
+      if (empty($local['is_active'])) {
+        continue;
+      }
       $readerId = (string) $local['reader_id'];
       $deviceId = (string) $local['device_identifier'];
       if (!in_array($readerId, $cloudReaderIds, TRUE) && !in_array($deviceId, $cloudDeviceIds, TRUE)) {

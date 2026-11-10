@@ -109,7 +109,7 @@
     <div class="messages status no-popup" ng-if="$ctrl.pairing.success">{{$ctrl.pairing.success}}</div>
     <div class="messages error" ng-if="$ctrl.pairing.error">{{$ctrl.pairing.error}}</div>
 
-    <form class="crm-sumup-pair-form" ng-submit="$ctrl.pairReader()">
+    <div class="crm-sumup-pair-form">
       <div class="crm-sumup-form-row">
         <div class="crm-sumup-form-group">
           <label for="sumup-site-code"><strong>{{:: ts('Site code') }}</strong> <span class="crm-marker">*</span></label>
@@ -124,22 +124,23 @@
         <div class="crm-sumup-form-group">
           <label for="sumup-pairing-code"><strong>{{:: ts('Pairing code') }}</strong> <span class="crm-marker">*</span></label>
           <input type="text" id="sumup-pairing-code" class="crm-form-text crm-sumup-code-input"
-                 placeholder="e.g. 012-345-67"
+                 placeholder="e.g. 4WLFDSBF"
                  maxlength="15"
                  ng-model="$ctrl.pairing.pairingCode"
                  required />
-          <small class="crm-sumup-help">{{:: ts('8-9 characters code displayed on the screen.') }}</small>
+          <small class="crm-sumup-help">{{:: ts('8-9 alphanumeric characters displayed on the screen. Spaces and separators are ignored.') }}</small>
         </div>
       </div>
 
       <div class="crm-sumup-actions" style="margin-top: 1rem;">
-        <button class="button btn btn-primary" type="submit"
+        <button class="button btn btn-primary" type="button"
+                ng-click="$ctrl.pairReader()"
                 ng-disabled="$ctrl.pairing.submitting || !$ctrl.pairing.siteCode || !$ctrl.pairing.pairingCode">
           <i class="crm-i fa-plus" aria-hidden="true"></i>
           {{$ctrl.pairing.submitting ? ts('Pairing…') : ts('Pair card reader') }}
         </button>
       </div>
-    </form>
+    </div>
   </section>
 
   <!-- Discovered Cloud Readers Panel (Not in CiviCRM) -->

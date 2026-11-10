@@ -20,7 +20,7 @@ return [
           'is_active' => TRUE,
           'is_default' => FALSE,
           'user_name_label' => E::ts('Merchant code'),
-          'password_label' => E::ts('API key'),
+          'password_label' => E::ts('API key (Test sandbox only)'),
           'signature_label' => E::ts('Public merchant key (wallets)'),
           'url_site_default' => 'https://api.sumup.com',
           'url_site_test_default' => 'https://api.sumup.com',

@@ -26,8 +26,10 @@ CiviCRM records a payment only after retrieving and validating the checkout thro
 - card replacement, recurring amount changes and cancellation through native CiviCRM self-service;
 - configurable CiviCRM Scheduled Reminders for SumUp recurring payments and card remediation;
 - full and partial online refunds through CiviCRM with SumUp constraint reporting;
-- automatic accounting reconciliation: extraction of processing fees (`fee_amount`, `net_amount`) and payout dates (`revenue_recognition_date`);
-- extended lifecycle webhook handling for external refunds, chargebacks/disputes, and explicit cancellations;
+- best-effort extraction of card, fee, and payout details when the payment is
+  completed and SumUp already returns those fields;
+- webhook handling for external refunds and chargebacks/disputes;
+- cancellation handling when an authoritative checkout read returns `CANCELLED`;
 - native CiviCRM success and cancellation URLs;
 - durable SumUp checkout notifications through MJWShared;
 - an API4 `SumupCheckout` registry that counts attempts independently from payments;
@@ -39,13 +41,21 @@ The Solo Cloud API integration can pair and synchronise physical or Virtual Solo
 
 ## Configuration
 
-Create a CiviCRM payment processor of type **SumUp** and provide:
+Create a CiviCRM payment processor of type **SumUp** and provide its merchant
+code. Then open **Contributions > SumUp OAuth connection**, enter the OAuth
+client ID and secret issued for the callback URL displayed on that page, and
+connect each live or test processor to its SumUp merchant account.
+
+The processor fields are:
 
 - **Merchant code** in the username field;
-- **API key** in the password field;
 - **Public merchant key** in the signature field when a wallet mode is enabled.
 
-The live and test CiviCRM processor instances keep separate merchant codes, API keys, and public merchant keys. A test-only configuration can be saved without production credentials. SumUp uses the credentials to select the corresponding merchant environment; an attempted live payment without live credentials fails locally and never falls back to the test configuration (or the reverse).
+The extension authenticates API requests only with the stored OAuth connection;
+it does not fall back to the legacy password/API-key field. Live and test
+CiviCRM processor records keep separate OAuth connections, merchant codes, and
+public merchant keys. The CiviCRM test flag selects the processor record, not a
+separate SumUp tenant.
 
 Under **Contributions > SumUp settings**, choose:
 
@@ -78,7 +88,7 @@ The extension sends this URL to SumUp as the checkout `return_url`. The HTTP req
 
 Full and partial refunds are available from CiviCRM's native payment refund workflow. The extension verifies the authoritative SumUp transaction, currency and remaining refundable balance before sending the request. When a specific payment type rejects a partial amount (e.g. recurring card payments requiring full refunds), the extension displays an explicit error message detailing the minimum required amount. CiviCRM records the associated negative Payment after SumUp accepts the refund.
 
-The SumUp credential must include the `refunds.write` or `payments` scope. SumUp does not return the original processing fees when a payment is refunded.
+The SumUp OAuth connection must include the restricted `payments` scope. SumUp does not return the original processing fees when a payment is refunded.
 
 ## Recurring cards
 

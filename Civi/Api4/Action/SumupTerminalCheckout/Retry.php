@@ -52,7 +52,11 @@ final class Retry extends AbstractAction {
       ->addWhere('id', '=', $contributionId)
       ->execute()
       ->single();
-    if (!in_array(($contribution['contribution_status_id:name'] ?? ''), ['Pending', 'Failed'], TRUE)) {
+    if (!in_array(
+      ($contribution['contribution_status_id:name'] ?? ''),
+      ['Pending', 'Partially paid', 'Failed'],
+      TRUE
+    )) {
       throw new \CRM_Core_Exception(E::ts('Only an unpaid contribution can be resent to a terminal.'));
     }
 
@@ -81,7 +85,12 @@ final class Retry extends AbstractAction {
       throw new \CRM_Core_Exception(E::ts('This terminal payment is already being resent.'));
     }
     try {
-      $checkoutId = $processor->startSoloCheckoutForContribution($contributionId, $localReaderId);
+      $checkoutId = $processor->startSoloCheckoutForContribution(
+        $contributionId,
+        $localReaderId,
+        NULL,
+        (float) $checkout['amount']
+      );
     } finally {
       $lock->release();
     }

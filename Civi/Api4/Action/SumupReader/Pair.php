@@ -49,7 +49,7 @@ final class Pair extends AbstractAction {
         $reader->device->identifier
     );
     if ($reader->name !== $canonicalName) {
-      $reader = $service->rename($reader, $canonicalName, $siteCode);
+      $reader = $service->renameBestEffort($reader, $canonicalName, $siteCode);
     }
     $status = NULL;
     if ($reader->status->value === 'paired') {

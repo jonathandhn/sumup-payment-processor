@@ -32,7 +32,7 @@ final class CRM_SumupPaymentProcessor_ReaderService {
 
   public static function fromPaymentProcessorId(int $paymentProcessorId): self {
     $processor = PaymentProcessor::get(FALSE)
-      ->addSelect('id', 'class_name', 'user_name')
+      ->addSelect('id', 'class_name', 'user_name', 'password', 'is_test')
       ->addWhere('id', '=', $paymentProcessorId)
       ->execute()
       ->single();
@@ -40,10 +40,17 @@ final class CRM_SumupPaymentProcessor_ReaderService {
       throw new PaymentProcessorException(E::ts('The selected payment processor is not a SumUp processor.'));
     }
 
+    $testApiKey = !empty($processor['is_test'])
+      ? trim((string) ($processor['password'] ?? ''))
+      : '';
+    $accessToken = $testApiKey !== ''
+      ? $testApiKey
+      : (new CRM_SumupPaymentProcessor_OAuth((int) $processor['id']))->getAccessToken();
+
     return new self(
         (int) $processor['id'],
         trim((string) ($processor['user_name'] ?? '')),
-        (new CRM_SumupPaymentProcessor_OAuth((int) $processor['id']))->getAccessToken()
+        $accessToken
     );
   }
 
@@ -79,6 +86,21 @@ final class CRM_SumupPaymentProcessor_ReaderService {
         new ReadersUpdateRequest($canonicalName, ['civi_site_code' => $siteCode]),
         $this->requestOptions()
     );
+  }
+
+  public function renameBestEffort(Reader $reader, string $canonicalName, string $siteCode): Reader {
+    try {
+      return $this->rename($reader, $canonicalName, $siteCode);
+    }
+    catch (Throwable $exception) {
+      Civi::log()->warning(sprintf(
+          'SumUp reader %s is paired but its optional Cloud rename to %s failed: %s',
+          $reader->id,
+          $canonicalName,
+          $exception->getMessage()
+      ));
+      return $reader;
+    }
   }
 
   public function list(): ReadersListResponse {

@@ -36,7 +36,7 @@ final class Adopt extends AbstractAction {
         $reader->name !== $canonicalName
         || (string) ($reader->metadata['civi_site_code'] ?? '') !== $siteCode
     ) {
-      $reader = $service->rename($reader, $canonicalName, $siteCode);
+      $reader = $service->renameBestEffort($reader, $canonicalName, $siteCode);
     }
 
     $status = NULL;

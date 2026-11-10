@@ -353,7 +353,7 @@ final class CRM_SumupPaymentProcessor_CheckoutStore {
     ): void {
     if (
         !CRM_SumupPaymentProcessor_CheckoutService::isValidCheckoutId($checkoutId)
-        || !in_array($state, ['PENDING', 'PAID', 'FAILED', 'EXPIRED'], TRUE)
+        || !in_array($state, ['PENDING', 'PAID', 'FAILED', 'CANCELLED', 'EXPIRED'], TRUE)
     ) {
       throw new PaymentProcessorException(E::ts('Invalid SumUp checkout state.'));
     }

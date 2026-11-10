@@ -101,6 +101,8 @@ final class CRM_SumupPaymentProcessor_Page_OAuth extends CRM_Core_Page {
     $this->assign('clientId', $clientId);
     $this->assign('hasClientSecret', CRM_SumupPaymentProcessor_PartnerCredentials::hasStoredClientSecret());
     $this->assign('credentialsConfigured', CRM_SumupPaymentProcessor_PartnerCredentials::isConfigured());
+    $this->assign('usesBroker', CRM_SumupPaymentProcessor_PartnerCredentials::usesBroker());
+    $this->assign('brokerBaseUrl', CRM_SumupPaymentProcessor_PartnerCredentials::BROKER_BASE_URL);
     $this->assign('redirectUri', $oauth->getCalculatedRedirectUri());
     $this->assign('storedRedirectUri', $storedRedirectUri);
   }
@@ -109,8 +111,8 @@ final class CRM_SumupPaymentProcessor_Page_OAuth extends CRM_Core_Page {
     $processors = PaymentProcessor::get(FALSE)
       ->addSelect('id', 'name', 'is_test', 'user_name')
       ->addWhere('class_name', '=', 'Payment_Sumup')
-      ->addWhere('is_test', 'IN', [TRUE, FALSE])
-      ->addOrderBy('is_test', 'DESC')
+      ->addWhere('is_test', '=', FALSE)
+      ->addOrderBy('name', 'ASC')
       ->execute()
       ->getArrayCopy();
     foreach ($processors as &$processor) {
@@ -160,6 +162,7 @@ final class CRM_SumupPaymentProcessor_Page_OAuth extends CRM_Core_Page {
       ->addSelect('id', 'name', 'is_test', 'user_name', 'is_active')
       ->addWhere('id', '=', $paymentProcessorId)
       ->addWhere('class_name', '=', 'Payment_Sumup')
+      ->addWhere('is_test', '=', FALSE)
       ->execute()
       ->single();
     return $processor;

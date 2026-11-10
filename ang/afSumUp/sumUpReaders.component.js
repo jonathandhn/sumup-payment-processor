@@ -91,7 +91,7 @@
           }),
         ]).then(([paired, discovered]) => {
           this.pairedReaders = paired;
-          this.discoveredReaders = discovered;
+          this.discoveredReaders = discovered.filter((reader) => !reader.is_paired_in_civi);
         }).catch((err) => {
           this.error = err.error_message || ts('Unable to load SumUp readers.');
         }).finally(() => {
@@ -112,6 +112,8 @@
           paymentProcessorId: this.selectedProcessorId,
         }).then(() => {
           this.statusMessage = ts('Fleet synchronised successfully with SumUp Cloud API.');
+          this.pairing.error = '';
+          this.pairing.success = '';
           this.loadReaders();
         }).catch((err) => {
           this.error = err.error_message || ts('Synchronisation failed.');
@@ -123,7 +125,10 @@
 
       this.pairReader = () => {
         var siteCode = (this.pairing.siteCode || '').trim().toUpperCase();
-        var pairingCode = (this.pairing.pairingCode || '').trim().toUpperCase();
+        var pairingCode = (this.pairing.pairingCode || '')
+          .trim()
+          .toUpperCase()
+          .replace(/[^A-Z0-9]/g, '');
 
         this.pairing.error = '';
         this.pairing.success = '';
@@ -138,6 +143,7 @@
         }
 
         this.pairing.submitting = true;
+        $scope.$applyAsync();
         CRM.api4('SumupReader', 'pair', {
           paymentProcessorId: this.selectedProcessorId,
           siteCode: siteCode,
@@ -151,7 +157,8 @@
           this.pairing.pairingCode = '';
           this.loadReaders();
         }).catch((err) => {
-          this.pairing.error = err.error_message || ts('Failed to pair the SumUp card reader.');
+          this.pairing.error = (err && (err.error_message || err.message))
+            || ts('Failed to pair the SumUp card reader.');
         }).finally(() => {
           this.pairing.submitting = false;
           $scope.$applyAsync();

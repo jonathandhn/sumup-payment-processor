@@ -178,7 +178,7 @@ function sumup_payment_processor_civicrm_buildForm(string $formName, mixed &$for
 }
 
 /**
- * Replace the sandbox API credential fields with the OAuth connection panel.
+ * Replace the live API credential fields with the OAuth connection panel.
  */
 function sumup_payment_processor_add_oauth_processor_panel(CRM_Core_Form $form): void {
   $paymentProcessorType = $form->getVar('_paymentProcessorDAO');
@@ -186,56 +186,59 @@ function sumup_payment_processor_add_oauth_processor_panel(CRM_Core_Form $form):
     return;
   }
 
-  $liveProcessorId = (int) $form->getVar('_id');
-  if ($liveProcessorId <= 0) {
+  $formProcessorId = (int) $form->getVar('_id');
+  if ($formProcessorId <= 0) {
     return;
   }
 
   try {
-    $liveProcessor = \Civi\Api4\PaymentProcessor::get(FALSE)
-      ->addSelect('name', 'domain_id')
-      ->addWhere('id', '=', $liveProcessorId)
+    $currentProcessor = \Civi\Api4\PaymentProcessor::get(FALSE)
+      ->addSelect('id', 'name', 'domain_id', 'is_test')
+      ->addWhere('id', '=', $formProcessorId)
       ->execute()
       ->single();
-    $query = \Civi\Api4\PaymentProcessor::get(FALSE)
-      ->addSelect('id', 'name', 'user_name')
-      ->addWhere('class_name', '=', 'Payment_Sumup')
-      ->addWhere('is_test', '=', TRUE)
-      ->addWhere('name', '=', (string) $liveProcessor['name']);
-    if (!empty($liveProcessor['domain_id'])) {
-      $query->addWhere('domain_id', '=', (int) $liveProcessor['domain_id']);
+    if (!empty($currentProcessor['is_test'])) {
+      $query = \Civi\Api4\PaymentProcessor::get(FALSE)
+        ->addSelect('id')
+        ->addWhere('class_name', '=', 'Payment_Sumup')
+        ->addWhere('is_test', '=', FALSE)
+        ->addWhere('name', '=', (string) $currentProcessor['name']);
+      if (!empty($currentProcessor['domain_id'])) {
+        $query->addWhere('domain_id', '=', (int) $currentProcessor['domain_id']);
+      }
+      $liveRow = $query->setLimit(1)->execute()->first();
+      if (!$liveRow) {
+        return;
+      }
+      $liveProcessorId = (int) $liveRow['id'];
     }
-    $testProcessor = $query->setLimit(1)->execute()->first();
-    if (!$testProcessor) {
-      return;
+    else {
+      $liveProcessorId = (int) $currentProcessor['id'];
     }
-    $testProcessorId = (int) $testProcessor['id'];
-    $connection = (new CRM_SumupPaymentProcessor_OAuth($testProcessorId))->getConnection();
+    $connection = (new CRM_SumupPaymentProcessor_OAuth($liveProcessorId))->getConnection();
   }
   catch (Throwable $exception) {
     Civi::log()->warning('Unable to build the SumUp OAuth processor panel: ' . $exception->getMessage());
     return;
   }
 
+  $connectedMerchantCode = $connection !== NULL ? (string) ($connection['merchant_code'] ?? '') : '';
+
   $oauthUrl = CRM_Utils_System::url(
         'civicrm/admin/sumup/oauth',
-        'reset=1&processor_id=' . $testProcessorId,
+        'reset=1&processor_id=' . $liveProcessorId,
         TRUE,
         NULL,
         FALSE,
         TRUE
     );
   $panel = [];
-  $panel[] = '<fieldset id="sumup-sandbox-oauth-block"><legend>'
-        . E::ts('SumUp OAuth connection for the test processor') . '</legend>';
+  $panel[] = '<fieldset id="sumup-live-oauth-block"><legend>'
+        . E::ts('SumUp OAuth connection (Live)') . '</legend>';
   $panel[] = '<div class="crm-block crm-form-block">';
   $panel[] = '<p class="description">' . E::ts(
-        'The test processor uses the SumUp authorization screen. The merchant code and tokens are obtained '
-        . 'from SumUp; no API key is entered in this form.'
-    ) . '</p>';
-  $panel[] = '<p class="status warning">' . E::ts(
-        'SumUp determines whether the authorized merchant is sandbox or live. Verify the merchant code before '
-        . 'initiating a payment.'
+        'The live processor uses the SumUp OAuth authorization screen. The merchant code and tokens are obtained '
+        . 'from SumUp; no API key is entered for live mode. Test mode below uses your sandbox merchant code and API key.'
     ) . '</p>';
   if ($connection !== NULL) {
     $panel[] = '<p class="status success">' . E::ts(
@@ -262,11 +265,18 @@ function sumup_payment_processor_add_oauth_processor_panel(CRM_Core_Form $form):
 
   Civi::resources()->addScript(
         "CRM.\$(function(\$) {
-            \$('#sumup-sandbox-oauth-block').remove();
-            \$('.crm-paymentProcessor-form-block-test_user_name, '
-                + '.crm-paymentProcessor-form-block-test_password').hide();
+            \$('#sumup-live-oauth-block').remove();
+            var merchantCode = " . json_encode($connectedMerchantCode) . ";
+            if (merchantCode) {
+                \$('#user_name').val(merchantCode);
+            }
+            \$('.crm-paymentProcessor-form-block-user_name, '
+                + '.crm-paymentProcessor-form-block-password').hide();
             var panelHtml = " . json_encode($panelHtml) . ";
-            var \$target = \$('.crm-paymentProcessor-form-block fieldset').last();
+            var \$target = \$('.crm-paymentProcessor-form-block-user_name').closest('fieldset');
+            if (!\$target.length) {
+                \$target = \$('.crm-paymentProcessor-form-block fieldset').first();
+            }
             if (\$target.length) {
                 \$target.after(panelHtml);
             }
