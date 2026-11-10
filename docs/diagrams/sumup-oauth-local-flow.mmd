@@ -1,0 +1,38 @@
+sequenceDiagram
+    autonumber
+    actor Admin as Merchant Admin (Browser)
+    participant Civi as Customer CiviCRM (Self-Hosted PHP Backend)
+    participant OAuth as SumUp OAuth Server
+    participant API as SumUp REST API
+
+    Note over Civi: Installation-specific client ID and client secret are configured locally
+    Note over Civi: OAuth tokens are stored locally per CiviCRM payment processor
+
+    Admin->>Civi: Click "Connect to SumUp"
+    Note over Civi: Generate a random state value<br/>Store state, processor ID and exact redirect URI<br/>in the CiviCRM cache for 10 minutes
+
+    Civi-->>Admin: 302 Location: https://api.sumup.com/authorize
+    Admin->>OAuth: GET /authorize<br/>response_type=code<br/>client_id=CLIENT_ID<br/>redirect_uri=EXACT_CALLBACK_URL<br/>scope=REQUESTED_SCOPES<br/>state=STATE
+    Note over OAuth: REQUESTED_SCOPES = payments payment_instruments<br/>transactions.history readers.read readers.write<br/>user.profile_readonly
+
+    Admin->>OAuth: Authenticate and grant permissions
+    OAuth-->>Admin: 302 Location: EXACT_CALLBACK_URL?code=AUTH_CODE&state=STATE
+    Admin->>Civi: GET EXACT_CALLBACK_URL?code=AUTH_CODE&state=STATE
+
+    Note over Civi: Read and delete the cached state<br/>Reject a missing, reused or expired state
+    Civi->>OAuth: POST https://api.sumup.com/token<br/>Content-Type: application/x-www-form-urlencoded<br/>grant_type=authorization_code<br/>code=AUTH_CODE<br/>client_id=CLIENT_ID<br/>client_secret=CLIENT_SECRET<br/>redirect_uri=EXACT_CALLBACK_URL
+    OAuth-->>Civi: 200 access_token, refresh_token,<br/>expires_in and granted scope
+
+    Civi->>API: Resolve the authorised merchant identity<br/>Authorization: Bearer ACCESS_TOKEN
+    API-->>Civi: Merchant profile or memberships
+
+    Note over Civi: Require exactly one merchant code<br/>Store tokens, granted scope, expiry and merchant code locally
+    Civi-->>Admin: 302 Redirect to the local SumUp connection page
+    Note over Admin,Civi: Display "SumUp merchant MERCHANT_CODE is now connected"
+
+    opt A SumUp API call needs a token that expires within 60 seconds
+        Civi->>Civi: Acquire the payment-processor-scoped refresh lock
+        Civi->>OAuth: POST https://api.sumup.com/token<br/>Content-Type: application/x-www-form-urlencoded<br/>grant_type=refresh_token<br/>refresh_token=REFRESH_TOKEN<br/>client_id=CLIENT_ID<br/>client_secret=CLIENT_SECRET
+        OAuth-->>Civi: 200 new access_token,<br/>expires_in and optional new refresh_token
+        Note over Civi: Update the local token record<br/>Keep the previous refresh token if none is returned
+    end

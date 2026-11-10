@@ -1,33 +1,58 @@
-# Intent 005: Extended webhooks, accounting reconciliation and disputes
+# Intent 005: Webhooks, external refunds, and disputes
 
 ## Outcome
 
-CiviCRM automatically captures provider lifecycle events from SumUp webhooks, reconciling processing fees, payout dates for revenue recognition, external refunds, chargebacks/disputes, and explicit cancellations.
+SumUp notifications are durably queued by MJWShared and treated only as a
+signal to read authoritative provider state. CiviCRM can complete registered
+checkouts, record refunds made outside CiviCRM, and mark an unambiguous payment
+as disputed without trusting financial values from the webhook body.
 
-## Accounting Reconciliation (Payout & Fees)
+## Accepted events
 
-- When completing a contribution, the extension inspects the authoritative SumUp transaction for `feeAmount` and `payoutDate` (from transaction root or `PAYOUT` events).
-- If SumUp reports processing fees, `fee_amount` is recorded and `net_amount` is computed as `total_amount - fee_amount`.
-- If a scheduled or completed payout date exists, `revenue_recognition_date` on `civicrm_contribution` is set to the payout date, enabling accurate deferred revenue accounting.
-- Subsequent payout/settlement webhooks refresh these accounting fields idempotently.
+- `CHECKOUT_STATUS_CHANGED` re-reads a registered online checkout.
+- `solo.transaction.updated` re-reads a registered Solo checkout.
+- `TRANSACTION_REFUNDED`, `REFUND_SUCCESSFUL`, and `REFUND` re-read the SumUp
+  transaction and record only the unrecorded refund delta.
+- `CHARGEBACK` and `DISPUTE` re-read the SumUp transaction and update the one
+  matching CiviCRM contribution.
+- Other event names are acknowledged without being queued. In particular,
+  generic transaction-success or transaction-failure events are not accepted
+  until a deterministic registry correlation is implemented.
 
-## External Refunds (`REFUND` / `TRANSACTION_REFUNDED`)
+## State and accounting contract
 
-- When a refund is initiated outside CiviCRM (e.g. from the SumUp mobile app or `me.sumup.com`), SumUp emits a refund notification.
-- The webhook handler matches the original contribution by transaction ID / reference.
-- If the refund is not already recorded in CiviCRM, the extension creates the negative Payment record and updates the contribution status accordingly.
+- The webhook endpoint stores accepted payloads in MJWShared and returns
+  promptly. The queue worker performs all provider reads and CiviCRM writes.
+- A checkout notification can produce `PAID`, `FAILED`, `EXPIRED`, or
+  `CANCELLED`. Only a still-payable contribution is changed by a terminal
+  failure or cancellation.
+- Payment amount, currency, merchant, contribution reference, and transaction
+  ID come from the SumUp API and the local `SumupCheckout` registry, not from
+  the webhook payload.
+- Refund reconciliation creates a negative CiviCRM Payment only for the delta
+  visible at SumUp and not already recorded locally.
+- This extension does not currently refresh processing fees, net amounts, or
+  payout dates from settlement events.
 
-## Disputes & Chargebacks (`CHARGEBACK` / `DISPUTE`)
+## Chargeback contract
 
-- When a cardholder files a dispute, SumUp sends a chargeback notification.
-- The extension identifies the associated contribution and updates its status to `Chargeback` (or `Cancelled` if Chargeback status is unavailable), logging the event and reason.
+- The transaction is retrieved from SumUp and must belong to the configured
+  merchant.
+- An exact positive Payment transaction ID is preferred. Legacy comma-separated
+  references are supported only by exact token comparison.
+- Zero or multiple matches are errors; the handler never chooses the first
+  fuzzy match.
+- A transaction-scoped lock serializes replays. A contribution already marked
+  `Chargeback`, or carrying the extension's fallback cancellation reason, is
+  returned idempotently.
+- The contribution becomes `Chargeback`, falling back to `Cancelled` only when
+  the CiviCRM installation has no Chargeback status.
 
-## Explicit Cancellations (`CANCELLED` / `ABORTED`)
+## Acceptance
 
-- When an online or terminal checkout is explicitly cancelled by the customer or operator, the pending contribution is transitioned to `Cancelled`.
-
-## Safety & Idempotency
-
-- All webhook events are queued in MJWShared before processing; no direct synchronous execution occurs on the webhook endpoint.
-- Handlers use transaction-scoped locks to prevent race conditions.
-- Provider state is re-verified from the SumUp API before applying any financial updates.
+- A duplicate MJWShared event cannot create a second Payment or refund.
+- A transaction ID that is only a substring of another payment cannot attach a
+  chargeback to that payment.
+- A chargeback with no unique local positive Payment remains in error for
+  operator reconciliation.
+- Malformed or unsupported webhook events do not enter the processing queue.

@@ -101,6 +101,7 @@ if (
 
     public function startCheckout(CheckoutSession $session): void {
       $processor = $this->getProcessor($session);
+      $session->setCheckoutParam('payment_processor_id', $processor->getProcessorId());
       $editReturnUrl = $this->getSafeEditReturnUrl($session);
       if ($editReturnUrl !== NULL) {
         $session->setCancelUrl($editReturnUrl);

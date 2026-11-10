@@ -1,0 +1,62 @@
+flowchart LR
+    subgraph Assumed["Model currently assumed by the Berlin teams"]
+        BrowserA["Merchant A browser"]
+        BrowserB["Merchant B browser"]
+        Central["One partner-operated<br/>cloud backend"]
+        SharedClient["One OAuth runtime<br/>One callback<br/>One token store"]
+
+        BrowserA --> Central
+        BrowserB --> Central
+        Central --> SharedClient
+    end
+
+    SumUp["SumUp OAuth and REST APIs"]
+    SharedClient <-->|"OAuth and API traffic"| SumUp
+
+    Gap["Understanding gap<br/>CiviCRM is not a frontend connected to one partner cloud.<br/>The PHP payment extension runs inside every customer backend."]
+    Assumed --> Gap
+
+    subgraph Actual["Actual CiviCRM partner deployment"]
+        PartnerApp["One partner-owned<br/>SumUp OAuth application"]
+
+        CredA["Client credentials A<br/>Exact callback A"]
+        CredB["Client credentials B<br/>Exact callback B"]
+        CredN["Client credentials N<br/>Exact callback N"]
+
+        subgraph OrgA["Organisation A infrastructure"]
+            CiviA["CiviCRM A<br/>PHP payment extension A<br/>Local database and tokens A"]
+        end
+
+        subgraph OrgB["Organisation B infrastructure"]
+            CiviB["CiviCRM B<br/>PHP payment extension B<br/>Local database and tokens B"]
+        end
+
+        subgraph OrgN["Organisation N infrastructure"]
+            CiviN["CiviCRM N<br/>PHP payment extension N<br/>Local database and tokens N"]
+        end
+
+        PartnerApp -->|"Partner provisions"| CredA
+        PartnerApp -->|"Partner provisions"| CredB
+        PartnerApp -->|"Partner provisions"| CredN
+
+        CredA -. "Supplied to customer A" .-> CiviA
+        CredB -. "Supplied to customer B" .-> CiviB
+        CredN -. "Supplied to customer N" .-> CiviN
+    end
+
+    Gap --> Actual
+
+    CiviA <-->|"Direct OAuth and API traffic"| SumUp
+    CiviB <-->|"Direct OAuth and API traffic"| SumUp
+    CiviN <-->|"Direct OAuth and API traffic"| SumUp
+
+    Boundary["Partner mode boundary<br/>Credential provisioning is centralised in the partner application.<br/>OAuth execution, callbacks, tokens and API calls are decentralised."]
+    Actual --> Boundary
+
+    Escalation["Required SumUp confirmation<br/>The partner may issue one credential set per self-hosted installation,<br/>with the approved application scopes and no practical client-count limit."]
+    Boundary --> Escalation
+
+    classDef gap fill:#fff3cd,stroke:#856404,color:#212529,stroke-width:2px;
+    classDef question fill:#d1ecf1,stroke:#0c5460,color:#212529,stroke-width:2px;
+    class Gap gap;
+    class Boundary,Escalation question;

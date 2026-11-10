@@ -1,12 +1,16 @@
 # Intent 001: SumUp Widget and wallet checkout
 
+**Status:** Superseded as a configuration contract. The checkout invariants
+remain current, but Intent 018 defines OAuth authentication and later intents
+define Hosted Checkout, Solo, recurring cards, refunds, and payment links.
+
 ## Problem and outcome
 
 CiviCRM needs a first-class SumUp payment processor that accepts a one-off card or wallet payment without sending the payer through a CiviCRM credit-card form. The payer sees SumUp's Card Widget, Apple Pay and Google Pay buttons, or both on a local CiviCRM page; CiviCRM records the payment only after an authoritative SumUp API read.
 
 ## Scope
 
-- Configure one SumUp merchant code and API key per CiviCRM payment processor, plus a public merchant key for wallet modes.
+- Configure one SumUp merchant code and OAuth connection per CiviCRM payment processor, plus a public merchant key for wallet modes.
 - Create a SumUp checkout server-side for an existing Pending contribution.
 - Render the selected SumUp Widget, wallet, or combined mode on a signed, CMS-agnostic CiviCRM URL.
 - Persist the selected mode on the checkout attempt so configuration changes do not alter an in-flight checkout.
@@ -68,7 +72,7 @@ date aliases such as `now` must not produce a zero accounting date.
 
 ## Privacy and security
 
-- The API key stays server-side.
+- OAuth access and refresh tokens stay server-side.
 - The public merchant key is exposed only to the wallet SDK, as designed by SumUp.
 - Card fields are rendered by SumUp; the extension never receives PAN or CVC.
 - The local checkout URL is signed from CiviCRM's durable site key and remains valid across the public browser return without depending on a QuickForm session cookie.

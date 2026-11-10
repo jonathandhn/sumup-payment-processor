@@ -11,9 +11,13 @@ On QR payment screens (both **Standalone QR** and **Hybrid Split View**), contri
 
 2. **API4 Endpoint**:
    - `SumupCheckout.sendPaymentLink` takes `{ token, channel: 'email'|'sms', recipient: '...' }`.
-   - Validates the active checkout session, constructs the signed payment URL, and dispatches the message via email or the selected CiviCRM SMS provider.
+   - Restores the checkout session, requires a payable contribution, and
+     requires the exact SumUp processor ID stored by the selected checkout
+     option. There is no fallback to the first active SumUp processor.
+   - Constructs the signed payment URL and dispatches the message via email or
+     the selected CiviCRM SMS provider.
 
 3. **User Experience**:
    - Beneath the QR code on the kiosk / Afform screen, an optional "Send link to phone" button allows entering an email address or mobile number.
    - An immediate visual confirmation is displayed upon sending.
-   - The session continues polling so that when the recipient opens the link on their phone and pays, the screen still updates in real-time to **Payment Confirmed!** 🎉.
+   - The session continues polling so that when the recipient opens the link on their phone and pays, the screen still updates in real-time to **Payment confirmed**.

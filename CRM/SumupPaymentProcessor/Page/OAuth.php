@@ -101,6 +101,8 @@ final class CRM_SumupPaymentProcessor_Page_OAuth extends CRM_Core_Page {
     $this->assign('clientId', $clientId);
     $this->assign('hasClientSecret', CRM_SumupPaymentProcessor_PartnerCredentials::hasStoredClientSecret());
     $this->assign('credentialsConfigured', CRM_SumupPaymentProcessor_PartnerCredentials::isConfigured());
+    $this->assign('usesBroker', CRM_SumupPaymentProcessor_PartnerCredentials::usesBroker());
+    $this->assign('brokerBaseUrl', CRM_SumupPaymentProcessor_PartnerCredentials::BROKER_BASE_URL);
     $this->assign('redirectUri', $oauth->getCalculatedRedirectUri());
     $this->assign('storedRedirectUri', $storedRedirectUri);
   }

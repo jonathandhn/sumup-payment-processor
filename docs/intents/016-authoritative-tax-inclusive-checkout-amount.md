@@ -14,7 +14,9 @@ are both attached to the same contribution.
 
 ## Contract
 
-- `Contribution.total_amount` is the only amount sent to SumUp.
+- `Contribution.total_amount` is the authoritative full-payment amount sent to
+  SumUp. Intent 017 defines the explicit exception for a CiviCRM payment
+  attempt whose requested amount is smaller than the contribution total.
 - A browser-provided total never updates a persisted contribution during
   payment-processor execution.
 - Line-item diagnostics use the tax-inclusive expression

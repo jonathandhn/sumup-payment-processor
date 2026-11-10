@@ -25,24 +25,34 @@ final class CRM_SumupPaymentProcessor_OAuth {
   }
 
   public function buildAuthorizationUrl(): string {
-    CRM_SumupPaymentProcessor_PartnerCredentials::assertConfigured();
     $state = bin2hex(random_bytes(32));
-    $redirectUri = $this->getRedirectUri();
+    $useBroker = CRM_SumupPaymentProcessor_PartnerCredentials::usesBroker();
+    $redirectUri = $useBroker ? $this->getCalculatedRedirectUri() : $this->getRedirectUri();
     Civi::cache('long')->set(
         $this->stateCacheKey($state),
         [
           'payment_processor_id' => $this->paymentProcessorId,
           'redirect_uri' => $redirectUri,
+          'mode' => $useBroker ? 'broker' : 'direct',
           'created_at' => time(),
         ],
         DateInterval::createFromDateString(self::STATE_TTL)
     );
 
+    $scope = implode(' ', CRM_SumupPaymentProcessor_PartnerCredentials::SCOPES);
+    if ($useBroker) {
+      return CRM_SumupPaymentProcessor_PartnerCredentials::getBrokerAuthorizeUrl() . '?' . http_build_query([
+        'client_redirect_uri' => $redirectUri,
+        'scope' => $scope,
+        'state' => $state,
+      ]);
+    }
+
     return self::AUTHORIZE_URL . '?' . http_build_query([
       'client_id' => CRM_SumupPaymentProcessor_PartnerCredentials::getClientId(),
       'response_type' => 'code',
       'redirect_uri' => $redirectUri,
-      'scope' => implode(' ', CRM_SumupPaymentProcessor_PartnerCredentials::SCOPES),
+      'scope' => $scope,
       'state' => $state,
     ]);
   }
@@ -61,13 +71,23 @@ final class CRM_SumupPaymentProcessor_OAuth {
     }
 
     $oauth = new self((int) $stateData['payment_processor_id']);
-    $token = $oauth->requestToken([
-      'grant_type' => 'authorization_code',
-      'client_id' => CRM_SumupPaymentProcessor_PartnerCredentials::getClientId(),
-      'client_secret' => CRM_SumupPaymentProcessor_PartnerCredentials::getClientSecret(),
-      'code' => $code,
-      'redirect_uri' => (string) $stateData['redirect_uri'],
-    ]);
+    $useBroker = (($stateData['mode'] ?? '') === 'broker')
+      || CRM_SumupPaymentProcessor_PartnerCredentials::usesBroker();
+    if ($useBroker) {
+      $token = $oauth->requestToken([
+        'grant_type' => 'authorization_code',
+        'code' => $code,
+      ], TRUE);
+    }
+    else {
+      $token = $oauth->requestToken([
+        'grant_type' => 'authorization_code',
+        'client_id' => CRM_SumupPaymentProcessor_PartnerCredentials::getClientId(),
+        'client_secret' => CRM_SumupPaymentProcessor_PartnerCredentials::getClientSecret(),
+        'code' => $code,
+        'redirect_uri' => (string) $stateData['redirect_uri'],
+      ], FALSE);
+    }
     $merchantCode = $oauth->retrieveMerchantCode((string) $token['access_token']);
     $link = $oauth->normaliseToken($token, $merchantCode, NULL);
     $link['payment_processor_id'] = $oauth->paymentProcessorId;
@@ -122,6 +142,9 @@ final class CRM_SumupPaymentProcessor_OAuth {
   }
 
   public function getRedirectUri(): string {
+    if (CRM_SumupPaymentProcessor_PartnerCredentials::usesBroker()) {
+      return $this->getCalculatedRedirectUri();
+    }
     $storedRedirectUri = CRM_SumupPaymentProcessor_PartnerCredentials::getStoredRedirectUri();
     return $storedRedirectUri !== '' ? $storedRedirectUri : $this->getCalculatedRedirectUri();
   }
@@ -148,7 +171,7 @@ final class CRM_SumupPaymentProcessor_OAuth {
       $this->store->markReconnectRequired($this->paymentProcessorId, 'Missing refresh token.');
       throw new PaymentProcessorException(E::ts('Reconnect this payment processor to SumUp.'));
     }
-    $lock = Civi::lockManager()->acquire('sumup.oauth.refresh.' . $this->paymentProcessorId, 10);
+    $lock = Civi::lockManager()->acquire('data.sumup.oauth.refresh.' . $this->paymentProcessorId, 10);
     if (!$lock->isAcquired()) {
       throw new PaymentProcessorException(E::ts('The SumUp connection is being renewed. Please retry.'));
     }
@@ -161,12 +184,21 @@ final class CRM_SumupPaymentProcessor_OAuth {
       ) {
         return (string) $current['access_token'];
       }
-      $token = $this->requestToken([
-        'grant_type' => 'refresh_token',
-        'client_id' => CRM_SumupPaymentProcessor_PartnerCredentials::getClientId(),
-        'client_secret' => CRM_SumupPaymentProcessor_PartnerCredentials::getClientSecret(),
-        'refresh_token' => (string) $link['refresh_token'],
-      ]);
+      $useBroker = CRM_SumupPaymentProcessor_PartnerCredentials::usesBroker();
+      if ($useBroker) {
+        $token = $this->requestToken([
+          'grant_type' => 'refresh_token',
+          'refresh_token' => (string) $link['refresh_token'],
+        ], TRUE);
+      }
+      else {
+        $token = $this->requestToken([
+          'grant_type' => 'refresh_token',
+          'client_id' => CRM_SumupPaymentProcessor_PartnerCredentials::getClientId(),
+          'client_secret' => CRM_SumupPaymentProcessor_PartnerCredentials::getClientSecret(),
+          'refresh_token' => (string) $link['refresh_token'],
+        ], FALSE);
+      }
       $refreshed = $this->normaliseToken($token, (string) $link['merchant_code'], $link);
       $refreshed['last_refresh_at'] = date('Y-m-d H:i:s');
       $this->store->save($this->paymentProcessorId, $refreshed);
@@ -184,12 +216,15 @@ final class CRM_SumupPaymentProcessor_OAuth {
 
   /**
    * @param array<string,string> $fields
+   * @param bool $useBroker
    * @return array<string,mixed>
    */
-  private function requestToken(array $fields): array {
-    CRM_SumupPaymentProcessor_PartnerCredentials::assertConfigured();
+  private function requestToken(array $fields, bool $useBroker = TRUE): array {
+    $tokenUrl = $useBroker
+      ? CRM_SumupPaymentProcessor_PartnerCredentials::getBrokerTokenUrl()
+      : self::TOKEN_URL;
     try {
-      $response = (new GuzzleHttp\Client())->request('POST', self::TOKEN_URL, [
+      $response = (new GuzzleHttp\Client())->request('POST', $tokenUrl, [
         'form_params' => $fields,
         'headers' => ['Accept' => 'application/json'],
         'http_errors' => FALSE,
@@ -277,8 +312,8 @@ final class CRM_SumupPaymentProcessor_OAuth {
   /**
    * @return list<string> */
   public static function getMissingScopes(string $scope): array {
-    if ($scope === '') {
-      return CRM_SumupPaymentProcessor_PartnerCredentials::SCOPES;
+    if (trim($scope) === '') {
+      return [];
     }
     $granted = preg_split('/[ ,]+/', trim($scope)) ?: [];
     return array_values(array_diff(CRM_SumupPaymentProcessor_PartnerCredentials::SCOPES, $granted));
@@ -292,11 +327,16 @@ final class CRM_SumupPaymentProcessor_OAuth {
    */
   private function normaliseToken(array $token, string $merchantCode, ?array $previous): array {
     $expiresIn = max(1, (int) ($token['expires_in'] ?? 3600));
+    $defaultScope = implode(' ', CRM_SumupPaymentProcessor_PartnerCredentials::SCOPES);
+    $resolvedScope = trim((string) ($token['scope'] ?? $previous['scope'] ?? ''));
+    if ($resolvedScope === '') {
+      $resolvedScope = $defaultScope;
+    }
     return [
       'merchant_code' => $merchantCode,
       'access_token' => (string) $token['access_token'],
       'refresh_token' => (string) ($token['refresh_token'] ?? $previous['refresh_token'] ?? ''),
-      'scope' => (string) ($token['scope'] ?? $previous['scope'] ?? ''),
+      'scope' => $resolvedScope,
       'expires_at' => time() + $expiresIn,
       'status' => 'connected',
       'linked_at' => (string) ($previous['linked_at'] ?? date('Y-m-d H:i:s')),

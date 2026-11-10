@@ -57,24 +57,40 @@ final class SendPaymentLink extends AbstractAction {
     }
 
     $contribution = Contribution::get(FALSE)
-      ->addSelect('id', 'total_amount', 'currency', 'payment_processor_id', 'contact_id')
+      ->addSelect(
+        'id',
+        'total_amount',
+        'currency',
+        'payment_processor_id',
+        'contact_id',
+        'is_test',
+        'contribution_status_id:name'
+      )
       ->addWhere('id', '=', $contributionId)
       ->execute()
       ->single();
 
-    $processorId = (int) ($contribution['payment_processor_id'] ?? 0);
-    if ($processorId <= 0) {
-      $processorId = (int) $session->getCheckoutParam('payment_processor_id');
+    if (!in_array(
+      (string) ($contribution['contribution_status_id:name'] ?? ''),
+      ['Pending', 'Partially paid'],
+      TRUE
+    )) {
+      throw new PaymentProcessorException(E::ts('This contribution is no longer available for payment.'));
     }
-    if ($processorId <= 0) {
-      $activeProc = \Civi\Api4\PaymentProcessor::get(FALSE)
-        ->addSelect('id')
-        ->addWhere('class_name', 'LIKE', 'Payment_Sum%')
-        ->addWhere('is_active', '=', TRUE)
-        ->setLimit(1)
-        ->execute()
-        ->first();
-      $processorId = !empty($activeProc['id']) ? (int) $activeProc['id'] : 0;
+
+    $sessionProcessorId = (int) $session->getCheckoutParam('payment_processor_id');
+    $contributionProcessorId = (int) ($contribution['payment_processor_id'] ?? 0);
+    if (
+      $sessionProcessorId <= 0
+      || ($contributionProcessorId > 0 && $contributionProcessorId !== $sessionProcessorId)
+    ) {
+      throw new PaymentProcessorException(E::ts('The checkout session does not match this contribution.'));
+    }
+    $processorId = $sessionProcessorId;
+
+    $processor = \Civi\Payment\System::singleton()->getById($processorId);
+    if (!$processor instanceof \CRM_Core_Payment_Sumup) {
+      throw new PaymentProcessorException(E::ts('Invalid SumUp payment processor.'));
     }
 
     $key = \CRM_Core_Payment_Sumup::getBrowserReturnSigningKey();
@@ -88,7 +104,19 @@ final class SendPaymentLink extends AbstractAction {
         TRUE
     );
 
-    $amount = number_format((float) $contribution['total_amount'], 2, '.', '');
+    $checkout = \CRM_SumupPaymentProcessor_CheckoutStore::findLatestOnlineByContributionId(
+      $contributionId,
+      $processorId
+    );
+    if ($checkout === NULL && ($contribution['contribution_status_id:name'] ?? '') === 'Partially paid') {
+      throw new PaymentProcessorException(E::ts(
+        'No registered SumUp payment attempt is available for this partial contribution.'
+      ));
+    }
+    $attemptAmount = $checkout !== NULL
+      ? (float) $checkout['amount']
+      : (float) $contribution['total_amount'];
+    $amount = number_format($attemptAmount, 2, '.', '');
     $currency = strtoupper((string) $contribution['currency']);
 
     [$domainName, $domainEmail] = \CRM_Core_BAO_Domain::getNameAndEmail(TRUE);

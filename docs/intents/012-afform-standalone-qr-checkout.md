@@ -17,10 +17,12 @@ Introduce a dedicated Checkout Option `SumUpQrCheckout` (`sumup_qr_checkout_$nam
    - The Afform form transitions to the QR kiosk view (`afSumUpQrCheckout`).
    - A dynamic, high-contrast SVG QR Code is generated with the payment URL.
    - The contributor scans the QR code with their mobile device (Apple Pay, Google Pay, or Card).
-   - The Afform screen polls the contribution / checkout status and updates in real-time to **Payment Confirmed!** 🎉 as soon as the mobile payment succeeds.
+   - The Afform screen polls the contribution / checkout status and updates in real-time to **Payment confirmed** as soon as the mobile payment succeeds.
    - Contributor can cancel and return to the form at any moment.
 
 ## Security & Architectural Guarantees
 - CiviCRM remains the accounting source of truth.
-- The QR payment URL uses a signed token (`civicrm/sumup/pay?token=...`) ensuring integrity.
+- The QR payment URL uses the signed route
+  `civicrm/sumup/widget?c=...&p=...&s=...`, binding the contribution and payment
+  processor IDs.
 - Contribution completion is triggered only after verifying the paid checkout with SumUp.

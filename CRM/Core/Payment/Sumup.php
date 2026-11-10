@@ -14,7 +14,6 @@ use Civi\Payment\Exception\PaymentProcessorException;
 use Civi\Payment\PropertyBag;
 use CRM_SumupPaymentProcessor_ExtensionUtil as E;
 use SumUp\Types\CheckoutSuccess;
-use SumUp\Types\CheckoutAccepted;
 use SumUp\Types\TransactionFull;
 use SumUp\Exception\SDKException;
 
@@ -61,8 +60,10 @@ class CRM_Core_Payment_SumupBase extends CRM_Core_Payment {
     if (empty($this->_paymentProcessor['user_name'])) {
       return E::ts('The SumUp merchant code is missing.');
     }
-    if (!$this->hasOAuthConnection($this->getProcessorId())) {
-      return E::ts('Connect this payment processor to SumUp before accepting payments.');
+    if (!$this->hasCredentials()) {
+      return !empty($this->_paymentProcessor['is_test'])
+        ? E::ts('Enter the SumUp sandbox API key for the test processor.')
+        : E::ts('Connect this payment processor to SumUp before accepting payments.');
     }
     if (!class_exists(\SumUp\SumUp::class)) {
       return E::ts('The SumUp PHP SDK is not installed.');
@@ -79,7 +80,7 @@ class CRM_Core_Payment_SumupBase extends CRM_Core_Payment {
 
   private function hasConfiguredTestSibling(): bool {
     $query = PaymentProcessor::get(FALSE)
-      ->addSelect('id', 'user_name', 'signature')
+      ->addSelect('id', 'user_name', 'password', 'signature')
       ->addWhere('class_name', '=', 'Payment_Sumup')
       ->addWhere('is_test', '=', TRUE);
     if (!empty($this->_paymentProcessor['name'])) {
@@ -91,7 +92,10 @@ class CRM_Core_Payment_SumupBase extends CRM_Core_Payment {
     $testProcessor = $query->setLimit(1)->execute()->first();
     if (
         empty($testProcessor['user_name'])
-        || !$this->hasOAuthConnection((int) ($testProcessor['id'] ?? 0))
+        || (
+          trim((string) ($testProcessor['password'] ?? '')) === ''
+          && !$this->hasOAuthConnection((int) ($testProcessor['id'] ?? 0))
+        )
     ) {
       return FALSE;
     }
@@ -164,7 +168,7 @@ class CRM_Core_Payment_SumupBase extends CRM_Core_Payment {
 
   public function supportsRefund(): bool {
     return !empty($this->_paymentProcessor['user_name'])
-            && $this->hasOAuthConnection($this->getProcessorId())
+            && $this->hasCredentials()
             && class_exists(\SumUp\SumUp::class);
   }
 
@@ -1167,8 +1171,6 @@ class CRM_Core_Payment_SumupBase extends CRM_Core_Payment {
     $acceptedEvents = [
       'CHECKOUT_STATUS_CHANGED',
       'solo.transaction.updated',
-      'TRANSACTION_SUCCESSFUL',
-      'TRANSACTION_FAILED',
       'TRANSACTION_REFUNDED',
       'REFUND_SUCCESSFUL',
       'REFUND',
@@ -1263,7 +1265,7 @@ class CRM_Core_Payment_SumupBase extends CRM_Core_Payment {
         ?? $payload['payload']['transaction_id']
         ?? ''
           );
-        $result = $this->applyChargeback($txnRef, $payload);
+        $result = $this->applyChargeback($txnRef);
       }
       else {
         throw new PaymentProcessorException(E::ts('Unsupported SumUp webhook event: %1.', [1 => $eventType]));
@@ -1910,7 +1912,7 @@ class CRM_Core_Payment_SumupBase extends CRM_Core_Payment {
     }
 
     $processed = $this->service()->processWithToken($checkoutId, $customerId, $token);
-    if ($processed instanceof CheckoutAccepted) {
+    if (is_array($processed)) {
       $this->openRecurringRemediation(
         $contributionRecurId,
         $contributionId,
@@ -2625,7 +2627,7 @@ class CRM_Core_Payment_SumupBase extends CRM_Core_Payment {
       return $verified;
     }
     $processed = $this->service()->processWithToken($checkoutId, $customerId, $providerToken);
-    if ($processed instanceof CheckoutAccepted) {
+    if (is_array($processed)) {
       return [
         'status' => 'CUSTOMER_ACTION_REQUIRED',
         'contribution_id' => $contributionId,
@@ -2682,7 +2684,7 @@ class CRM_Core_Payment_SumupBase extends CRM_Core_Payment {
       }
 
       $processed = $this->service()->processWithToken($chargeCheckoutId, $customerId, $providerToken);
-      if ($processed instanceof CheckoutAccepted) {
+      if (is_array($processed)) {
         return [
           'status' => 'CUSTOMER_ACTION_REQUIRED',
           'contribution_id' => (int) $contribution['id'],
@@ -2697,15 +2699,17 @@ class CRM_Core_Payment_SumupBase extends CRM_Core_Payment {
   }
 
   /**
+   * @param array<string,mixed> $accepted
    * @return array{url: string, method: string, payload: array<string,scalar|null>} */
-  private function normaliseNextStep(CheckoutAccepted $accepted): array {
-    $url = trim((string) ($accepted->nextStep->url ?? ''));
-    $method = strtoupper(trim((string) ($accepted->nextStep->method ?? 'GET')));
+  private function normaliseNextStep(array $accepted): array {
+    $nextStep = is_array($accepted['next_step'] ?? NULL) ? $accepted['next_step'] : [];
+    $url = trim((string) ($nextStep['url'] ?? ''));
+    $method = strtoupper(trim((string) ($nextStep['method'] ?? 'GET')));
     if (!str_starts_with($url, 'https://') || !in_array($method, ['GET', 'POST'], TRUE)) {
       throw new PaymentProcessorException(E::ts('SumUp returned an invalid authentication step.'));
     }
     $payload = [];
-    foreach ((array) ($accepted->nextStep->payload ?? []) as $name => $value) {
+    foreach ((array) ($nextStep['payload'] ?? []) as $name => $value) {
       if (is_scalar($value) || $value === NULL) {
         $payload[$name] = $value;
       }
@@ -2828,10 +2832,26 @@ class CRM_Core_Payment_SumupBase extends CRM_Core_Payment {
 
   private function service(): CRM_SumupPaymentProcessor_CheckoutService {
     $processorId = $this->getProcessorId();
+    $testApiKey = !empty($this->_paymentProcessor['is_test'])
+      ? trim((string) ($this->_paymentProcessor['password'] ?? ''))
+      : '';
+    $accessToken = $testApiKey !== ''
+      ? $testApiKey
+      : (new CRM_SumupPaymentProcessor_OAuth($processorId))->getAccessToken();
     return new CRM_SumupPaymentProcessor_CheckoutService(
-        (new CRM_SumupPaymentProcessor_OAuth($processorId))->getAccessToken(),
+        $accessToken,
         (string) ($this->_paymentProcessor['user_name'] ?? '')
     );
+  }
+
+  private function hasCredentials(): bool {
+    if (!empty($this->_paymentProcessor['is_test'])) {
+      $testApiKey = trim((string) ($this->_paymentProcessor['password'] ?? ''));
+      if ($testApiKey !== '') {
+        return TRUE;
+      }
+    }
+    return $this->hasOAuthConnection($this->getProcessorId());
   }
 
   private function hasOAuthConnection(int $paymentProcessorId): bool {
@@ -3060,47 +3080,102 @@ class CRM_Core_Payment_SumupBase extends CRM_Core_Payment {
 
   /**
    * @param string $transactionReference
-   * @param array<string,mixed> $payload
    * @return array{status: string, contribution_id: int, transaction_id: string}
    */
-  private function applyChargeback(string $transactionReference, array $payload): array {
-    if ($transactionReference === '') {
+  private function applyChargeback(string $transactionReference): array {
+    if (!preg_match('/^[A-Za-z0-9_-]{4,100}$/', $transactionReference)) {
       throw new PaymentProcessorException(E::ts('Missing transaction reference in SumUp chargeback webhook.'));
     }
 
     $service = $this->service();
     $transaction = $service->getTransaction($transactionReference);
     $transactionId = trim((string) $transaction->id);
-
-    $payments = Payment::get(FALSE)
-      ->addSelect('id', 'contribution_id')
-      ->addWhere('trxn_id', 'LIKE', '%' . $transactionId . '%')
-      ->addWhere('payment_processor_id', '=', $this->getProcessorId())
-      ->execute();
-
-    $payment = $payments->first();
-    if (!$payment) {
-      throw new PaymentProcessorException(E::ts(
-        'No matching CiviCRM payment found for SumUp chargeback transaction %1.',
-        [1 => $transactionId]
-      ));
+    if (!preg_match('/^[A-Za-z0-9_-]{4,100}$/', $transactionId)) {
+      throw new PaymentProcessorException(E::ts('SumUp did not return a valid transaction identifier.'));
+    }
+    if (!hash_equals($this->getMerchantCode(), (string) $transaction->merchantCode)) {
+      throw new PaymentProcessorException(E::ts('The SumUp transaction belongs to another merchant.'));
     }
 
-    $contributionId = (int) $payment['contribution_id'];
-    $chargebackStatusId = CRM_Core_PseudoConstant::getKey(
-        'CRM_Contribute_BAO_Contribution',
-        'contribution_status_id',
-        'Chargeback'
-    );
-    if ($chargebackStatusId === NULL || $chargebackStatusId === FALSE) {
+    $lock = CRM_Core_Lock::createScopedLock('data.sumup.chargeback.' . $transactionId);
+    if (!$lock->acquire()) {
+      throw new PaymentProcessorException(E::ts('This SumUp chargeback is already being processed.'));
+    }
+
+    try {
+      $payments = Payment::get(FALSE)
+        ->addSelect('id', 'contribution_id', 'trxn_id')
+        ->addWhere('trxn_id', '=', $transactionId)
+        ->addWhere('payment_processor_id', '=', $this->getProcessorId())
+        ->addWhere('total_amount', '>', 0)
+        ->execute();
+
+      $matches = iterator_to_array($payments);
+      if ($matches === []) {
+        $legacyPayments = Payment::get(FALSE)
+          ->addSelect('id', 'contribution_id', 'trxn_id')
+          ->addWhere('trxn_id', 'LIKE', '%' . $transactionId . '%')
+          ->addWhere('payment_processor_id', '=', $this->getProcessorId())
+          ->addWhere('total_amount', '>', 0)
+          ->execute();
+        foreach ($legacyPayments as $legacyPayment) {
+          $references = array_map('trim', explode(',', (string) ($legacyPayment['trxn_id'] ?? '')));
+          if (in_array($transactionId, $references, TRUE)) {
+            $matches[] = $legacyPayment;
+          }
+        }
+      }
+
+      if ($matches === []) {
+        throw new PaymentProcessorException(E::ts(
+          'No matching CiviCRM payment found for SumUp chargeback transaction %1.',
+          [1 => $transactionId]
+        ));
+      }
+      if (count($matches) !== 1) {
+        throw new PaymentProcessorException(E::ts(
+          'Multiple CiviCRM payments match SumUp chargeback transaction %1.',
+          [1 => $transactionId]
+        ));
+      }
+
+      $contributionId = (int) $matches[0]['contribution_id'];
+      $contribution = Contribution::get(FALSE)
+        ->addSelect('contribution_status_id:name', 'cancel_reason')
+        ->addWhere('id', '=', $contributionId)
+        ->execute()
+        ->single();
+      if (
+        ($contribution['contribution_status_id:name'] ?? '') === 'Chargeback'
+        || (
+          ($contribution['contribution_status_id:name'] ?? '') === 'Cancelled'
+          && ($contribution['cancel_reason'] ?? '') === E::ts('SumUp chargeback / cardholder dispute')
+        )
+      ) {
+        return [
+          'status' => 'CHARGEBACK',
+          'contribution_id' => $contributionId,
+          'transaction_id' => $transactionId,
+        ];
+      }
+
       $chargebackStatusId = CRM_Core_PseudoConstant::getKey(
         'CRM_Contribute_BAO_Contribution',
         'contribution_status_id',
-        'Cancelled'
+        'Chargeback'
       );
-    }
+      if ($chargebackStatusId === NULL || $chargebackStatusId === FALSE) {
+        $chargebackStatusId = CRM_Core_PseudoConstant::getKey(
+          'CRM_Contribute_BAO_Contribution',
+          'contribution_status_id',
+          'Cancelled'
+        );
+      }
 
-    if ($chargebackStatusId !== NULL && $chargebackStatusId !== FALSE) {
+      if ($chargebackStatusId === NULL || $chargebackStatusId === FALSE) {
+        throw new PaymentProcessorException(E::ts('No CiviCRM chargeback status is available.'));
+      }
+
       Contribution::update(FALSE)
         ->addWhere('id', '=', $contributionId)
         ->setValues([
@@ -3109,19 +3184,21 @@ class CRM_Core_Payment_SumupBase extends CRM_Core_Payment {
           'cancel_reason' => E::ts('SumUp chargeback / cardholder dispute'),
         ])
         ->execute();
-    }
 
-    Civi::log()->warning(sprintf(
+      Civi::log()->warning(sprintf(
         'SumUp chargeback applied to contribution %d: transaction_id=%s',
         $contributionId,
         $transactionId
-    ));
+      ));
 
-    return [
-      'status' => 'CHARGEBACK',
-      'contribution_id' => $contributionId,
-      'transaction_id' => $transactionId,
-    ];
+      return [
+        'status' => 'CHARGEBACK',
+        'contribution_id' => $contributionId,
+        'transaction_id' => $transactionId,
+      ];
+    } finally {
+      $lock->release();
+    }
   }
 
   /**

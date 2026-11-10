@@ -71,9 +71,22 @@ if (
      * @return array<string,mixed>
      */
     public function getAfformSettings(bool $testMode): array {
+      $connection = $this->getConnectionDetails($testMode);
       return [
         'description' => E::ts('In-person payment on card reader.'),
         'template' => '~/afSumUp/sumup_solo_checkout.html',
+        'fields' => [
+          [
+            'name' => 'sumup_reader_id',
+            'title' => E::ts('SumUp card reader'),
+            'htmlType' => 'select',
+            'is_required' => TRUE,
+            'options' => array_merge(
+              [['id' => '', 'label' => E::ts('- select -')]],
+              \CRM_SumupPaymentProcessor_ReaderStore::getCheckoutOptions((int) $connection['id'])
+            ),
+          ],
+        ],
       ];
     }
 
@@ -86,22 +99,10 @@ if (
       $connection = $this->getConnectionDetails($session->isTestMode());
 
       if ($readerId <= 0) {
-        $defaultReader = SumupReader::get(FALSE)
-          ->addSelect('id')
-          ->addWhere('payment_processor_id', '=', (int) $connection['id'])
-          ->addWhere('pairing_status', '=', 'paired')
-          ->addWhere('is_active', '=', TRUE)
-          ->addOrderBy('site_code', 'ASC')
-          ->addOrderBy('canonical_name', 'ASC')
-          ->execute()
-          ->first();
-        $readerId = !empty($defaultReader['id']) ? (int) $defaultReader['id'] : 0;
-      }
-
-      if ($readerId <= 0) {
-        throw new \CRM_Core_Exception(E::ts('No paired SumUp card reader is available.'));
+        throw new \CRM_Core_Exception(E::ts('Please select an available SumUp card reader.'));
       }
       $session->setCheckoutParam('sumup_reader_id', $readerId);
+      $session->setCheckoutParam('payment_processor_id', (int) $connection['id']);
 
       $reader = SumupReader::get(FALSE)
         ->addSelect('id', 'canonical_name', 'site_code')

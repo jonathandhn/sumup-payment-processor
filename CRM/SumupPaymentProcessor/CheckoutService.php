@@ -8,14 +8,13 @@ use SumUp\Hydrator;
 use SumUp\HttpClient\RequestOptions;
 use SumUp\ResponseDecoder;
 use SumUp\SumUp;
+use SumUp\Types\CardResponseType;
 use SumUp\Types\Checkout;
-use SumUp\Types\CheckoutAccepted;
 use SumUp\Types\CheckoutCreateRequest;
 use SumUp\Types\CheckoutSuccess;
 use SumUp\Types\HostedCheckout;
 use SumUp\Types\Customer;
 use SumUp\Types\PaymentInstrumentResponse;
-use SumUp\Types\ProcessCheckout;
 use SumUp\Services\CheckoutsListParams;
 use SumUp\Types\TransactionFull;
 
@@ -135,19 +134,43 @@ final class CRM_SumupPaymentProcessor_CheckoutService {
     ));
   }
 
+  /**
+   * @return \SumUp\Types\CheckoutSuccess|array<string,mixed>
+   */
   public function processWithToken(
         string $checkoutId,
         string $customerId,
         string $token
-    ): CheckoutSuccess|CheckoutAccepted {
+    ): CheckoutSuccess|array {
     if (!self::isValidCheckoutId($checkoutId) || $customerId === '' || $token === '') {
       throw new PaymentProcessorException(E::ts('Invalid SumUp recurring payment identifiers.'));
     }
     try {
-      return $this->client->checkouts()->process(
-        $checkoutId,
-        new ProcessCheckout(paymentType: 'card', token: $token, customerId: $customerId),
-        $this->requestOptions()
+      $path = sprintf('/v0.1/checkouts/%s', rawurlencode($checkoutId));
+      $response = $this->client->request(
+          'PUT',
+          $path,
+          [
+            'payment_type' => 'card',
+            'token' => $token,
+            'customer_id' => $customerId,
+          ],
+          $this->requestOptions()
+      );
+      return ResponseDecoder::decodeOrThrow(
+          $response,
+          [
+            '200' => ['type' => 'class', 'class' => CheckoutSuccess::class],
+            '202' => ['type' => 'object'],
+          ],
+          [
+            '400' => ['type' => 'mixed'],
+            '401' => ['type' => 'class', 'class' => \SumUp\Types\Problem::class],
+            '404' => ['type' => 'class', 'class' => \SumUp\Types\Error::class],
+            '409' => ['type' => 'class', 'class' => \SumUp\Types\Error::class],
+          ],
+          'PUT',
+          $path
       );
     }
     catch (\SumUp\Exception\SDKException $exception) {
@@ -231,6 +254,21 @@ final class CRM_SumupPaymentProcessor_CheckoutService {
 
     // Sanitize unknown event statuses in payload to prevent SDK Enum deserialization crashes
     if (is_array($body)) {
+      $knownCardTypes = array_map(
+        static fn(CardResponseType $type): string => $type->value,
+        CardResponseType::cases()
+      );
+      if (
+        isset($body['card']['type'])
+        && !in_array((string) $body['card']['type'], $knownCardTypes, TRUE)
+      ) {
+        Civi::log()->warning(sprintf(
+          'Unknown SumUp card type normalised to UNKNOWN: %s',
+          (string) $body['card']['type']
+        ));
+        $body['card']['type'] = CardResponseType::UNKNOWN->value;
+      }
+
       $knownStatuses = [
         'FAILED',
         'PAID_OUT',
@@ -370,7 +408,6 @@ final class CRM_SumupPaymentProcessor_CheckoutService {
 
     $merchant = $this->client->merchants()->get(
         $this->merchantCode,
-        NULL,
         $this->requestOptions()
     );
     $businessName = $merchant->businessProfile !== NULL

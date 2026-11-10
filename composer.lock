@@ -4,20 +4,20 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "d95186fde4ea74d4ec90822cd63281f8",
+    "content-hash": "49367e040d70cda77e5366ff23baa808",
     "packages": [
         {
             "name": "sumup/sumup-php",
-            "version": "0.1.4",
+            "version": "0.1.7",
             "source": {
                 "type": "git",
                 "url": "https://github.com/sumup/sumup-php.git",
-                "reference": "00327905c551db050e624ab2b4c926466911cfa4"
+                "reference": "585f6d329c9275e3dfac0999ba74094709d6f0f7"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sumup/sumup-php/zipball/00327905c551db050e624ab2b4c926466911cfa4",
-                "reference": "00327905c551db050e624ab2b4c926466911cfa4",
+                "url": "https://api.github.com/repos/sumup/sumup-php/zipball/585f6d329c9275e3dfac0999ba74094709d6f0f7",
+                "reference": "585f6d329c9275e3dfac0999ba74094709d6f0f7",
                 "shasum": ""
             },
             "require": {
@@ -25,9 +25,8 @@
                 "php": "^8.2"
             },
             "require-dev": {
-                "friendsofphp/php-cs-fixer": "3.95.1",
+                "friendsofphp/php-cs-fixer": "3.95.27",
                 "league/oauth2-client": "^2.9",
-                "phpdocumentor/shim": "^3.9",
                 "phpstan/phpstan": "^2.1",
                 "phpunit/phpunit": "^9.6"
             },
@@ -74,9 +73,9 @@
             ],
             "support": {
                 "issues": "https://github.com/sumup/sumup-php/issues",
-                "source": "https://github.com/sumup/sumup-php/tree/v0.1.4"
+                "source": "https://github.com/sumup/sumup-php/tree/v0.1.7"
             },
-            "time": "2026-05-14T11:29:25+00:00"
+            "time": "2026-10-15T08:34:58+00:00"
         }
     ],
     "packages-dev": [

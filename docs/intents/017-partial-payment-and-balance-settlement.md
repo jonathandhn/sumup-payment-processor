@@ -15,6 +15,12 @@ Furthermore, any partial payment handling must preserve the tax-inclusive accoun
 - `CRM_SumupPaymentProcessor_CheckoutStore::recordCreated()` persists the exact attempt amount in `civicrm_sumup_checkout.amount`.
 - SumUp checkout verification (`assertMatchesContribution`, `validateCheckout`, `validateSoloReaderCheckout`) and webhooks validate the provider amount against the recorded attempt amount (`$registry['amount']`), not `Contribution.total_amount`.
 - `Payment::create` in CiviCRM records the actual paid attempt amount (`$registry['amount']`), allowing CiviCRM to transition contribution status appropriately (e.g. `Partially paid` to `Completed` when balance reaches 0, or remaining `Partially paid`).
+- Retrying a Solo attempt reuses the amount recorded on the previous checkout;
+  it never reloads the full contribution total.
+- A signed Widget link for a Partially paid contribution must resolve an
+  existing registered online attempt. It never calculates or guesses the
+  balance from contribution fields. Recreating an expired attempt preserves
+  the recorded attempt amount.
 - Tax-inclusive integrity is preserved: line items and totals always account for `tax_amount`, and partial payments never alter the total contribution accounting structure.
 - If a contribution is already `Completed` or `Refunded`, attempting an additional payment without a matching existing SumUp transaction is rejected.
 

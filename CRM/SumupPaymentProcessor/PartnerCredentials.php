@@ -10,6 +10,7 @@ use CRM_SumupPaymentProcessor_ExtensionUtil as E;
 final class CRM_SumupPaymentProcessor_PartnerCredentials {
   public const APPLICATION_ID = 'CiviCRM';
   public const AFFILIATE_KEY = 'sup_afk_dfonDVPcG134Mvkc2CRinIjTJI08has6';
+  public const BROKER_BASE_URL = 'https://sumup-auth.cou.re';
 
   private const CLIENT_ID_SETTING = 'sumup_oauth_client_id';
   private const CLIENT_SECRET_SETTING = 'sumup_oauth_client_secret';
@@ -26,13 +27,29 @@ final class CRM_SumupPaymentProcessor_PartnerCredentials {
     'user.profile_readonly',
   ];
 
+  public static function usesBroker(): bool {
+    return !self::hasDirectCredentials();
+  }
+
+  public static function hasDirectCredentials(): bool {
+    return self::getStoredClientId() !== ''
+            && self::hasStoredClientSecret()
+            && self::getStoredRedirectUri() !== '';
+  }
+
+  public static function getBrokerAuthorizeUrl(): string {
+    return self::BROKER_BASE_URL . '/authorize';
+  }
+
+  public static function getBrokerTokenUrl(): string {
+    return self::BROKER_BASE_URL . '/token';
+  }
+
   public static function getClientId(): string {
-    self::assertConfigured();
     return trim((string) Civi::settings()->get(self::CLIENT_ID_SETTING));
   }
 
   public static function getClientSecret(): string {
-    self::assertConfigured();
     return trim((string) Civi::settings()->get(self::CLIENT_SECRET_SETTING));
   }
 
@@ -49,9 +66,13 @@ final class CRM_SumupPaymentProcessor_PartnerCredentials {
   }
 
   public static function isConfigured(): bool {
-    return self::getStoredClientId() !== ''
-            && self::hasStoredClientSecret()
-            && self::getStoredRedirectUri() !== '';
+    return TRUE;
+  }
+
+  public static function clearDirectCredentials(): void {
+    Civi::settings()->set(self::CLIENT_ID_SETTING, '');
+    Civi::settings()->set(self::CLIENT_SECRET_SETTING, '');
+    Civi::settings()->set(self::REDIRECT_URI_SETTING, '');
   }
 
   public static function save(string $clientId, string $clientSecret, string $redirectUri): void {
@@ -62,13 +83,14 @@ final class CRM_SumupPaymentProcessor_PartnerCredentials {
     $storedClientSecret = trim((string) Civi::settings()->get(self::CLIENT_SECRET_SETTING));
 
     if ($clientId === '') {
-      throw new PaymentProcessorException(E::ts('The SumUp OAuth client ID is required.'));
+      self::clearDirectCredentials();
+      return;
     }
     if ($clientSecret === '') {
       $clientSecret = $storedClientSecret;
     }
     if ($clientSecret === '') {
-      throw new PaymentProcessorException(E::ts('The SumUp OAuth client secret is required.'));
+      throw new PaymentProcessorException(E::ts('The SumUp OAuth client secret is required when using custom credentials.'));
     }
     if (filter_var($redirectUri, FILTER_VALIDATE_URL) === FALSE) {
       throw new PaymentProcessorException(E::ts('The calculated SumUp callback URL is invalid.'));
@@ -82,11 +104,7 @@ final class CRM_SumupPaymentProcessor_PartnerCredentials {
   }
 
   public static function assertConfigured(): void {
-    if (!self::isConfigured()) {
-      throw new PaymentProcessorException(E::ts(
-        'Configure the SumUp OAuth client ID and client secret before connecting a merchant.'
-      ));
-    }
+    // Always configured via the central partner relay (or optional local override).
   }
 
 }
