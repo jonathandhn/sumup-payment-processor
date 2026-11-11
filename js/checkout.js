@@ -174,26 +174,6 @@
         ));
       };
 
-      var hasVisibleWalletControl = function () {
-        if (hasError()) {
-          return false;
-        }
-        return Array.prototype.some.call(wallet.querySelectorAll(
-          'button, iframe, [role="button"], [data-testid$="-pay-button"]'
-        ), function (control) {
-          if (control.closest('[data-testid*="error"], [class*="error"]')) {
-            return false;
-          }
-          var style = window.getComputedStyle(control);
-          var rect = control.getBoundingClientRect();
-          return style.display !== 'none'
-            && style.visibility !== 'hidden'
-            && style.opacity !== '0'
-            && rect.width > 20
-            && rect.height > 20;
-        });
-      };
-
       if (window.MutationObserver) {
         var observer = new window.MutationObserver(function () {
           if (hasError()) {
@@ -247,39 +227,11 @@
             });
             wallet.hidden = false;
             wallet.style.display = 'flex';
-            wallet.style.maxHeight = '0';
-            wallet.style.overflow = 'hidden';
-            wallet.style.visibility = 'hidden';
             buttons.mount({paymentMethods: methods, container: wallet});
-            return new Promise(function (resolve) {
-              var checksRemaining = 16;
-              var visibleChecks = 0;
-              var revealWhenRendered = function () {
-                visibleChecks = hasVisibleWalletControl() ? visibleChecks + 1 : 0;
-                if (visibleChecks >= 2) {
-                  wallet.style.removeProperty('max-height');
-                  wallet.style.removeProperty('overflow');
-                  wallet.style.removeProperty('visibility');
-                  if (walletCardSeparator) {
-                    walletCardSeparator.hidden = false;
-                    walletCardSeparator.style.removeProperty('display');
-                  }
-                  resolve();
-                  return;
-                }
-                checksRemaining -= 1;
-                if (checksRemaining > 0) {
-                  window.setTimeout(revealWhenRendered, 250);
-                  return;
-                }
-                removeWallet();
-                if (!usesWidget) {
-                  showMessage(ts('No compatible wallet is available in this browser.'));
-                }
-                resolve();
-              };
-              window.setTimeout(revealWhenRendered, 0);
-            });
+            if (walletCardSeparator) {
+              walletCardSeparator.hidden = false;
+              walletCardSeparator.style.removeProperty('display');
+            }
           }
           else {
             removeWallet();
