@@ -190,6 +190,7 @@
         var request = client.paymentRequest({
           countryCode: config.countryCode,
           locale: config.locale,
+          requiredInformation: [],
           total: {
             label: config.businessName || ts('CiviCRM payment'),
             amount: {currency: config.currency, value: config.amount},
