@@ -245,7 +245,9 @@
             });
             wallet.hidden = false;
             wallet.style.display = 'flex';
-            buttons.mount({paymentMethods: methods, container: wallet});
+            window.requestAnimationFrame(function () {
+              buttons.mount({paymentMethods: methods, container: wallet});
+            });
             if (walletCardSeparator) {
               walletCardSeparator.hidden = false;
               walletCardSeparator.style.removeProperty('display');
