@@ -561,9 +561,9 @@ body.sumup-checkout-page h1.crm-page-title {
 
 .crm-sumup-checkout-block [id^='sumup-wallet-'],
 .crm-sumup-embedded-checkout [id^='sumup-wallet-'] {
-  align-items: center;
+  align-items: stretch;
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 0.75rem;
   justify-content: center;
   width: 100%;
@@ -571,7 +571,28 @@ body.sumup-checkout-page h1.crm-page-title {
 
 .crm-sumup-checkout-block [id^='sumup-wallet-'] > *,
 .crm-sumup-embedded-checkout [id^='sumup-wallet-'] > * {
-  margin-inline: auto;
+  flex: 0 0 auto;
+  margin: 0;
+  width: 100%;
+}
+
+.crm-sumup-checkout-block [id^='sumup-wallet-'] [data-payment-method='google-pay'],
+.crm-sumup-embedded-checkout [id^='sumup-wallet-'] [data-payment-method='google-pay'],
+.crm-sumup-checkout-block [id^='sumup-wallet-'] [data-testid='google-pay-button'],
+.crm-sumup-embedded-checkout [id^='sumup-wallet-'] [data-testid='google-pay-button'] {
+  display: block !important;
+  height: var(--sumup-swift-checkout-button-height, 48px) !important;
+  margin: 0 !important;
+  max-width: none !important;
+  overflow: hidden;
+  width: 100% !important;
+}
+
+/* SumUp's card accordion adds a grey 20px gutter around the hosted fields. */
+.crm-sumup-checkout-block [id^='sumup-card-'] #card-form,
+.crm-sumup-embedded-checkout [id^='sumup-card-'] #card-form {
+  background: var(--sumup-surface, #fff) !important;
+  padding-inline: 0 !important;
 }
 
 .crm-sumup-checkout-block [data-sumup-id='submit_button'] span,
