@@ -40,6 +40,7 @@
       locale: config.locale || dataset.locale,
       mode: config.mode || dataset.mode || 'widget',
       publicKey: config.public_key || dataset.publicKey || '',
+      googleMerchantId: config.google_pay_merchant_id || dataset.googlePayMerchantId || '',
       businessName: config.business_name || dataset.businessName || '',
       countryCode: config.country_code || dataset.countryCode || '',
       walletsAllowed: config.wallets_allowed === true
@@ -187,7 +188,11 @@
         return Boolean(window.SumUp && window.SumUp.SwiftCheckout);
       }).then(function () {
         var client = new window.SumUp.SwiftCheckout(config.publicKey);
-        var request = client.paymentRequest({
+        var googleMerchantId = config.googleMerchantId;
+        if (!googleMerchantId && window.location.hash.indexOf('sumup:google-pay-demo-mode') !== -1) {
+          googleMerchantId = '123456789123456789';
+        }
+        var paymentRequestOptions = {
           countryCode: config.countryCode,
           locale: config.locale,
           requiredInformation: [],
@@ -195,7 +200,19 @@
             label: config.businessName || ts('CiviCRM payment'),
             amount: {currency: config.currency, value: config.amount},
           },
-        });
+        };
+        if (googleMerchantId) {
+          paymentRequestOptions.methodData = [{
+            supportedMethods: 'google_pay',
+            data: {
+              merchantInfo: {
+                merchantId: googleMerchantId,
+                merchantName: config.businessName || ts('CiviCRM payment'),
+              },
+            },
+          }];
+        }
+        var request = client.paymentRequest(paymentRequestOptions);
         return request.canMakePayment().then(function (available) {
           return available ? request.availablePaymentMethods() : [];
         }).then(function (methods) {

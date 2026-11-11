@@ -22,6 +22,7 @@
       data-locale="{$sumupLocale|escape:'html'}"
       data-mode="{$sumupCheckoutMode|escape:'html'}"
       data-public-key="{$sumupPublicMerchantKey|escape:'html'}"
+      data-google-pay-merchant-id="{$sumupGooglePayMerchantId|escape:'html'}"
       data-business-name="{$sumupBusinessName|escape:'html'}"
       data-country-code="{$sumupMerchantCountryCode|escape:'html'}"
       data-wallets-allowed="{if $sumupWalletsAllowed}1{else}0{/if}"
