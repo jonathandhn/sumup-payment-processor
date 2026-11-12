@@ -155,6 +155,10 @@ class CRM_SumupPaymentProcessor_Page_Widget extends CRM_Core_Page {
         $walletsAllowed
       );
       $this->assign('sumupPublicMerchantKey', $walletsAllowed ? $processor->getPublicMerchantKey() : '');
+      $this->assign(
+        'sumupGooglePayMerchantId',
+        $walletsAllowed ? trim((string) Civi::settings()->get('sumup_google_pay_merchant_id')) : ''
+      );
       $this->assign('sumupBusinessName', $merchantProfile['business_name']);
       $this->assign(
         'sumupMerchantCountryCode',

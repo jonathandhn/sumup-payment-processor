@@ -836,6 +836,7 @@ class CRM_Core_Payment_SumupBase extends CRM_Core_Payment {
    *   locale: string,
    *   mode: string,
    *   public_key: string,
+   *   google_pay_merchant_id: string,
    *   merchant_code: string,
    *   business_name: string,
    *   country_code: string,
@@ -869,6 +870,7 @@ class CRM_Core_Payment_SumupBase extends CRM_Core_Payment {
    *   locale: string,
    *   mode: string,
    *   public_key: string,
+   *   google_pay_merchant_id: string,
    *   merchant_code: string,
    *   business_name: string,
    *   country_code: string,
@@ -1035,6 +1037,9 @@ class CRM_Core_Payment_SumupBase extends CRM_Core_Payment {
       'mode' => $checkoutMode,
       'public_key' => CRM_SumupPaymentProcessor_CheckoutMode::usesWallet($checkoutMode)
       ? $this->getPublicMerchantKey()
+      : '',
+      'google_pay_merchant_id' => CRM_SumupPaymentProcessor_CheckoutMode::usesWallet($checkoutMode)
+      ? trim((string) Civi::settings()->get('sumup_google_pay_merchant_id'))
       : '',
       'merchant_code' => $this->getMerchantCode(),
       'business_name' => $merchantProfile['business_name'],
@@ -2325,6 +2330,7 @@ class CRM_Core_Payment_SumupBase extends CRM_Core_Payment {
       'locale' => CRM_SumupPaymentProcessor_CheckoutMode::getLocale(),
       'mode' => CRM_SumupPaymentProcessor_CheckoutMode::WIDGET,
       'public_key' => '',
+      'google_pay_merchant_id' => '',
       'merchant_code' => $this->getMerchantCode(),
       'business_name' => $merchantProfile['business_name'],
       'country_code' => CRM_SumupPaymentProcessor_CheckoutMode::getMerchantCountryCode(

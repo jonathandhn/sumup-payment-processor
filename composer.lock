@@ -4,20 +4,20 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "49367e040d70cda77e5366ff23baa808",
+    "content-hash": "83be27bdf6213d626db31bce713eda42",
     "packages": [
         {
             "name": "sumup/sumup-php",
-            "version": "0.1.7",
+            "version": "0.1.9",
             "source": {
                 "type": "git",
                 "url": "https://github.com/sumup/sumup-php.git",
-                "reference": "585f6d329c9275e3dfac0999ba74094709d6f0f7"
+                "reference": "320575a49351bebe3b07ef4a64a0b6605931a61c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sumup/sumup-php/zipball/585f6d329c9275e3dfac0999ba74094709d6f0f7",
-                "reference": "585f6d329c9275e3dfac0999ba74094709d6f0f7",
+                "url": "https://api.github.com/repos/sumup/sumup-php/zipball/320575a49351bebe3b07ef4a64a0b6605931a61c",
+                "reference": "320575a49351bebe3b07ef4a64a0b6605931a61c",
                 "shasum": ""
             },
             "require": {
@@ -73,9 +73,10 @@
             ],
             "support": {
                 "issues": "https://github.com/sumup/sumup-php/issues",
-                "source": "https://github.com/sumup/sumup-php/tree/v0.1.7"
+                "source": "https://github.com/sumup/sumup-php/tree/v0.1.9"
             },
-            "time": "2026-10-15T08:34:58+00:00"
+            "time": "2026-11-03T11:04:53+00:00",
+            "published-time": "2026-11-03T12:01:53+00:00"
         }
     ],
     "packages-dev": [
@@ -153,5 +154,5 @@
         "php": ">=8.2 <8.6"
     },
     "platform-dev": {},
-    "plugin-api-version": "2.9.0"
+    "plugin-api-version": "2.11.0"
 }

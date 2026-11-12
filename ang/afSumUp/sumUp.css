@@ -574,6 +574,46 @@ body.sumup-checkout-page h1.crm-page-title {
   margin-inline: auto;
 }
 
+.crm-sumup-checkout-block .crm-sumup-wallet-method,
+.crm-sumup-embedded-checkout .crm-sumup-wallet-method {
+  flex: 0 0 100%;
+  margin: 0;
+  min-width: 0;
+  width: 100%;
+}
+
+.crm-sumup-checkout-block .crm-sumup-wallet-method > *,
+.crm-sumup-embedded-checkout .crm-sumup-wallet-method > *,
+.crm-sumup-checkout-block .crm-sumup-wallet-method [data-payment-method],
+.crm-sumup-embedded-checkout .crm-sumup-wallet-method [data-payment-method] {
+  margin-inline: 0 !important;
+  max-width: none !important;
+  width: 100% !important;
+}
+
+.crm-sumup-wallet-method--google-pay .gpay-button-fill,
+.crm-sumup-wallet-method--google-pay .gpay-button {
+  height: var(--sumup-swift-checkout-button-height, 48px) !important;
+  max-width: none !important;
+  width: 100% !important;
+}
+
+.crm-sumup-wallet-method--google-pay .gpay-button {
+  background-origin: content-box !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-size: contain !important;
+  box-sizing: border-box !important;
+  padding: 12px 15% 10px !important;
+}
+
+/* SumUp's card accordion adds a grey 20px gutter around the hosted fields. */
+.crm-sumup-checkout-block [id^='sumup-card-'] #card-form,
+.crm-sumup-embedded-checkout [id^='sumup-card-'] #card-form {
+  background: var(--sumup-surface, #fff) !important;
+  padding-inline: 0 !important;
+}
+
 .crm-sumup-checkout-block [data-sumup-id='submit_button'] span,
 .crm-sumup-embedded-checkout [data-sumup-id='submit_button'] span,
 .crm-sumup-replacement-widget [data-sumup-id='submit_button'] span {

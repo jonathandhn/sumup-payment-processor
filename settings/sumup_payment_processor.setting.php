@@ -96,6 +96,23 @@ return [
       ],
     ],
   ],
+  'sumup_google_pay_merchant_id' => [
+    'name' => 'sumup_google_pay_merchant_id',
+    'type' => 'String',
+    'html_type' => 'text',
+    'default' => '',
+    'is_domain' => 1,
+    'is_contact' => 0,
+    'title' => E::ts('Google Pay merchant ID'),
+    'description' => E::ts(
+            'Merchant ID issued by Google after this website domain is approved for Google Pay production access.'
+    ),
+    'settings_pages' => [
+      'sumup' => [
+        'weight' => 65,
+      ],
+    ],
+  ],
   'sumup_qr_allow_send_email' => [
     'name' => 'sumup_qr_allow_send_email',
     'type' => 'Boolean',
