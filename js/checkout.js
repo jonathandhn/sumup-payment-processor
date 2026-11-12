@@ -218,8 +218,7 @@
         }).then(function (methods) {
           if (methods.length) {
             var walletBusy = false;
-            var buttons = client.elements({label: 'pay'});
-            buttons.onSubmit(function (event) {
+            var submitWallet = function (event) {
               if (walletBusy) {
                 return;
               }
@@ -242,10 +241,18 @@
                   wallet.removeAttribute('aria-busy');
                   wallet.style.removeProperty('pointer-events');
                 });
-            });
+            };
             wallet.hidden = false;
             wallet.style.display = 'flex';
-            buttons.mount({paymentMethods: methods, container: wallet});
+            methods.forEach(function (method) {
+              var methodContainer = document.createElement('div');
+              methodContainer.className = 'crm-sumup-wallet-method crm-sumup-wallet-method--'
+                + String(method.id).replace('_', '-');
+              wallet.appendChild(methodContainer);
+              client.elements({label: method.id === 'google_pay' ? 'plain' : 'pay'})
+                .onSubmit(submitWallet)
+                .mount({paymentMethods: [method], container: methodContainer});
+            });
             if (walletCardSeparator) {
               walletCardSeparator.hidden = false;
               walletCardSeparator.style.removeProperty('display');

@@ -574,6 +574,23 @@ body.sumup-checkout-page h1.crm-page-title {
   margin-inline: auto;
 }
 
+.crm-sumup-checkout-block .crm-sumup-wallet-method,
+.crm-sumup-embedded-checkout .crm-sumup-wallet-method {
+  flex: 0 0 100%;
+  margin: 0;
+  min-width: 0;
+  width: 100%;
+}
+
+.crm-sumup-checkout-block .crm-sumup-wallet-method > *,
+.crm-sumup-embedded-checkout .crm-sumup-wallet-method > *,
+.crm-sumup-checkout-block .crm-sumup-wallet-method [data-payment-method],
+.crm-sumup-embedded-checkout .crm-sumup-wallet-method [data-payment-method] {
+  margin-inline: 0 !important;
+  max-width: none !important;
+  width: 100% !important;
+}
+
 /* SumUp's card accordion adds a grey 20px gutter around the hosted fields. */
 .crm-sumup-checkout-block [id^='sumup-card-'] #card-form,
 .crm-sumup-embedded-checkout [id^='sumup-card-'] #card-form {
