@@ -576,6 +576,18 @@ body.sumup-checkout-page h1.crm-page-title {
   width: 100%;
 }
 
+.crm-sumup-checkout-block .crm-sumup-wallet-method,
+.crm-sumup-embedded-checkout .crm-sumup-wallet-method,
+.crm-sumup-checkout-block .crm-sumup-wallet-method > *,
+.crm-sumup-embedded-checkout .crm-sumup-wallet-method > *,
+.crm-sumup-checkout-block [id^='sumup-wallet-'] [data-payment-method='apple-pay'],
+.crm-sumup-embedded-checkout [id^='sumup-wallet-'] [data-payment-method='apple-pay'] {
+  display: block !important;
+  margin: 0 !important;
+  max-width: none !important;
+  width: 100% !important;
+}
+
 .crm-sumup-checkout-block [id^='sumup-wallet-'] [data-payment-method='google-pay'],
 .crm-sumup-embedded-checkout [id^='sumup-wallet-'] [data-payment-method='google-pay'],
 .crm-sumup-checkout-block [id^='sumup-wallet-'] [data-testid='google-pay-button'],
