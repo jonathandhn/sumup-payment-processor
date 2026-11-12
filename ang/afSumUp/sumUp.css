@@ -591,6 +591,19 @@ body.sumup-checkout-page h1.crm-page-title {
   width: 100% !important;
 }
 
+.crm-sumup-wallet-method--google-pay .gpay-button-fill,
+.crm-sumup-wallet-method--google-pay .gpay-button {
+  height: var(--sumup-swift-checkout-button-height, 48px) !important;
+  max-width: none !important;
+  width: 100% !important;
+}
+
+.crm-sumup-wallet-method--google-pay .gpay-button {
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-size: contain !important;
+}
+
 /* SumUp's card accordion adds a grey 20px gutter around the hosted fields. */
 .crm-sumup-checkout-block [id^='sumup-card-'] #card-form,
 .crm-sumup-embedded-checkout [id^='sumup-card-'] #card-form {
