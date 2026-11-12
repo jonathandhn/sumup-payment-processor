@@ -599,9 +599,12 @@ body.sumup-checkout-page h1.crm-page-title {
 }
 
 .crm-sumup-wallet-method--google-pay .gpay-button {
+  background-origin: content-box !important;
   background-position: center !important;
   background-repeat: no-repeat !important;
   background-size: contain !important;
+  box-sizing: border-box !important;
+  padding: 12px 15% 10px !important;
 }
 
 /* SumUp's card accordion adds a grey 20px gutter around the hosted fields. */
