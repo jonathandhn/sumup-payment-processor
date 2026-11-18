@@ -31,8 +31,8 @@
     "installer-name": "sumup-payment-processor"
   },
   "support": {
-    "source": "https://github.com/jonathandhn/sumup-payment-processor",
-    "issues": "https://github.com/jonathandhn/sumup-payment-processor/issues"
+    "source": "https://lab.civicrm.org/extensions/sumup-payment-processor",
+    "issues": "https://lab.civicrm.org/extensions/sumup-payment-processor/-/issues"
   },
   "config": {
     "sort-packages": true

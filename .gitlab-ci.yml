@@ -1,0 +1,70 @@
+image: php:8.2-cli
+
+stages:
+  - build
+  - package
+  - release
+
+variables:
+  COMPOSER_ALLOW_SUPERUSER: "1"
+
+before_script:
+  - apt-get update -qq && apt-get install -y -qq git zip unzip
+  - curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
+build_release:
+  stage: build
+  script:
+    - composer install --prefer-dist --no-progress
+    - chmod +x build.sh
+    - ./build.sh
+    - sha256sum sumup-payment-processor.zip > SHA256SUMS
+  artifacts:
+    name: "sumup-payment-processor-${CI_COMMIT_TAG}"
+    paths:
+      - sumup-payment-processor.zip
+      - SHA256SUMS
+    expire_in: 1 day
+  rules:
+    - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_PIPELINE_SOURCE == "web"
+
+publish_release_package:
+  stage: package
+  image: curlimages/curl:8.12.1
+  before_script: []
+  needs:
+    - job: build_release
+      artifacts: true
+  script:
+    - 'export PACKAGE_URL="${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/sumup-payment-processor/${CI_COMMIT_TAG}"'
+    - 'curl --fail-with-body --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file sumup-payment-processor.zip "${PACKAGE_URL}/sumup-payment-processor.zip"'
+    - 'curl --fail-with-body --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file SHA256SUMS "${PACKAGE_URL}/SHA256SUMS"'
+  rules:
+    - if: $CI_COMMIT_TAG
+
+create_release:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  before_script: []
+  needs:
+    - job: publish_release_package
+  script:
+    - echo "Creating release on GitLab for ${CI_COMMIT_TAG}"
+  release:
+    name: 'Release ${CI_COMMIT_TAG}'
+    description: 'Installable release built and packaged by the GitLab CI pipeline.'
+    tag_name: '${CI_COMMIT_TAG}'
+    assets:
+      links:
+        - name: 'SumUp Payment Processor installable ZIP'
+          url: '${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/sumup-payment-processor/${CI_COMMIT_TAG}/sumup-payment-processor.zip'
+          filepath: '/sumup-payment-processor.zip'
+          link_type: 'package'
+        - name: 'SHA256 checksum'
+          url: '${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/sumup-payment-processor/${CI_COMMIT_TAG}/SHA256SUMS'
+          filepath: '/SHA256SUMS'
+          link_type: 'package'
+  rules:
+    - if: $CI_COMMIT_TAG
