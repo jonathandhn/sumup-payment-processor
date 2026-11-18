@@ -17,9 +17,9 @@
     <url desc="Support">https://lab.civicrm.org/extensions/sumup-payment-processor/-/issues</url>
     <url desc="Licensing">https://www.gnu.org/licenses/agpl-3.0.html</url>
   </urls>
-  <releaseDate>2026-08-12</releaseDate>
-  <version>1.0.1</version>
-  <develStage>alpha</develStage>
+  <releaseDate>2026-11-18</releaseDate>
+  <version>1.1.0</version>
+  <develStage>stable</develStage>
   <compatibility mode="semver">
     <comments>Semantic versioning. For example, compatibility with "6.1" implies compatibility with "6.2".</comments>
     <ver>6.16</ver>
@@ -35,7 +35,7 @@
     <comments>Listed versions. For example, specify both "4" and "5".</comments>
     <ver>5</ver>
   </smarty_compatibility>
-  <comments>Supports SumUp Card Widget, wallets, Hosted Checkout, refunds and the first Solo reader-management slice. MJWShared is required for durable webhook processing.</comments>
+  <comments>Supports SumUp partner OAuth, Card Widget, Apple Pay, Google Pay, saved cards and recurring contributions, Hosted Checkout, Solo Cloud API terminal fleet management, dynamic QR code and hybrid kiosk checkouts, refunds, and chargeback reconciliation. MJWShared is required for durable webhook processing.</comments>
   <requires>
     <ext>civi_contribute</ext>
     <ext>mjwshared</ext>

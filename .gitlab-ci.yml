@@ -60,7 +60,7 @@ create_release:
       links:
         - name: 'SumUp Payment Processor installable ZIP'
           url: '${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/sumup-payment-processor/${CI_COMMIT_TAG}/sumup-payment-processor.zip'
-          filepath: '/sumup-payment-processor.zip'
+          filepath: '/extension.zip'
           link_type: 'package'
         - name: 'SHA256 checksum'
           url: '${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/sumup-payment-processor/${CI_COMMIT_TAG}/SHA256SUMS'
