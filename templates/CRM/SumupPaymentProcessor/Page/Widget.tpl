@@ -4,9 +4,9 @@
       <div class="crm-sumup-state__icon">
         <i class="crm-i fa-check-circle"></i>
       </div>
-      <h2>{ts}Payment Confirmed!{/ts}</h2>
+      <h2>{ts domain="sumup-payment-processor"}Payment Confirmed!{/ts}</h2>
       <p class="crm-sumup-state__message">
-        {ts}Thank you! Your payment has been approved and recorded successfully.{/ts}
+        {ts domain="sumup-payment-processor"}Thank you! Your payment has been approved and recorded successfully.{/ts}
       </p>
       <div class="crm-sumup-state__amount">
         {$sumupAmount|escape:'html'} {$sumupCurrency|escape:'html'}

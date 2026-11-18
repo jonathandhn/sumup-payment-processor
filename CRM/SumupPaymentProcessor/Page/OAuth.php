@@ -79,14 +79,17 @@ final class CRM_SumupPaymentProcessor_Page_OAuth extends CRM_Core_Page {
     $missingScopes = $connection === NULL
             ? []
             : CRM_SumupPaymentProcessor_OAuth::getMissingScopes((string) $connection['scope']);
-    $connectUrl = CRM_Utils_System::url(
-        'civicrm/admin/sumup/oauth',
-        'reset=1&oauth_action=connect&processor_id=' . $paymentProcessorId,
-        TRUE,
-        NULL,
-        FALSE,
-        TRUE
-    );
+    $connectQuery = 'reset=1&oauth_action=connect&processor_id=' . $paymentProcessorId;
+    $connectUrl = (CRM_Core_Config::singleton()->userFramework === 'WordPress' && function_exists('admin_url'))
+      ? admin_url('admin.php?page=CiviCRM&q=' . rawurlencode('civicrm/admin/sumup/oauth') . '&' . $connectQuery)
+      : CRM_Utils_System::url(
+          'civicrm/admin/sumup/oauth',
+          $connectQuery,
+          TRUE,
+          NULL,
+          FALSE,
+          FALSE
+      );
     $formAction = $this->statusUrl($paymentProcessorId);
     $clientId = CRM_SumupPaymentProcessor_PartnerCredentials::getStoredClientId();
     $storedRedirectUri = CRM_SumupPaymentProcessor_PartnerCredentials::getStoredRedirectUri();
@@ -186,13 +189,17 @@ final class CRM_SumupPaymentProcessor_Page_OAuth extends CRM_Core_Page {
   }
 
   private function statusUrl(int $paymentProcessorId): string {
+    $query = 'reset=1&processor_id=' . $paymentProcessorId;
+    if (CRM_Core_Config::singleton()->userFramework === 'WordPress' && function_exists('admin_url')) {
+      return admin_url('admin.php?page=CiviCRM&q=' . rawurlencode('civicrm/admin/sumup/oauth') . '&' . $query);
+    }
     return CRM_Utils_System::url(
         'civicrm/admin/sumup/oauth',
-        'reset=1&processor_id=' . $paymentProcessorId,
+        $query,
         TRUE,
         NULL,
         FALSE,
-        TRUE
+        FALSE
     );
   }
 

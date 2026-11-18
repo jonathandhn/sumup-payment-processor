@@ -1,0 +1,1555 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: sumup-payment-processor 1.0\n"
+"PO-Revision-Date: 2026-11-18 22:40+0100\n"
+"Language-Team: French\n"
+"Language: fr_FR\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+msgid "%1 (Card reader & QR Code)"
+msgstr "%1 (Terminal de paiement & QR Code)"
+
+msgid "%1 (Card reader / Kiosk)"
+msgstr "%1 (Terminal de paiement / Kiosque)"
+
+msgid "%1 (Card reader / QR Code)"
+msgstr "%1 (Terminal de paiement / QR Code)"
+
+msgid "%1 (Card reader)"
+msgstr "%1 (Terminal de paiement)"
+
+msgid "%1 (Credit Card / Wallets)"
+msgstr "%1 (Carte bancaire / Portefeuilles)"
+
+msgid "%1 (Credit card, Apple Pay, Google Pay)"
+msgstr "%1 (Carte bancaire, Apple Pay, Google Pay)"
+
+msgid "%1 (Dynamic QR Code)"
+msgstr "%1 (QR Code dynamique)"
+
+msgid "%1 (Hosted Checkout)"
+msgstr "%1 (Page de paiement hébergée)"
+
+msgid "%1 (Online payment)"
+msgstr "%1 (Paiement en ligne)"
+
+msgid "%1 (QR Code / Smartphone)"
+msgstr "%1 (QR Code / Smartphone)"
+
+msgid "%1 (system default)"
+msgstr "%1 (défaut système)"
+
+msgid "%1 saved authorisations"
+msgstr "%1 autorisations enregistrées"
+
+msgid "- Default / System SMS Provider -"
+msgstr "- Fournisseur SMS par défaut du système -"
+
+msgid "- select -"
+msgstr "- sélectionner -"
+
+msgid "1 saved authorisation"
+msgstr "1 autorisation enregistrée"
+
+msgid "2 to 12 uppercase letters or digits."
+msgstr "2 à 12 lettres majuscules ou chiffres."
+
+msgid "8-9 alphanumeric characters displayed on the screen. Spaces and separators are ignored."
+msgstr "8 à 9 caractères alphanumériques affichés à l'écran. Les espaces et séparateurs sont ignorés."
+
+msgid "A SumUp payment processor is required."
+msgstr "Un processeur de paiement SumUp est requis."
+
+msgid "A SumUp recurring payment is currently being processed. Please retry the cancellation shortly."
+msgstr "Un paiement récurrent SumUp est en cours de traitement. Veuillez réessayer l'annulation dans quelques instants."
+
+msgid "A SumUp recurring-card job is already running."
+msgstr "Une tâche de prélèvement récurrent SumUp est déjà en cours d'exécution."
+
+msgid "A SumUp refund requires a valid transaction reference and a positive two-decimal amount."
+msgstr "Un remboursement SumUp nécessite une référence de transaction valide et un montant positif à deux décimales."
+
+msgid "A contact is required for recurring SumUp payments."
+msgstr "Un contact est requis pour les paiements récurrents SumUp."
+
+msgid "A recurring contribution payment method changed during replacement."
+msgstr "Le moyen de paiement d'une contribution récurrente a changé pendant le remplacement."
+
+msgid "A refund for this SumUp transaction is already being processed."
+msgstr "Un remboursement pour cette transaction SumUp est déjà en cours de traitement."
+
+msgid "A valid SumUp public merchant key is required for wallet checkout."
+msgstr "Une clé publique marchand SumUp valide est requise pour le paiement par portefeuille numérique."
+
+msgid "A valid payment processor and reader identifier are required."
+msgstr "Un processeur de paiement et un identifiant de terminal valides sont requis."
+
+msgid "API key (Test sandbox only)"
+msgstr "Clé API (bac à sable de test uniquement)"
+
+msgid "Access token expiry timestamp: %1"
+msgstr "Expiration du jeton d'accès : %1"
+
+msgid "Action required for your recurring payment"
+msgstr "Action requise pour votre paiement récurrent"
+
+msgid "Action required for your recurring payment. Review or replace the saved card:"
+msgstr "Action requise pour votre paiement récurrent. Vérifiez ou remplacez la carte enregistrée :"
+
+msgid "Active"
+msgstr "Actif"
+
+msgid "Adapt the recurring payment"
+msgstr "Modifier le paiement récurrent"
+
+msgid "Adapt the recurring payment:"
+msgstr "Modifier le paiement récurrent :"
+
+msgid "Add Card Reader"
+msgstr "Ajouter un terminal de paiement"
+
+msgid "Adopt card reader"
+msgstr "Rattacher le terminal"
+
+msgid "Adopt for site…"
+msgstr "Rattacher au site…"
+
+msgid "Adopting…"
+msgstr "Rattachement…"
+
+msgid "Allow only one active recurring plan per contact"
+msgstr "Autoriser un seul abonnement récurrent actif par contact"
+
+msgid "Allow sending payment link by Email from QR views"
+msgstr "Autoriser l'envoi du lien de paiement par e-mail depuis les écrans QR"
+
+msgid "Allow sending payment link by SMS from QR views"
+msgstr "Autoriser l'envoi du lien de paiement par SMS depuis les écrans QR"
+
+msgid "Amount:"
+msgstr "Montant :"
+
+msgid "An administrator has invited you to review the amount of your recurring payment."
+msgstr "Un administrateur vous invite à vérifier ou modifier le montant de votre paiement récurrent."
+
+msgid "An administrator has invited you to securely replace the card used for your recurring payment."
+msgstr "Un administrateur vous invite à remplacer de manière sécurisée la carte bancaire utilisée pour votre paiement récurrent."
+
+msgid "Another SumUp card replacement is already in progress for a selected recurring contribution."
+msgstr "Un autre remplacement de carte SumUp est déjà en cours pour l'une des contributions récurrentes sélectionnées."
+
+msgid "Another SumUp card replacement is already in progress for this recurring contribution."
+msgstr "Un autre remplacement de carte SumUp est déjà en cours pour cette contribution récurrente."
+
+msgid "Apple Pay domain association text"
+msgstr "Contenu du fichier d'association de domaine Apple Pay"
+
+msgid "Assign this existing SumUp card reader to a CiviCRM site code:"
+msgstr "Affecter ce terminal SumUp existant à un code de site CiviCRM :"
+
+msgid "Authentication is required before your next SumUp payment can be collected."
+msgstr "Une authentification est requise avant que votre prochain paiement SumUp puisse être prélevé."
+
+msgid "Authorisation details"
+msgstr "Détails de l'autorisation"
+
+msgid "Back to form"
+msgstr "Retour au formulaire"
+
+msgid "Back to my recurring payments"
+msgstr "Retour à mes paiements récurrents"
+
+msgid "Bank transfer"
+msgstr "Virement bancaire"
+
+msgid "Cancel"
+msgstr "Annuler"
+
+msgid "Cancel current terminal payment?"
+msgstr "Annuler le paiement en cours sur le terminal ?"
+
+msgid "Cancel payment"
+msgstr "Annuler le paiement"
+
+msgid "Cancellation date"
+msgstr "Date d'annulation"
+
+msgid "Card Widget"
+msgstr "Widget Carte"
+
+msgid "Card Widget and wallets"
+msgstr "Widget Carte et portefeuilles (Apple Pay / Google Pay)"
+
+msgid "Card reader %1 successfully paired with site %2."
+msgstr "Terminal %1 jumelé avec succès au site %2."
+
+msgid "Card reader fleet"
+msgstr "Flotte de terminaux de paiement"
+
+msgid "Card reader session timed out"
+msgstr "Délai d'attente du terminal dépassé"
+
+msgid "Card reader: %1"
+msgstr "Terminal : %1"
+
+msgid "Card readers"
+msgstr "Terminaux de paiement"
+
+msgid "Change amount"
+msgstr "Modifier le montant"
+
+msgid "Change site / pool"
+msgstr "Changer de site / groupe"
+
+msgid "Checkout mode"
+msgstr "Mode d'encaissement"
+
+msgid "Choose a payment method"
+msgstr "Choisir un moyen de paiement"
+
+msgid "Choose the SumUp Card Widget, Apple Pay and Google Pay wallets, both, or a redirect to SumUp Hosted Checkout."
+msgstr "Choisissez le Widget Carte SumUp, les portefeuilles Apple Pay et Google Pay, les deux, ou une redirection vers la page hébergée SumUp."
+
+msgid "Choose the active CiviCRM SMS Provider / Gateway used to send SMS payment links."
+msgstr "Choisissez le fournisseur SMS CiviCRM actif utilisé pour envoyer les liens de paiement par SMS."
+
+msgid "Choose the recurring payments which should use the new card. The current payment is selected by default."
+msgstr "Choisissez les paiements récurrents qui doivent utiliser la nouvelle carte. Le paiement actuel est sélectionné par défaut."
+
+msgid "CiviCRM contribution %1"
+msgstr "Contribution CiviCRM %1"
+
+msgid "CiviCRM payment"
+msgstr "Paiement CiviCRM"
+
+msgid "CiviCRM recurring contribution %1"
+msgstr "Contribution récurrente CiviCRM %1"
+
+msgid "Close"
+msgstr "Fermer"
+
+msgid "Cloud Discovery"
+msgstr "Découverte Cloud"
+
+msgid "Complete your payment of %1 %2 at:"
+msgstr "Finalisez votre paiement de %1 %2 sur :"
+
+msgid "Complete your payment of %1 %2:"
+msgstr "Finalisez votre paiement de %1 %2 :"
+
+msgid "Confirm adoption"
+msgstr "Confirmer le rattachement"
+
+msgid "Confirm site change"
+msgstr "Confirmer le changement de site"
+
+msgid "Confirming payment with your saved card…"
+msgstr "Confirmation du paiement avec votre carte enregistrée…"
+
+msgid "Connect this payment processor to SumUp before accepting payments."
+msgstr "Connectez ce processeur de paiement à SumUp avant d'accepter des paiements."
+
+msgid "Connect to SumUp"
+msgstr "Se connecter à SumUp"
+
+msgid "Connected on: %1"
+msgstr "Connecté le : %1"
+
+msgid "Connected to merchant %1."
+msgstr "Connecté au compte marchand %1."
+
+msgid "Connection established, but these scopes are not granted yet: %1."
+msgstr "Connexion établie, mais ces permissions OAuth ne sont pas encore accordées : %1."
+
+msgid "Continue to payment"
+msgstr "Continuer vers le paiement"
+
+msgid "Continue to secure card replacement"
+msgstr "Continuer vers le remplacement sécurisé de la carte"
+
+msgid "Continue to secure payment"
+msgstr "Continuer vers le paiement sécurisé"
+
+msgid "Continues until cancelled"
+msgstr "Se poursuit jusqu'à annulation"
+
+msgid "Contribution %1 is already %2 without the matching SumUp payment."
+msgstr "La contribution %1 est déjà à l'état %2 sans le paiement SumUp correspondant."
+
+msgid "Creation date"
+msgstr "Date de création"
+
+msgid "Credit or debit card"
+msgstr "Carte bancaire"
+
+msgid "Currency %1 is not supported by this SumUp merchant account (%2)."
+msgstr "La devise %1 n'est pas prise en charge par ce compte marchand SumUp (%2)."
+
+msgid "Current recurring payment"
+msgstr "Paiement récurrent actuel"
+
+msgid "Customer action required since"
+msgstr "Action du payeur requise depuis le"
+
+msgid "Delete from Cloud API and CiviCRM"
+msgstr "Supprimer du Cloud API et de CiviCRM"
+
+msgid "Device ID:"
+msgstr "ID de l'appareil :"
+
+msgid "Disconnect"
+msgstr "Déconnecter"
+
+msgid "Disconnect SumUp"
+msgstr "Déconnecter SumUp"
+
+msgid "Disconnect from Cloud API"
+msgstr "Déconnecter du Cloud API"
+
+msgid "Disconnect terminal %1 from SumUp Cloud API? It will be marked inactive in CiviCRM."
+msgstr "Déconnecter le terminal %1 du Cloud API SumUp ? Il sera marqué comme inactif dans CiviCRM."
+
+msgid "Duplicate webhook ignored."
+msgstr "Webhook en doublon ignoré."
+
+msgid "Duration"
+msgstr "Durée"
+
+msgid "Edit"
+msgstr "Modifier"
+
+msgid "Email"
+msgstr "E-mail"
+
+msgid "Email: name@example.com"
+msgstr "E-mail : nom@exemple.com"
+
+msgid "End date"
+msgstr "Date de fin"
+
+msgid "Enter the SumUp sandbox API key for the test processor."
+msgstr "Saisissez la clé API bac à sable SumUp pour le processeur de test."
+
+msgid "Environment"
+msgstr "Environnement"
+
+msgid "Exact callback URL registered with the current OAuth client."
+msgstr "URL de retour exacte enregistrée auprès du client OAuth actuel."
+
+msgid "Expected one CiviCRM payment for SumUp transaction %1; found %2."
+msgstr "Un seul paiement CiviCRM était attendu pour la transaction SumUp %1 ; %2 trouvé(s)."
+
+msgid "Failed to adopt the terminal."
+msgstr "Échec du rattachement du terminal."
+
+msgid "Failed to disconnect terminal."
+msgstr "Échec de la déconnexion du terminal."
+
+msgid "Failed to pair the SumUp card reader."
+msgstr "Échec du jumelage du terminal SumUp."
+
+msgid "Failed to reassign terminal site."
+msgstr "Échec du changement de site du terminal."
+
+msgid "Failed to send SMS: %1"
+msgstr "Échec de l'envoi du SMS : %1"
+
+msgid "Failed to send payment link by email."
+msgstr "Échec de l'envoi du lien de paiement par e-mail."
+
+msgid "Failed to send payment link."
+msgstr "Échec de l'envoi du lien de paiement."
+
+msgid "Failure retry date"
+msgstr "Date de nouvelle tentative après échec"
+
+msgid "Finish / Next payment"
+msgstr "Terminer / Paiement suivant"
+
+msgid "Fleet synchronised successfully with SumUp Cloud API."
+msgstr "Flotte synchronisée avec succès avec le Cloud API SumUp."
+
+msgid "Follow instructions on the card reader (contactless, chip & PIN)."
+msgstr "Suivez les instructions sur le terminal de paiement (sans contact, puce et code PIN)."
+
+msgid "Future SumUp charges were stopped in CiviCRM. Payments already collected were not refunded."
+msgstr "Les prélèvements SumUp futurs ont été arrêtés dans CiviCRM. Les paiements déjà encaissés n'ont pas été remboursés."
+
+msgid "Go Back"
+msgstr "Retour"
+
+msgid "Google Pay merchant ID"
+msgstr "Identifiant marchand Google Pay"
+
+msgid "Here is your secure link to complete your payment of %1 %2:"
+msgstr "Voici votre lien sécurisé pour finaliser votre paiement de %1 %2 :"
+
+msgid "In payment"
+msgstr "Paiement en cours"
+
+msgid "In-person payment on card reader with instant QR code fallback."
+msgstr "Paiement sur place sur terminal avec bascule instantanée sur QR code."
+
+msgid "In-person payment on card reader."
+msgstr "Paiement sur place sur terminal de paiement."
+
+msgid "Inactive"
+msgstr "Inactif"
+
+msgid "Incomplete configuration"
+msgstr "Configuration incomplète"
+
+msgid "Invalid SumUp checkout identifier."
+msgstr "Identifiant de checkout SumUp invalide."
+
+msgid "Invalid SumUp checkout mode."
+msgstr "Mode de checkout SumUp invalide."
+
+msgid "Invalid SumUp checkout reference."
+msgstr "Référence de checkout SumUp invalide."
+
+msgid "Invalid SumUp checkout registry record."
+msgstr "Enregistrement de registre de checkout SumUp invalide."
+
+msgid "Invalid SumUp checkout state."
+msgstr "État de checkout SumUp invalide."
+
+msgid "Invalid SumUp client transaction identifier."
+msgstr "Identifiant de transaction client SumUp invalide."
+
+msgid "Invalid SumUp contribution or processor identifier."
+msgstr "Identifiant de contribution ou de processeur SumUp invalide."
+
+msgid "Invalid SumUp customer identifier."
+msgstr "Identifiant de client SumUp invalide."
+
+msgid "Invalid SumUp management-link type."
+msgstr "Type de lien de gestion SumUp invalide."
+
+msgid "Invalid SumUp payment instrument identifiers."
+msgstr "Identifiants de moyen de paiement SumUp invalides."
+
+msgid "Invalid SumUp payment processor."
+msgstr "Processeur de paiement SumUp invalide."
+
+msgid "Invalid SumUp reader identifier."
+msgstr "Identifiant de terminal SumUp invalide."
+
+msgid "Invalid SumUp recurring charge identifiers."
+msgstr "Identifiants de prélèvement récurrent SumUp invalides."
+
+msgid "Invalid SumUp recurring payment identifiers."
+msgstr "Identifiants de paiement récurrent SumUp invalides."
+
+msgid "Invalid SumUp recurring reminder date field."
+msgstr "Champ de date de rappel récurrent SumUp invalide."
+
+msgid "Invalid SumUp remediation request."
+msgstr "Demande de régularisation SumUp invalide."
+
+msgid "Invalid SumUp replacement checkout identifier."
+msgstr "Identifiant de checkout de remplacement SumUp invalide."
+
+msgid "Invalid SumUp saved-card customer mapping."
+msgstr "Association client de carte enregistrée SumUp invalide."
+
+msgid "Invalid SumUp terminal checkout amount or currency."
+msgstr "Montant ou devise de paiement terminal SumUp invalide."
+
+msgid "Invalid SumUp terminal checkout reference."
+msgstr "Référence de paiement terminal SumUp invalide."
+
+msgid "Invalid SumUp terminal transaction identifier."
+msgstr "Identifiant de transaction terminal SumUp invalide."
+
+msgid "Invalid SumUp transaction identifier."
+msgstr "Identifiant de transaction SumUp invalide."
+
+msgid "Invalid SumUp transaction reference."
+msgstr "Référence de transaction SumUp invalide."
+
+msgid "Invalid SumUp webhook payload in the queue."
+msgstr "Contenu de webhook SumUp invalide dans la file d'attente."
+
+msgid "Invalid channel (must be email or sms)."
+msgstr "Canal invalide (doit être email ou sms)."
+
+msgid "Invalid contribution session."
+msgstr "Session de contribution invalide."
+
+msgid "Invalid recipient email address."
+msgstr "Adresse e-mail du destinataire invalide."
+
+msgid "Invalid recipient phone number."
+msgstr "Numéro de téléphone du destinataire invalide."
+
+msgid "Invalid recurring contribution identifier."
+msgstr "Identifiant de contribution récurrente invalide."
+
+msgid "Invalid saved card identifier."
+msgstr "Identifiant de carte enregistrée invalide."
+
+msgid "Last sync:"
+msgstr "Dernière synchro :"
+
+msgid "Live"
+msgstr "Production"
+
+msgid "Manage SumUp connection"
+msgstr "Gérer la connexion SumUp"
+
+msgid "Manage this recurring payment"
+msgstr "Gérer ce paiement récurrent"
+
+msgid "Manage this recurring payment or its saved card:"
+msgstr "Gérer ce paiement récurrent ou sa carte enregistrée :"
+
+msgid "Merchant ID issued by Google after this website domain is approved for Google Pay production access."
+msgstr "Identifiant marchand attribué par Google après l'approbation de ce domaine pour Google Pay en production."
+
+msgid "Merchant code"
+msgstr "Code marchand"
+
+msgid "Missing OAuth scopes: %1."
+msgstr "Permissions OAuth manquantes : %1."
+
+msgid "Missing reader identifier or payment processor for reassignment."
+msgstr "Identifiant de terminal ou processeur de paiement manquant pour le changement de site."
+
+msgid "Missing transaction reference in SumUp chargeback webhook."
+msgstr "Référence de transaction manquante dans le webhook de contestation SumUp."
+
+msgid "Missing transaction reference in SumUp refund webhook."
+msgstr "Référence de transaction manquante dans le webhook de remboursement SumUp."
+
+msgid "Mobile: +33 6 12 34 56 78"
+msgstr "Mobile : +33 6 12 34 56 78"
+
+msgid "Model:"
+msgstr "Modèle :"
+
+msgid "Multiple CiviCRM payments match SumUp chargeback transaction %1."
+msgstr "Plusieurs paiements CiviCRM correspondent à la transaction de contestation SumUp %1."
+
+msgid "New site code"
+msgstr "Nouveau code de site"
+
+msgid "Next payment"
+msgstr "Prochain paiement"
+
+msgid "Next scheduled payment"
+msgstr "Prochain paiement prévu"
+
+msgid "No CiviCRM chargeback status is available."
+msgstr "Aucun statut de contestation (chargeback) CiviCRM n'est disponible."
+
+msgid "No SumUp card reader is currently paired with this CiviCRM site."
+msgstr "Aucun terminal de paiement SumUp n'est actuellement jumelé à ce site CiviCRM."
+
+msgid "No SumUp merchant is connected to this processor."
+msgstr "Aucun compte marchand SumUp n'est connecté à ce processeur."
+
+msgid "No SumUp merchant is connected yet."
+msgstr "Aucun compte marchand SumUp n'est encore connecté."
+
+msgid "No active CiviCRM SMS Provider is configured or selected."
+msgstr "Aucun fournisseur SMS CiviCRM actif n'est configuré ou sélectionné."
+
+msgid "No active SumUp card is saved for this contact."
+msgstr "Aucune carte SumUp active n'est enregistrée pour ce contact."
+
+msgid "No active SumUp payment processor found. Please configure a processor first."
+msgstr "Aucun processeur de paiement SumUp actif trouvé. Veuillez d'abord configurer un processeur."
+
+msgid "No active SumUp payment processor is available for this mode."
+msgstr "Aucun processeur de paiement SumUp actif n'est disponible pour ce mode."
+
+msgid "No active SumUp payment processor is available."
+msgstr "Aucun processeur de paiement SumUp actif n'est disponible."
+
+msgid "No active SumUp payment processor is configured."
+msgstr "Aucun processeur de paiement SumUp actif n'est configuré."
+
+msgid "No active SumUp recurring payment exists for this contact."
+msgstr "Aucun paiement récurrent SumUp actif n'existe pour ce contact."
+
+msgid "No card detected. You can retry on the card reader or cancel."
+msgstr "Aucune carte détectée. Vous pouvez réessayer sur le terminal ou annuler."
+
+msgid "No card detected. You can retry on the card reader or pay by QR code."
+msgstr "Aucune carte détectée. Vous pouvez réessayer sur le terminal ou payer par QR code."
+
+msgid "No compatible wallet is available in this browser."
+msgstr "Aucun portefeuille numérique compatible n'est disponible dans ce navigateur."
+
+msgid "No matching CiviCRM payment found for SumUp chargeback transaction %1."
+msgstr "Aucun paiement CiviCRM correspondant n'a été trouvé pour la contestation SumUp %1."
+
+msgid "No paired and active SumUp card reader is available for this processor."
+msgstr "Aucun terminal SumUp jumelé et actif n'est disponible pour ce processeur."
+
+msgid "No registered SumUp payment attempt is available for this partial contribution."
+msgstr "Aucune tentative de paiement SumUp enregistrée n'est disponible pour cette contribution partielle."
+
+msgid "No saved card"
+msgstr "Aucune carte enregistrée"
+
+msgid "Not scheduled"
+msgstr "Non planifié"
+
+msgid "Not specified"
+msgstr "Non spécifié"
+
+msgid "Not used by an active recurring payment."
+msgstr "Non utilisée par un paiement récurrent actif."
+
+msgid "Number of installments"
+msgstr "Nombre d'échéances"
+
+msgid "OAuth client ID created for this CiviCRM installation."
+msgstr "Identifiant client OAuth créé pour cette installation CiviCRM."
+
+msgid "Only a CiviCRM administrator may send this link."
+msgstr "Seul un administrateur CiviCRM peut envoyer ce lien."
+
+msgid "Only an unpaid contribution can be resent to a terminal."
+msgstr "Seule une contribution non payée peut être renvoyée vers un terminal."
+
+msgid "Open connection"
+msgstr "Ouvrir la connexion"
+
+msgid "Or pay by card"
+msgstr "Ou payer par carte"
+
+msgid "Order summary"
+msgstr "Sommaire de la commande"
+
+msgid "Other card readers on this SumUp account"
+msgstr "Autres terminaux sur ce compte SumUp"
+
+msgid "Paid SumUp checkout has no transaction identifier."
+msgstr "Le checkout SumUp payé ne comporte aucun identifiant de transaction."
+
+msgid "Pair a new card reader"
+msgstr "Jumeler un nouveau terminal de paiement"
+
+msgid "Pair card reader"
+msgstr "Jumeler le terminal"
+
+msgid "Paired card readers"
+msgstr "Terminaux de paiement jumelés"
+
+msgid "Paired in SumUp"
+msgstr "Jumelé dans SumUp"
+
+msgid "Pairing code"
+msgstr "Code de jumelage"
+
+msgid "Pairing code must be 8 or 9 alphanumeric characters displayed on the Solo screen."
+msgstr "Le code de jumelage doit comporter les 8 ou 9 caractères alphanumériques affichés sur l'écran du Solo."
+
+msgid "Pairing…"
+msgstr "Jumelage…"
+
+msgid "Paste the contents of the Apple Developer Merchant ID Domain Association file provided by SumUp. CiviCRM will automatically serve it at /.well-known/apple-developer-merchantid-domain-association."
+msgstr "Collez le contenu du fichier d'association de domaine Apple Pay fourni par SumUp. CiviCRM le servira automatiquement sur /.well-known/apple-developer-merchantid-domain-association."
+
+msgid "Pay %1 %2 now"
+msgstr "Payer %1 %2 maintenant"
+
+msgid "Pay %1 %2 with this card"
+msgstr "Payer %1 %2 avec cette carte"
+
+msgid "Pay with another credit / debit card"
+msgstr "Payer avec une autre carte bancaire"
+
+msgid "Payment"
+msgstr "Paiement"
+
+msgid "Payment Confirmed!"
+msgstr "Paiement confirmé !"
+
+msgid "Payment Expired"
+msgstr "Paiement expiré"
+
+msgid "Payment Not Completed"
+msgstr "Paiement non finalisé"
+
+msgid "Payment card"
+msgstr "Carte de paiement"
+
+msgid "Payment in progress"
+msgstr "Paiement en cours"
+
+msgid "Payment link sent to %1."
+msgstr "Lien de paiement envoyé à %1."
+
+msgid "Payment link sent!"
+msgstr "Lien de paiement envoyé !"
+
+msgid "Payment of %1 %2 sent to card reader %3."
+msgstr "Paiement de %1 %2 envoyé au terminal %3."
+
+msgid "Payment processor:"
+msgstr "Processeur de paiement :"
+
+msgid "Payment session timed out. Please try again."
+msgstr "La session de paiement a expiré. Veuillez réessayer."
+
+msgid "Permanently delete terminal %1 from SumUp Cloud API and CiviCRM?"
+msgstr "Supprimer définitivement le terminal %1 du Cloud API SumUp et de CiviCRM ?"
+
+msgid "Please scan the QR code to complete your payment of %1 %2."
+msgstr "Veuillez scanner le QR code pour finaliser votre paiement de %1 %2."
+
+msgid "Please select an available SumUp card reader."
+msgstr "Veuillez sélectionner un terminal de paiement SumUp disponible."
+
+msgid "Processor"
+msgstr "Processeur"
+
+msgid "Public merchant key (wallets)"
+msgstr "Clé publique marchand (portefeuilles)"
+
+msgid "QR Code checkout only supports one-time payments. Recurring contributions require online card checkout."
+msgstr "Le paiement par QR code ne prend en charge que les paiements ponctuels. Les contributions récurrentes nécessitent un paiement par carte en ligne."
+
+msgid "Reader ID:"
+msgstr "ID du terminal :"
+
+msgid "Ready"
+msgstr "Prêt"
+
+msgid "Reassign site / pool"
+msgstr "Réaffecter le site / groupe"
+
+msgid "Reassigning…"
+msgstr "Réaffectation…"
+
+msgid "Recipient address or phone number is required."
+msgstr "L'adresse e-mail ou le numéro de téléphone du destinataire est requis."
+
+msgid "Reconnect this payment processor to SumUp before accepting payments."
+msgstr "Reconnectez ce processeur de paiement à SumUp avant d'accepter des paiements."
+
+msgid "Reconnect this payment processor to SumUp."
+msgstr "Reconnectez ce processeur de paiement à SumUp."
+
+msgid "Reconnect to SumUp"
+msgstr "Se reconnecter à SumUp"
+
+msgid "Recurring SumUp payments require the Card Widget checkout mode."
+msgstr "Les paiements récurrents SumUp nécessitent le mode Widget Carte."
+
+msgid "Recurring contribution status"
+msgstr "Statut de la contribution récurrente"
+
+msgid "Recurring payment"
+msgstr "Paiement récurrent"
+
+msgid "Recurring payment #%1"
+msgstr "Paiement récurrent n°%1"
+
+msgid "Recurring payments"
+msgstr "Paiements récurrents"
+
+msgid "Remove saved card"
+msgstr "Supprimer la carte enregistrée"
+
+msgid "Remove this saved card authorisation? It will no longer be available for future SumUp payments."
+msgstr "Supprimer cette autorisation de carte enregistrée ? Elle ne sera plus utilisable pour de futurs paiements SumUp."
+
+msgid "Removing…"
+msgstr "Suppression…"
+
+msgid "Replace card"
+msgstr "Remplacer la carte"
+
+msgid "Replace payment card"
+msgstr "Remplacer la carte de paiement"
+
+msgid "Replace the card for %1 recurring contribution(s)"
+msgstr "Remplacer la carte pour %1 contribution(s) récurrente(s)"
+
+msgid "Replace the saved card"
+msgstr "Remplacer la carte enregistrée"
+
+msgid "Replace the saved card:"
+msgstr "Remplacer la carte enregistrée :"
+
+msgid "Retry on card reader"
+msgstr "Réessayer sur le terminal"
+
+msgid "Retry payment"
+msgstr "Réessayer le paiement"
+
+msgid "Review or replace the card"
+msgstr "Vérifier ou remplacer la carte"
+
+msgid "Review or replace the card:"
+msgstr "Vérifier ou remplacer la carte :"
+
+msgid "Review the amount of your recurring payment"
+msgstr "Vérifier le montant de votre paiement récurrent"
+
+msgid "SMS"
+msgstr "SMS"
+
+msgid "SMS Provider for payment links"
+msgstr "Fournisseur SMS pour les liens de paiement"
+
+msgid "Saved authorisation #%1"
+msgstr "Autorisation enregistrée n°%1"
+
+msgid "Saved card"
+msgstr "Carte enregistrée"
+
+msgid "Saved cards"
+msgstr "Cartes enregistrées"
+
+msgid "Scan"
+msgstr "Scannez"
+
+msgid "Scan a dynamic QR code to pay on your phone."
+msgstr "Scannez un QR code dynamique pour payer sur votre téléphone."
+
+msgid "Scan to pay"
+msgstr "Scanner pour payer"
+
+msgid "Schedule %1 has no linked SumUp card token."
+msgstr "L'échéancier %1 n'a aucun jeton de carte SumUp associé."
+
+msgid "Schedule %1 has no valid SumUp card token."
+msgstr "L'échéancier %1 n'a aucun jeton de carte SumUp valide."
+
+msgid "Schedule %1 is overdue since %2 and was not charged."
+msgstr "L'échéancier %1 est en retard depuis le %2 et n'a pas été débité."
+
+msgid "Schedule %1: %2"
+msgstr "Échéancier %1 : %2"
+
+msgid "Scheduled date:"
+msgstr "Date prévue :"
+
+msgid "Secure payment"
+msgstr "Paiement sécurisé"
+
+msgid "Secure redirect"
+msgstr "Redirection sécurisée"
+
+msgid "Select a SumUp payment processor"
+msgstr "Sélectionner un processeur de paiement SumUp"
+
+msgid "Send"
+msgstr "Envoyer"
+
+msgid "Send card-change link"
+msgstr "Envoyer le lien de changement de carte"
+
+msgid "Send link by SMS or Email…"
+msgstr "Envoyer le lien par SMS ou e-mail…"
+
+msgid "Send plan-change link"
+msgstr "Envoyer le lien de modification du montant"
+
+msgid "Send the %1 link to this contact?"
+msgstr "Envoyer le lien de %1 à ce contact ?"
+
+msgid "Sending payment links by Email is disabled in settings."
+msgstr "L'envoi de liens de paiement par e-mail est désactivé dans les paramètres."
+
+msgid "Sending payment links by SMS is disabled in settings."
+msgstr "L'envoi de liens de paiement par SMS est désactivé dans les paramètres."
+
+msgid "Sending…"
+msgstr "Envoi…"
+
+msgid "Server-side OAuth client secret for this CiviCRM installation."
+msgstr "Secret client OAuth côté serveur pour cette installation CiviCRM."
+
+msgid "Settings"
+msgstr "Paramètres"
+
+msgid "Site"
+msgstr "Site"
+
+msgid "Site Readers"
+msgstr "Terminaux du site"
+
+msgid "Site code"
+msgstr "Code de site"
+
+msgid "Site code must be 2 to 12 alphanumeric characters (e.g. BAR)."
+msgstr "Le code de site doit comporter de 2 à 12 caractères alphanumériques (ex. BAR)."
+
+msgid "Site code must be 2 to 12 alphanumeric characters (e.g. BAR, ACCUEIL)."
+msgstr "Le code de site doit comporter de 2 à 12 caractères alphanumériques (ex. BAR, ACCUEIL)."
+
+msgid "Start date"
+msgstr "Date de début"
+
+msgid "Stop future payments"
+msgstr "Arrêter les paiements futurs"
+
+msgid "SumUp"
+msgstr "SumUp"
+
+msgid "SumUp Hosted Checkout"
+msgstr "Page de paiement hébergée SumUp"
+
+msgid "SumUp OAuth callback URL"
+msgstr "URL de retour OAuth SumUp"
+
+msgid "SumUp OAuth client ID"
+msgstr "Identifiant client OAuth SumUp"
+
+msgid "SumUp OAuth client secret"
+msgstr "Secret client OAuth SumUp"
+
+msgid "SumUp OAuth connection"
+msgstr "Connexion OAuth SumUp"
+
+msgid "SumUp OAuth connection (Live)"
+msgstr "Connexion OAuth SumUp (Production)"
+
+msgid "SumUp Solo card reader"
+msgstr "Terminal de paiement SumUp Solo"
+
+msgid "SumUp Solo return URLs must use HTTPS."
+msgstr "Les URL de retour SumUp Solo doivent utiliser HTTPS."
+
+msgid "SumUp authorization failed: %1 (%2)."
+msgstr "Échec de l'autorisation SumUp : %1 (%2)."
+
+msgid "SumUp authorization was rejected: %1%2."
+msgstr "L'autorisation SumUp a été refusée : %1%2."
+
+msgid "SumUp card reader"
+msgstr "Terminal de paiement SumUp"
+
+msgid "SumUp card readers only support one-time payments. Recurring contributions require online card checkout."
+msgstr "Les terminaux SumUp ne prennent en charge que les paiements ponctuels. Les contributions récurrentes nécessitent un paiement par carte en ligne."
+
+msgid "SumUp chargeback / cardholder dispute"
+msgstr "Contestation bancaire (chargeback) SumUp"
+
+msgid "SumUp checkout amount does not match the contribution."
+msgstr "Le montant du checkout SumUp ne correspond pas à la contribution."
+
+msgid "SumUp checkout currency does not match the contribution."
+msgstr "La devise du checkout SumUp ne correspond pas à la contribution."
+
+msgid "SumUp checkout does not belong to this contribution."
+msgstr "Le checkout SumUp n'appartient pas à cette contribution."
+
+msgid "SumUp checkout merchant does not match the configured merchant."
+msgstr "Le compte marchand du checkout SumUp ne correspond pas au marchand configuré."
+
+msgid "SumUp checkout payment processor does not match the contribution."
+msgstr "Le processeur de paiement du checkout SumUp ne correspond pas à la contribution."
+
+msgid "SumUp checkout reference does not match the contribution."
+msgstr "La référence du checkout SumUp ne correspond pas à la contribution."
+
+msgid "SumUp checkout registry amount does not match the contribution."
+msgstr "Le montant enregistré du checkout SumUp ne correspond pas à la contribution."
+
+msgid "SumUp checkout registry does not match the provider checkout."
+msgstr "Le registre de checkout SumUp ne correspond pas au checkout du prestataire."
+
+msgid "SumUp determines whether the authorized merchant is sandbox or live. Verify the merchant code before initiating a payment."
+msgstr "SumUp détermine si le compte marchand autorisé est en bac à sable ou en production. Vérifiez le code marchand avant d'initier un paiement."
+
+msgid "SumUp did not return a reusable payment token."
+msgstr "SumUp n'a pas renvoyé de jeton de paiement réutilisable."
+
+msgid "SumUp did not return a reusable replacement card."
+msgstr "SumUp n'a pas renvoyé de carte de remplacement réutilisable."
+
+msgid "SumUp did not return a usable device identifier."
+msgstr "SumUp n'a pas renvoyé d'identifiant d'appareil utilisable."
+
+msgid "SumUp did not return a valid Hosted Checkout URL."
+msgstr "SumUp n'a pas renvoyé d'URL de paiement hébergé valide."
+
+msgid "SumUp did not return a valid checkout identifier."
+msgstr "SumUp n'a pas renvoyé d'identifiant de checkout valide."
+
+msgid "SumUp did not return a valid merchant country code."
+msgstr "SumUp n'a pas renvoyé de code pays marchand valide."
+
+msgid "SumUp did not return a valid merchant currency."
+msgstr "SumUp n'a pas renvoyé de devise marchand valide."
+
+msgid "SumUp did not return a valid terminal transaction identifier."
+msgstr "SumUp n'a pas renvoyé d'identifiant de transaction terminal valide."
+
+msgid "SumUp did not return a valid transaction identifier."
+msgstr "SumUp n'a pas renvoyé d'identifiant de transaction valide."
+
+msgid "SumUp did not return an active reusable card."
+msgstr "SumUp n'a pas renvoyé de carte réutilisable active."
+
+msgid "SumUp did not return one unambiguous merchant account for this authorization."
+msgstr "SumUp n'a pas renvoyé un compte marchand unique pour cette autorisation."
+
+msgid "SumUp does not allow a partial refund for this transaction (minimum required: %1 %2)."
+msgstr "SumUp n'autorise pas de remboursement partiel pour cette transaction (minimum requis : %1 %2)."
+
+msgid "SumUp event %1 processed: %2."
+msgstr "Événement SumUp %1 traité : %2."
+
+msgid "SumUp has not exposed a refundable event for transaction %1 yet."
+msgstr "SumUp n'expose pas encore d'événement remboursable pour la transaction %1."
+
+msgid "SumUp merchant %1 is now connected."
+msgstr "Le compte marchand SumUp %1 est maintenant connecté."
+
+msgid "SumUp online payments"
+msgstr "Paiements en ligne SumUp"
+
+msgid "SumUp payment processor"
+msgstr "Processeur de paiement SumUp"
+
+msgid "SumUp recurring card charge (schedule %1)"
+msgstr "Prélèvement récurrent par carte SumUp (échéancier %1)"
+
+msgid "SumUp recurring contribution"
+msgstr "Contribution récurrente SumUp"
+
+msgid "SumUp refund failed: %1"
+msgstr "Échec du remboursement SumUp : %1"
+
+msgid "SumUp refunds are unavailable for this processor."
+msgstr "Les remboursements SumUp ne sont pas disponibles pour ce processeur."
+
+msgid "SumUp return URLs must use HTTPS."
+msgstr "Les URL de retour SumUp doivent utiliser HTTPS."
+
+msgid "SumUp returned an incomplete OAuth token response."
+msgstr "SumUp a renvoyé une réponse de jeton OAuth incomplète."
+
+msgid "SumUp returned an invalid authentication step."
+msgstr "SumUp a renvoyé une étape d'authentification invalide."
+
+msgid "SumUp returned several checkouts for one reference."
+msgstr "SumUp a renvoyé plusieurs checkouts pour une même référence."
+
+msgid "SumUp terminal"
+msgstr "Terminal SumUp"
+
+msgid "SumUp terminal amount does not match the contribution."
+msgstr "Le montant du terminal SumUp ne correspond pas à la contribution."
+
+msgid "SumUp terminal checkout registry does not match the processor."
+msgstr "Le registre de paiement terminal SumUp ne correspond pas au processeur."
+
+msgid "SumUp terminal transaction does not match its CiviCRM contribution."
+msgstr "La transaction terminal SumUp ne correspond pas à sa contribution CiviCRM."
+
+msgid "SumUp — %1"
+msgstr "SumUp — %1"
+
+msgid "SumUp — Adapt recurring plan invitation"
+msgstr "SumUp — Invitation à modifier le montant récurrent"
+
+msgid "SumUp — Change saved card invitation"
+msgstr "SumUp — Invitation à remplacer la carte enregistrée"
+
+msgid "SumUp — Payment method action required"
+msgstr "SumUp — Action requise sur le moyen de paiement"
+
+msgid "SumUp — Payment method action required — SMS"
+msgstr "SumUp — Action requise sur le moyen de paiement — SMS"
+
+msgid "SumUp — Upcoming recurring payment"
+msgstr "SumUp — Prochain paiement récurrent"
+
+msgid "SumUp — Upcoming recurring payment — SMS"
+msgstr "SumUp — Prochain paiement récurrent — SMS"
+
+msgid "SumUp — collect due recurring card payments"
+msgstr "SumUp — prélever les échéances récurrentes par carte arrivées à terme"
+
+msgid "Summary"
+msgstr "Récapitulatif"
+
+msgid "Synchronisation failed."
+msgstr "Échec de la synchronisation."
+
+msgid "Synchronise fleet"
+msgstr "Synchroniser la flotte"
+
+msgid "Synchronising…"
+msgstr "Synchronisation…"
+
+msgid "Terminal %1 disconnected successfully."
+msgstr "Terminal %1 déconnecté avec succès."
+
+msgid "Terminal adopted successfully for site %1."
+msgstr "Terminal rattaché avec succès au site %1."
+
+msgid "Terminal reassigned successfully to site %1."
+msgstr "Terminal réaffecté avec succès au site %1."
+
+msgid "Test"
+msgstr "Test"
+
+msgid "Test / Sandbox"
+msgstr "Test / Bac à sable"
+
+msgid "Thank you! Your payment has been approved and recorded successfully."
+msgstr "Merci ! Votre paiement a été accepté et enregistré avec succès."
+
+msgid "The CiviCRM contribution amount must be positive."
+msgstr "Le montant de la contribution CiviCRM doit être positif."
+
+msgid "The CiviCRM site key is not configured."
+msgstr "La clé de site CiviCRM n'est pas configurée."
+
+msgid "The QR payment session timed out or was not completed."
+msgstr "La session de paiement par QR code a expiré ou n'a pas été finalisée."
+
+msgid "The QR payment session timed out. Please try again."
+msgstr "La session de paiement par QR code a expiré. Veuillez réessayer."
+
+msgid "The SumUp Cloud API processor is not configured."
+msgstr "Le processeur Cloud API SumUp n'est pas configuré."
+
+msgid "The SumUp OAuth client credentials have been saved."
+msgstr "Les identifiants client OAuth SumUp ont été enregistrés."
+
+msgid "The SumUp OAuth client secret is required when using custom credentials."
+msgstr "Le secret client OAuth SumUp est requis lors de l'utilisation d'identifiants personnalisés."
+
+msgid "The SumUp PHP SDK is not installed."
+msgstr "Le SDK PHP SumUp n'est pas installé."
+
+msgid "The SumUp authorization callback is incomplete."
+msgstr "Le retour d'autorisation SumUp est incomplet."
+
+msgid "The SumUp authorization state is invalid or expired."
+msgstr "L'état d'autorisation SumUp est invalide ou expiré."
+
+msgid "The SumUp connection form action is invalid."
+msgstr "L'action du formulaire de connexion SumUp est invalide."
+
+msgid "The SumUp connection form token is invalid."
+msgstr "Le jeton du formulaire de connexion SumUp est invalide."
+
+msgid "The SumUp connection is being renewed. Please retry."
+msgstr "La connexion SumUp est en cours de renouvellement. Veuillez réessayer."
+
+msgid "The SumUp customer is invalid."
+msgstr "Le client SumUp est invalide."
+
+msgid "The SumUp management link could not be sent: %1"
+msgstr "Le lien de gestion SumUp n'a pas pu être envoyé : %1"
+
+msgid "The SumUp merchant code is missing."
+msgstr "Le code marchand SumUp est manquant."
+
+msgid "The SumUp merchant has been disconnected."
+msgstr "Le compte marchand SumUp a été déconnecté."
+
+msgid "The SumUp pairing code must contain 8 or 9 letters or numbers."
+msgstr "Le code de jumelage SumUp doit contenir 8 ou 9 lettres ou chiffres."
+
+msgid "The SumUp payment link is invalid or expired."
+msgstr "Le lien de paiement SumUp est invalide ou expiré."
+
+msgid "The SumUp payment link signature is invalid."
+msgstr "La signature du lien de paiement SumUp est invalide."
+
+msgid "The SumUp payment processor does not match this checkout."
+msgstr "Le processeur de paiement SumUp ne correspond pas à ce checkout."
+
+msgid "The SumUp payment processor is not configured."
+msgstr "Le processeur de paiement SumUp n'est pas configuré."
+
+msgid "The SumUp payment-method access link is invalid."
+msgstr "Le lien d'accès aux moyens de paiement SumUp est invalide."
+
+msgid "The SumUp reader has no CiviCRM site code."
+msgstr "Ce terminal SumUp n'a aucun code de site CiviCRM."
+
+msgid "The SumUp recurring checkout registry is inconsistent."
+msgstr "Le registre de checkout récurrent SumUp est incohérent."
+
+msgid "The SumUp recurring contribution ID is invalid."
+msgstr "L'identifiant de contribution récurrente SumUp est invalide."
+
+msgid "The SumUp recurring contribution ID is missing."
+msgstr "L'identifiant de contribution récurrente SumUp est manquant."
+
+msgid "The SumUp recurring setup is not linked to CiviCRM."
+msgstr "La configuration récurrente SumUp n'est pas liée à CiviCRM."
+
+msgid "The SumUp refund could not be processed. Please try again later."
+msgstr "Le remboursement SumUp n'a pas pu être traité. Veuillez réessayer plus tard."
+
+msgid "The SumUp refunded amount exceeds the original transaction amount."
+msgstr "Le montant remboursé par SumUp dépasse le montant initial de la transaction."
+
+msgid "The SumUp replacement checkout is inconsistent."
+msgstr "Le checkout de remplacement SumUp est incohérent."
+
+msgid "The SumUp replacement session is invalid."
+msgstr "La session de remplacement SumUp est invalide."
+
+msgid "The SumUp schedule is managed by CiviCRM. The new amount applies to the next payment not yet created."
+msgstr "L'échéancier SumUp est géré par CiviCRM. Le nouveau montant s'appliquera au prochain paiement non encore créé."
+
+msgid "The SumUp terminal checkout does not match this contribution."
+msgstr "Le paiement terminal SumUp ne correspond pas à cette contribution."
+
+msgid "The SumUp terminal transaction identifier is missing."
+msgstr "L'identifiant de transaction terminal SumUp est manquant."
+
+msgid "The SumUp transaction belongs to another merchant."
+msgstr "La transaction SumUp appartient à un autre compte marchand."
+
+msgid "The SumUp transaction is not refundable in its current state."
+msgstr "La transaction SumUp n'est pas remboursable dans son état actuel."
+
+msgid "The amount will be sent to the selected SumUp card reader after this contribution is saved."
+msgstr "Le montant sera envoyé au terminal de paiement SumUp sélectionné après l'enregistrement de cette contribution."
+
+msgid "The authenticated SumUp merchant (%1) does not match the configured merchant code (%2)."
+msgstr "Le compte marchand SumUp authentifié (%1) ne correspond pas au code marchand configuré (%2)."
+
+msgid "The automatic redirect appears to be blocked. Use the button above to continue."
+msgstr "La redirection automatique semble bloquée. Utilisez le bouton ci-dessus pour continuer."
+
+msgid "The calculated SumUp callback URL is invalid."
+msgstr "L'URL de retour SumUp calculée est invalide."
+
+msgid "The canonical name and Cloud API metadata will update automatically."
+msgstr "Le nom canonique et les métadonnées Cloud API seront mis à jour automatiquement."
+
+msgid "The card payment form could not be loaded."
+msgstr "Le formulaire de paiement par carte n'a pas pu être chargé."
+
+msgid "The checkout session does not match this contribution."
+msgstr "La session de paiement ne correspond pas à cette contribution."
+
+msgid "The checkout session token is missing."
+msgstr "Le jeton de session de paiement est manquant."
+
+msgid "The configured SMS Provider cannot send messages."
+msgstr "Le fournisseur SMS configuré ne peut pas envoyer de messages."
+
+msgid "The contribution uses another payment processor."
+msgstr "Cette contribution utilise un autre processeur de paiement."
+
+msgid "The link was sent to %1."
+msgstr "Le lien a été envoyé à %1."
+
+msgid "The live processor uses the SumUp OAuth authorization screen. The merchant code and tokens are obtained from SumUp; no API key is entered for live mode. Test mode below uses your sandbox merchant code and API key."
+msgstr "Le processeur de production utilise l'écran d'autorisation OAuth SumUp. Le code marchand et les jetons sont obtenus auprès de SumUp ; aucune clé API n'est saisie en mode production. Le mode test ci-dessous utilise votre code marchand et votre clé API de bac à sable."
+
+msgid "The local QR code encoder is unavailable."
+msgstr "Le générateur local de QR code est indisponible."
+
+msgid "The new card could not be confirmed. You can try again."
+msgstr "La nouvelle carte n'a pas pu être confirmée. Vous pouvez réessayer."
+
+msgid "The new recurring amount is invalid for currency %1."
+msgstr "Le nouveau montant récurrent est invalide pour la devise %1."
+
+msgid "The payment could not be confirmed. You can try again or cancel."
+msgstr "Le paiement n'a pas pu être confirmé. Vous pouvez réessayer ou annuler."
+
+msgid "The payment could not be processed."
+msgstr "Le paiement n'a pas pu être traité."
+
+msgid "The payment session timed out. Please try again."
+msgstr "La session de paiement a expiré. Veuillez réessayer."
+
+msgid "The payment timed out or was cancelled on the card reader."
+msgstr "Le délai de paiement a expiré ou l'opération a été annulée sur le terminal."
+
+msgid "The payment was cancelled or failed."
+msgstr "Le paiement a été annulé ou a échoué."
+
+msgid "The recurring amount is unchanged."
+msgstr "Le montant récurrent est inchangé."
+
+msgid "The recurring contribution has no valid SumUp card token."
+msgstr "La contribution récurrente n'a aucun jeton de carte SumUp valide."
+
+msgid "The recurring contribution uses another payment processor."
+msgstr "La contribution récurrente utilise un autre processeur de paiement."
+
+msgid "The recurring payment link is invalid."
+msgstr "Le lien de paiement récurrent est invalide."
+
+msgid "The recurring schedule frequency is invalid."
+msgstr "La périodicité de l'échéancier récurrent est invalide."
+
+msgid "The refund currency does not match the SumUp transaction."
+msgstr "La devise du remboursement ne correspond pas à la transaction SumUp."
+
+msgid "The requested refund exceeds the amount still refundable by SumUp."
+msgstr "Le remboursement demandé dépasse le montant encore remboursable par SumUp."
+
+msgid "The saved SumUp card is already linked to another SumUp customer."
+msgstr "La carte SumUp enregistrée est déjà associée à un autre client SumUp."
+
+msgid "The saved SumUp card is missing its remote customer association."
+msgstr "L'association client distante de la carte SumUp enregistrée est manquante."
+
+msgid "The saved-card checkout is inconsistent."
+msgstr "Le checkout par carte enregistrée est incohérent."
+
+msgid "The saved-card payment authorisation is invalid or expired."
+msgstr "L'autorisation de paiement par carte enregistrée est invalide ou expirée."
+
+msgid "The saved-card payment is still pending. Its status will be checked again."
+msgstr "Le paiement par carte enregistrée est toujours en attente. Son statut va être vérifié à nouveau."
+
+msgid "The secure checkout token is missing."
+msgstr "Le jeton de paiement sécurisé est manquant."
+
+msgid "The secure payment form is temporarily unavailable. Please try again."
+msgstr "Le formulaire de paiement sécurisé est temporairement indisponible. Veuillez réessayer."
+
+msgid "The selected SumUp card does not belong to this contribution."
+msgstr "La carte SumUp sélectionnée n'appartient pas à cette contribution."
+
+msgid "The selected SumUp card reader is not ready (%1 / %2)."
+msgstr "Le terminal de paiement SumUp sélectionné n'est pas prêt (%1 / %2)."
+
+msgid "The selected SumUp card reader is unavailable."
+msgstr "Le terminal de paiement SumUp sélectionné est indisponible."
+
+msgid "The selected payment processor is not a SumUp processor."
+msgstr "Le processeur de paiement sélectionné n'est pas un processeur SumUp."
+
+msgid "The terminal site code must contain 2 to 12 uppercase letters or numbers."
+msgstr "Le code de site du terminal doit contenir de 2 à 12 lettres majuscules ou chiffres."
+
+msgid "The wallet payment could not be confirmed. You can try again or cancel."
+msgstr "Le paiement par portefeuille numérique n'a pas pu être confirmé. Vous pouvez réessayer ou annuler."
+
+msgid "The wallet payment form could not be loaded."
+msgstr "Le formulaire de paiement par portefeuille numérique n'a pas pu être chargé."
+
+msgid "These card readers are linked to your SumUp merchant account but not attached to a site code in this CiviCRM."
+msgstr "Ces terminaux de paiement sont liés à votre compte marchand SumUp mais ne sont rattachés à aucun code de site dans ce CiviCRM."
+
+msgid "This SumUp card replacement is already being completed."
+msgstr "Ce remplacement de carte SumUp est déjà en cours de finalisation."
+
+msgid "This SumUp card replacement is already being prepared."
+msgstr "Ce remplacement de carte SumUp est déjà en cours de préparation."
+
+msgid "This SumUp chargeback is already being processed."
+msgstr "Cette contestation SumUp est déjà en cours de traitement."
+
+msgid "This SumUp checkout is not a payment attempt."
+msgstr "Ce checkout SumUp n'est pas une tentative de paiement."
+
+msgid "This SumUp payment is already being processed."
+msgstr "Ce paiement SumUp est déjà en cours de traitement."
+
+msgid "This SumUp recurring contribution cannot be managed."
+msgstr "Cette contribution récurrente SumUp ne peut pas être gérée."
+
+msgid "This SumUp recurring setup is already being processed."
+msgstr "Cette configuration récurrente SumUp est déjà en cours de traitement."
+
+msgid "This SumUp refund notification is already being processed."
+msgstr "Cette notification de remboursement SumUp est déjà en cours de traitement."
+
+msgid "This card is used by an active recurring payment. Replace the card or stop the recurring payment first."
+msgstr "Cette carte est utilisée par un paiement récurrent actif. Remplacez d'abord la carte ou arrêtez le paiement récurrent."
+
+msgid "This checkout is not linked to a SumUp card reader."
+msgstr "Ce checkout n'est pas associé à un terminal de paiement SumUp."
+
+msgid "This contact has no valid email address."
+msgstr "Ce contact n'a aucune adresse e-mail valide."
+
+msgid "This contribution is no longer available for payment."
+msgstr "Cette contribution n'est plus disponible au paiement."
+
+msgid "This recurring contribution cannot be managed."
+msgstr "Cette contribution récurrente ne peut pas être gérée."
+
+msgid "This recurring contribution does not use SumUp."
+msgstr "Cette contribution récurrente n'utilise pas SumUp."
+
+msgid "This recurring payment is not ready: no saved card or next payment is configured."
+msgstr "Ce paiement récurrent n'est pas prêt : aucune carte enregistrée ou prochaine échéance n'est configurée."
+
+msgid "This saved SumUp card does not exist."
+msgstr "Cette carte SumUp enregistrée n'existe pas."
+
+msgid "This saved SumUp card has no provider token."
+msgstr "Cette carte SumUp enregistrée n'a aucun jeton prestataire."
+
+msgid "This saved card could not be used. You can choose another card below."
+msgstr "Cette carte enregistrée n'a pas pu être utilisée. Vous pouvez choisir une autre carte ci-dessous."
+
+msgid "This saved card does not use SumUp."
+msgstr "Cette carte enregistrée n'utilise pas SumUp."
+
+msgid "This terminal payment is already being resent."
+msgstr "Ce paiement terminal est déjà en cours de renvoi."
+
+msgid "Total"
+msgstr "Total"
+
+msgid "Transaction reference:"
+msgstr "Référence de transaction :"
+
+msgid "Transfer this terminal to another CiviCRM site code (e.g. BAR, ACCUEIL, STAND1):"
+msgstr "Transférer ce terminal vers un autre code de site CiviCRM (ex. BAR, ACCUEIL, STAND1) :"
+
+msgid "Unable to cancel the payment. Please try again."
+msgstr "Impossible d'annuler le paiement. Veuillez réessayer."
+
+msgid "Unable to communicate with the card reader."
+msgstr "Impossible de communiquer avec le terminal de paiement."
+
+msgid "Unable to contact the SumUp authorization service."
+msgstr "Impossible de contacter le service d'autorisation SumUp."
+
+msgid "Unable to create a SumUp checkout for this contribution."
+msgstr "Impossible de créer un checkout SumUp pour cette contribution."
+
+msgid "Unable to deserialize SumUp transaction details."
+msgstr "Impossible de décoder les détails de la transaction SumUp."
+
+msgid "Unable to determine the CiviCRM return and cancellation URLs for this payment."
+msgstr "Impossible de déterminer les URL de retour et d'annulation CiviCRM pour ce paiement."
+
+msgid "Unable to generate the local QR code."
+msgstr "Impossible de générer le QR code local."
+
+msgid "Unable to load SumUp readers."
+msgstr "Impossible de charger les terminaux SumUp."
+
+msgid "Unable to load payment processors."
+msgstr "Impossible de charger les processeurs de paiement."
+
+msgid "Unable to load the SumUp payment processor."
+msgstr "Impossible de charger le processeur de paiement SumUp."
+
+msgid "Unable to load the SumUp processor for schedule %1."
+msgstr "Impossible de charger le processeur SumUp pour l'échéancier %1."
+
+msgid "Unable to prepare the SumUp payment reference."
+msgstr "Impossible de préparer la référence de paiement SumUp."
+
+msgid "Unable to prepare the SumUp terminal payment reference."
+msgstr "Impossible de préparer la référence de paiement terminal SumUp."
+
+msgid "Unable to prepare the secure card replacement form."
+msgstr "Impossible de préparer le formulaire sécurisé de remplacement de carte."
+
+msgid "Unable to remove the saved card."
+msgstr "Impossible de supprimer la carte enregistrée."
+
+msgid "Unable to resend the payment to the terminal."
+msgstr "Impossible de renvoyer le paiement vers le terminal."
+
+msgid "Unable to retrieve payment status."
+msgstr "Impossible de récupérer le statut du paiement."
+
+msgid "Unable to retrieve the SumUp payment methods."
+msgstr "Impossible de récupérer les moyens de paiement SumUp."
+
+msgid "Unable to retrieve the recurring payments available for card replacement."
+msgstr "Impossible de récupérer les paiements récurrents éligibles au remplacement de carte."
+
+msgid "Unable to send the management link."
+msgstr "Impossible d'envoyer le lien de gestion."
+
+msgid "Unable to start the secure payment form. Please try again."
+msgstr "Impossible de démarrer le formulaire de paiement sécurisé. Veuillez réessayer."
+
+msgid "Unexpected SumUp replacement checkout state."
+msgstr "État inattendu du checkout de remplacement SumUp."
+
+msgid "Unsupported SumUp terminal transaction status: %1."
+msgstr "Statut de transaction terminal SumUp non pris en charge : %1."
+
+msgid "Unsupported SumUp webhook event: %1."
+msgstr "Événement webhook SumUp non pris en charge : %1."
+
+msgid "Upcoming recurring payment:"
+msgstr "Prochain paiement récurrent :"
+
+msgid "Update card"
+msgstr "Mettre à jour la carte"
+
+msgid "Update the card used for your recurring payment"
+msgstr "Mettre à jour la carte utilisée pour votre paiement récurrent"
+
+msgid "Wallets only"
+msgstr "Portefeuilles uniquement (Apple Pay / Google Pay)"
+
+msgid "When enabled, a contact who already has an active SumUp recurring contribution in the same test or live environment is directed to manage that plan instead of creating another one."
+msgstr "Lorsqu'elle est activée, cette option redirige un contact ayant déjà une contribution récurrente SumUp active dans le même environnement (test ou production) vers la gestion de cet abonnement au lieu d'en créer un nouveau."
+
+msgid "When enabled, users and kiosk operators can send the payment link by Email from QR payment screens."
+msgstr "Lorsqu'elle est activée, cette option permet aux utilisateurs et opérateurs de kiosque d'envoyer le lien de paiement par e-mail depuis les écrans QR."
+
+msgid "When enabled, users and kiosk operators can send the payment link by SMS from QR payment screens."
+msgstr "Lorsqu'elle est activée, cette option permet aux utilisateurs et opérateurs de kiosque d'envoyer le lien de paiement par SMS depuis les écrans QR."
+
+msgid "You already have an active recurring contribution. Sign in to view, update or stop it here: %1"
+msgstr "Vous avez déjà une contribution récurrente active. Connectez-vous pour la consulter, la modifier ou l'arrêter ici : %1"
+
+msgid "You are being redirected to %1 to complete your payment securely."
+msgstr "Vous allez être redirigé vers %1 pour finaliser votre paiement en toute sécurité."
+
+msgid "You are not authorised to use this saved card."
+msgstr "Vous n'êtes pas autorisé à utiliser cette carte enregistrée."
+
+msgid "You must be logged in or use a valid CiviCRM checksum to manage a SumUp payment method."
+msgstr "Vous devez être connecté ou utiliser un lien sécurisé CiviCRM valide pour gérer un moyen de paiement SumUp."
+
+msgid "You will be redirected to complete your payment."
+msgstr "Vous allez être redirigé pour finaliser votre paiement."
+
+msgid "Your new card has been saved for the selected recurring payments."
+msgstr "Votre nouvelle carte a été enregistrée pour les paiements récurrents sélectionnés."
+
+msgid "Your next recurring payment is approaching"
+msgstr "Votre prochain paiement récurrent approche"
+
+msgid "Your next recurring payment is scheduled soon."
+msgstr "Votre prochain paiement récurrent arrivera bientôt à échéance."
+
+msgid "Your payment link (%1 %2)"
+msgstr "Votre lien de paiement (%1 %2)"
+
+msgid "Your saved card can no longer be used for this payment."
+msgstr "Votre carte enregistrée ne peut plus être utilisée pour ce paiement."
+
+msgid "Your saved payment card needs attention before future recurring payments can continue."
+msgstr "Votre carte bancaire enregistrée nécessite votre attention pour que vos prochains paiements récurrents puissent se poursuivre."
+
+msgid "card-change"
+msgstr "changement de carte"
+
+msgid "plan-change"
+msgstr "modification du montant"
+
+msgid "to pay"
+msgstr "pour payer"
+
+msgid "unknown"
+msgstr "inconnu"
+
+msgid "used by %1 active recurring payments"
+msgstr "utilisée par %1 paiements récurrents actifs"
+
+msgid "used by 1 active recurring payment"
+msgstr "utilisée par 1 paiement récurrent actif"

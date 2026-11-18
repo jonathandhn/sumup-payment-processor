@@ -19,6 +19,7 @@
     <page_callback>CRM_SumupPaymentProcessor_Page_OAuth</page_callback>
     <title>SumUp OAuth callback</title>
     <access_arguments>administer CiviCRM system</access_arguments>
+    <is_public>true</is_public>
     <is_ssl>true</is_ssl>
   </item>
   <item>

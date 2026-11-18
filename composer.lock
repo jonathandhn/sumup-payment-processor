@@ -4,20 +4,20 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "83be27bdf6213d626db31bce713eda42",
+    "content-hash": "c76a66c505d5109bc692001692be2f96",
     "packages": [
         {
             "name": "sumup/sumup-php",
-            "version": "0.1.9",
+            "version": "0.1.11",
             "source": {
                 "type": "git",
                 "url": "https://github.com/sumup/sumup-php.git",
-                "reference": "320575a49351bebe3b07ef4a64a0b6605931a61c"
+                "reference": "7214b0931c77fe7cb45d765decbfa7ca6c86fd71"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sumup/sumup-php/zipball/320575a49351bebe3b07ef4a64a0b6605931a61c",
-                "reference": "320575a49351bebe3b07ef4a64a0b6605931a61c",
+                "url": "https://api.github.com/repos/sumup/sumup-php/zipball/7214b0931c77fe7cb45d765decbfa7ca6c86fd71",
+                "reference": "7214b0931c77fe7cb45d765decbfa7ca6c86fd71",
                 "shasum": ""
             },
             "require": {
@@ -25,7 +25,7 @@
                 "php": "^8.2"
             },
             "require-dev": {
-                "friendsofphp/php-cs-fixer": "3.95.27",
+                "friendsofphp/php-cs-fixer": "3.95.30",
                 "league/oauth2-client": "^2.9",
                 "phpstan/phpstan": "^2.1",
                 "phpunit/phpunit": "^9.6"
@@ -39,17 +39,7 @@
                     "SumUp\\": "src/"
                 },
                 "classmap": [
-                    "src/Checkouts/Checkouts.php",
-                    "src/Customers/Customers.php",
-                    "src/Members/Members.php",
-                    "src/Memberships/Memberships.php",
-                    "src/Merchants/Merchants.php",
-                    "src/Payouts/Payouts.php",
-                    "src/Readers/Readers.php",
-                    "src/Receipts/Receipts.php",
-                    "src/Roles/Roles.php",
-                    "src/Shared/Shared.php",
-                    "src/Transactions/Transactions.php"
+                    "src/"
                 ]
             },
             "notification-url": "https://packagist.org/downloads/",
@@ -73,10 +63,10 @@
             ],
             "support": {
                 "issues": "https://github.com/sumup/sumup-php/issues",
-                "source": "https://github.com/sumup/sumup-php/tree/v0.1.9"
+                "source": "https://github.com/sumup/sumup-php/tree/v0.1.11"
             },
-            "time": "2026-11-03T11:04:53+00:00",
-            "published-time": "2026-11-03T12:01:53+00:00"
+            "time": "2026-11-17T15:09:53+00:00",
+            "published-time": "2026-11-17T15:10:38+00:00"
         }
     ],
     "packages-dev": [

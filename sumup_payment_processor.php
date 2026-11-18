@@ -224,13 +224,16 @@ function sumup_payment_processor_add_oauth_processor_panel(CRM_Core_Form $form):
 
   $connectedMerchantCode = $connection !== NULL ? (string) ($connection['merchant_code'] ?? '') : '';
 
-  $oauthUrl = CRM_Utils_System::url(
+  $oauthQuery = 'reset=1&processor_id=' . $liveProcessorId;
+  $oauthUrl = (CRM_Core_Config::singleton()->userFramework === 'WordPress' && function_exists('admin_url'))
+    ? admin_url('admin.php?page=CiviCRM&q=' . rawurlencode('civicrm/admin/sumup/oauth') . '&' . $oauthQuery)
+    : CRM_Utils_System::url(
         'civicrm/admin/sumup/oauth',
-        'reset=1&processor_id=' . $liveProcessorId,
+        $oauthQuery,
         TRUE,
         NULL,
         FALSE,
-        TRUE
+        FALSE
     );
   $panel = [];
   $panel[] = '<fieldset id="sumup-live-oauth-block"><legend>'

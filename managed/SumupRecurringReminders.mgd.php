@@ -8,77 +8,77 @@ $manageUrl = <<<'SMARTY'
 {crmURL p='civicrm/sumup/payment-methods' q="cid={contact.id}&{contact.checksum}" a=true h=0 fe=1}
 SMARTY;
 
-$upcomingSubject = '{ts}Your next recurring payment is approaching{/ts}';
+$upcomingSubject = '{ts domain="sumup-payment-processor"}Your next recurring payment is approaching{/ts}';
 $upcomingText = <<<'SMARTY'
 {contact.email_greeting_display},
 
-{ts}Your next recurring payment is scheduled soon.{/ts}
-{ts}Amount:{/ts} {contribution_recur.amount|crmMoney}
-{ts}Scheduled date:{/ts} {contribution_recur.next_sched_contribution_date|crmDate}
+{ts domain="sumup-payment-processor"}Your next recurring payment is scheduled soon.{/ts}
+{ts domain="sumup-payment-processor"}Amount:{/ts} {contribution_recur.amount|crmMoney}
+{ts domain="sumup-payment-processor"}Scheduled date:{/ts} {contribution_recur.next_sched_contribution_date|crmDate}
 
-{ts}Manage this recurring payment or its saved card:{/ts}
+{ts domain="sumup-payment-processor"}Manage this recurring payment or its saved card:{/ts}
 SMARTY;
 $upcomingText .= "\n" . $manageUrl;
 $upcomingHtml = <<<'SMARTY'
 <p>{contact.email_greeting_display},</p>
-<p>{ts}Your next recurring payment is scheduled soon.{/ts}</p>
+<p>{ts domain="sumup-payment-processor"}Your next recurring payment is scheduled soon.{/ts}</p>
 <ul>
-  <li><strong>{ts}Amount:{/ts}</strong> {contribution_recur.amount|crmMoney}</li>
-  <li><strong>{ts}Scheduled date:{/ts}</strong> {contribution_recur.next_sched_contribution_date|crmDate}</li>
+  <li><strong>{ts domain="sumup-payment-processor"}Amount:{/ts}</strong> {contribution_recur.amount|crmMoney}</li>
+  <li><strong>{ts domain="sumup-payment-processor"}Scheduled date:{/ts}</strong> {contribution_recur.next_sched_contribution_date|crmDate}</li>
 </ul>
 <p><a href="
 SMARTY;
-$upcomingHtml .= $manageUrl . '">{ts}Manage this recurring payment{/ts}</a></p>';
-$upcomingSms = '{ts}Upcoming recurring payment:{/ts} '
+$upcomingHtml .= $manageUrl . '">{ts domain="sumup-payment-processor"}Manage this recurring payment{/ts}</a></p>';
+$upcomingSms = '{ts domain="sumup-payment-processor"}Upcoming recurring payment:{/ts} '
     . '{contribution_recur.amount|crmMoney}, '
     . '{contribution_recur.next_sched_contribution_date|crmDate}. ' . $manageUrl;
 
-$actionSubject = '{ts}Action required for your recurring payment{/ts}';
+$actionSubject = '{ts domain="sumup-payment-processor"}Action required for your recurring payment{/ts}';
 $actionText = <<<'SMARTY'
 {contact.email_greeting_display},
 
-{ts}Your saved payment card needs attention before future recurring payments can continue.{/ts}
+{ts domain="sumup-payment-processor"}Your saved payment card needs attention before future recurring payments can continue.{/ts}
 
-{ts}Review or replace the card:{/ts}
+{ts domain="sumup-payment-processor"}Review or replace the card:{/ts}
 SMARTY;
 $actionText .= "\n" . $manageUrl;
 $actionHtml = <<<'SMARTY'
 <p>{contact.email_greeting_display},</p>
-<p>{ts}Your saved payment card needs attention before future recurring payments can continue.{/ts}</p>
+<p>{ts domain="sumup-payment-processor"}Your saved payment card needs attention before future recurring payments can continue.{/ts}</p>
 <p><a href="
 SMARTY;
-$actionHtml .= $manageUrl . '">{ts}Review or replace the card{/ts}</a></p>';
-$actionSms = '{ts}Action required for your recurring payment. Review or replace the saved card:{/ts} '
+$actionHtml .= $manageUrl . '">{ts domain="sumup-payment-processor"}Review or replace the card{/ts}</a></p>';
+$actionSms = '{ts domain="sumup-payment-processor"}Action required for your recurring payment. Review or replace the saved card:{/ts} '
     . $manageUrl;
 
-$cardInvitationSubject = '{ts}Update the card used for your recurring payment{/ts}';
+$cardInvitationSubject = '{ts domain="sumup-payment-processor"}Update the card used for your recurring payment{/ts}';
 $cardInvitationText = <<<'SMARTY'
 {contact.email_greeting_display},
 
-{ts}An administrator has invited you to securely replace the card used for your recurring payment.{/ts}
+{ts domain="sumup-payment-processor"}An administrator has invited you to securely replace the card used for your recurring payment.{/ts}
 
-{ts}Replace the saved card:{/ts}
+{ts domain="sumup-payment-processor"}Replace the saved card:{/ts}
 {$management_url}
 SMARTY;
 $cardInvitationHtml = <<<'SMARTY'
 <p>{contact.email_greeting_display},</p>
-<p>{ts}An administrator has invited you to securely replace the card used for your recurring payment.{/ts}</p>
-<p><a href="{$management_url}">{ts}Replace the saved card{/ts}</a></p>
+<p>{ts domain="sumup-payment-processor"}An administrator has invited you to securely replace the card used for your recurring payment.{/ts}</p>
+<p><a href="{$management_url}">{ts domain="sumup-payment-processor"}Replace the saved card{/ts}</a></p>
 SMARTY;
 
-$planInvitationSubject = '{ts}Review the amount of your recurring payment{/ts}';
+$planInvitationSubject = '{ts domain="sumup-payment-processor"}Review the amount of your recurring payment{/ts}';
 $planInvitationText = <<<'SMARTY'
 {contact.email_greeting_display},
 
-{ts}An administrator has invited you to review the amount of your recurring payment.{/ts}
+{ts domain="sumup-payment-processor"}An administrator has invited you to review the amount of your recurring payment.{/ts}
 
-{ts}Adapt the recurring payment:{/ts}
+{ts domain="sumup-payment-processor"}Adapt the recurring payment:{/ts}
 {$management_url}
 SMARTY;
 $planInvitationHtml = <<<'SMARTY'
 <p>{contact.email_greeting_display},</p>
-<p>{ts}An administrator has invited you to review the amount of your recurring payment.{/ts}</p>
-<p><a href="{$management_url}">{ts}Adapt the recurring payment{/ts}</a></p>
+<p>{ts domain="sumup-payment-processor"}An administrator has invited you to review the amount of your recurring payment.{/ts}</p>
+<p><a href="{$management_url}">{ts domain="sumup-payment-processor"}Adapt the recurring payment{/ts}</a></p>
 SMARTY;
 
 $inProgressStatus = CRM_Core_PseudoConstant::getKey(
