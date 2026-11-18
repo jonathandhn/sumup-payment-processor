@@ -1,149 +1,63 @@
 # SumUp Payment Processor for CiviCRM
 
-This extension integrates SumUp online payments with CiviCRM. It creates a SumUp checkout server-side and displays the SumUp Card Widget, Apple Pay and Google Pay, or both directly in CiviCRM contribution, event and Afform checkout flows.
+SumUp Payment Processor integrates SumUp online, mobile wallet, QR code, and in-person Solo terminal payments into CiviCRM. It supports donations, memberships, event registrations, traditional CiviCRM contribution pages, Drupal Webform, and FormBuilder/Afform across Drupal, WordPress, and CiviCRM Standalone.
 
-CiviCRM records a payment only after retrieving and validating the checkout through the SumUp API. Incoming SumUp notifications are stored and processed through MJWShared, so they can be inspected and replayed.
+CiviCRM remains the accounting source of truth. The extension creates checkouts server-side, verifies every transaction directly against the SumUp API before recording a payment, and processes webhooks asynchronously through the `MJWShared` (`PaymentprocessorWebhook`) queue.
+
+## Features
+
+- **1-click SumUp OAuth connection** for production accounts (plus API-key support for test/sandbox accounts).
+- **Embedded Card Widget, Apple Pay, and Google Pay** (with automatic `/.well-known/apple-developer-merchantid-domain-association` serving), or full-page **SumUp Hosted Checkout**.
+- **Saved cards and recurring contributions** with automated daily collection (`SumupRecurringCard.run`), self-service card replacement, amount updates, and scheduled reminders (email and SMS).
+- **SumUp Solo Cloud API terminal fleet management** — pair, adopt, and assign Solo readers to site pools (`BAR`, `ACCUEIL`, etc.) for back-office or front-end kiosk payments.
+- **Dynamic QR code & hybrid kiosk checkouts** — instant QR fallback when a card reader times out, with optional payment link delivery by **SMS or Email**.
+- **Full and partial refunds**, external refund reconciliation, and chargeback/dispute handling.
+
+## Partner Offer & Negotiated SumUp Pricing
+
+As an official **CiviCRM Bronze Partner** and SumUp integration partner, **Jonathan Dahan** provides a negotiated SumUp partner contract with preferential transaction rates for organizations using this extension.
+
+- **Currently open for immediate onboarding:** **France (FR)** and **United Kingdom (UK)**.
+- **Worldwide coverage & pre-negotiated European schedule:** Rates are already established for additional markets (see table below) and worldwide onboarding is supported. Contact Jonathan Dahan to activate the partner offer for your organization or to open onboarding in another country.
+
+| Country | Card-Present (Consumer) | Card-Present (Non-Consumer) | Online (Consumer) | Online (Non-Consumer) |
+| :--- | :---: | :---: | :---: | :---: |
+| **FR** (France) | 1.00% | 1.75% | 1.00% | 2.50% |
+| **UK** (United Kingdom) | 1.20% | 1.69% | 1.20% | 2.50% |
+| **DK** (Denmark) | 1.00% | 1.49% | 1.00% | 2.50% |
+| **CH** (Switzerland) | 1.40% | 1.50% | 1.50% | 2.50% |
+| **BE** (Belgium) | 1.10% | 1.69% | 1.10% | 2.50% |
+| **DE** (Germany) | 1.10% | 1.39% | 1.10% | 2.50% |
+| **ES** (Spain) | 1.10% | 1.49% | 1.10% | 2.50% |
+| **IT** (Italy) | 1.30% | 1.95% | 1.30% | 2.50% |
+| **NL** (Netherlands) | 1.10% | 1.49% | 1.10% | 2.50% |
+
+To benefit from these rates, launch the offer in your country, or schedule a call:
+- **CiviCRM Partner Profile & Booking:** [https://civicrm.com/partners/jonathan-dahan/](https://civicrm.com/partners/jonathan-dahan/)
+- **Direct Contact:** [https://www.jonathan.paris/en/](https://www.jonathan.paris/en/)
 
 ## Requirements
 
-- CiviCRM 6.16 or newer;
-- PHP 8.2 through 8.5;
-- the CiviCRM Contributions component;
-- MJWShared;
-- Composer dependencies installed with `composer install --no-dev` for a production package.
+- CiviCRM 6.16 or later.
+- PHP 8.2 through 8.5.
+- `mjwshared` extension (durable webhook queue).
+- Optional: `formbuilder-payment-extra` for multi-option FormBuilder/Afform checkouts (Card/Wallets, Solo terminal, QR code, and Hybrid Kiosk).
 
-## Current scope
+## Quick Setup
 
-- one-off card payments through SumUp Card Widget;
-- Apple Pay and Google Pay through SumUp Swift Checkout SDK;
-- selectable Card Widget, wallets-only, and combined checkout modes;
-- SumUp Hosted Checkout as a full-page redirect option;
-- embedded checkout on legacy QuickForm and modern Afform forms;
-- server-side checkout creation and verification;
-- recurring card setup with explicit SumUp consent and a CiviCRM payment token;
-- API4 processing of due recurring-card instalments;
-- contact and administrator visibility of saved cards;
-- card replacement, recurring amount changes and cancellation through native CiviCRM self-service;
-- configurable CiviCRM Scheduled Reminders for SumUp recurring payments and card remediation;
-- full and partial online refunds through CiviCRM with SumUp constraint reporting;
-- best-effort extraction of card, fee, and payout details when the payment is
-  completed and SumUp already returns those fields;
-- webhook handling for external refunds and chargebacks/disputes;
-- cancellation handling when an authoritative checkout read returns `CANCELLED`;
-- native CiviCRM success and cancellation URLs;
-- durable SumUp checkout notifications through MJWShared;
-- an API4 `SumupCheckout` registry that counts attempts independently from payments;
-- idempotent CiviCRM payment completion.
+1. Create a **SumUp** payment processor under **Administer > CiviCRM Payment Processors**:
+   - **Live mode:** Save the processor and click **Connect to SumUp** to authorize your merchant account via OAuth.
+   - **Test mode:** Enter your sandbox **Merchant code** and **API key**.
+   - **Wallets (optional):** Enter your SumUp **Public merchant key** (`sup_pk_...`) on the processor, and configure your Apple Pay domain association text and/or Google Pay merchant ID under **Contributions > SumUp settings**.
+2. Choose your checkout mode (**Card Widget**, **Card Widget and wallets**, **Wallets only**, or **SumUp Hosted Checkout**) under **Contributions > SumUp settings**.
+3. Pair or adopt SumUp Solo terminals under **Contributions > SumUp Card Readers** (`civicrm/admin/sumup/readers`).
 
-The modes `widget`, `widget_wallet`, `wallet`, and `hosted` are implemented. The signed local checkout route verifies the browser return and remains available as a fallback; it is no longer a normal visible payment step.
+## Support the project
 
-The Solo Cloud API integration can pair and synchronise physical or Virtual Solo readers via Afform UI or API4, assign an immutable site code, apply a deterministic terminal name, initiate payments from CiviCRM's back office or an Afform checkout, handle unpair/remote deletion sync, and complete contributions after authoritative SumUp verification.
+SumUp payment processor is independently developed and currently has no institutional or corporate sponsor. If your organization benefits from this work, you can help fund its maintenance, documentation, provider testing or future development.
 
-## Configuration
+To sponsor work on SumUp payment processor, activate the negotiated SumUp partner rates, or request professional support from a **CiviCRM Bronze Partner**, please [schedule a call on CiviCRM.com](https://civicrm.com/partners/jonathan-dahan/) or [contact Jonathan Dahan](https://www.jonathan.paris/en/).
 
-Create a CiviCRM payment processor of type **SumUp** and provide its merchant
-code. Then open **Contributions > SumUp OAuth connection**, enter the OAuth
-client ID and secret issued for the callback URL displayed on that page, and
-connect each live or test processor to its SumUp merchant account.
+## License
 
-The processor fields are:
-
-- **Merchant code** in the username field;
-- **Public merchant key** in the signature field when a wallet mode is enabled.
-
-The extension authenticates API requests only with the stored OAuth connection;
-it does not fall back to the legacy password/API-key field. Live and test
-CiviCRM processor records keep separate OAuth connections, merchant codes, and
-public merchant keys. The CiviCRM test flag selects the processor record, not a
-separate SumUp tenant.
-
-Under **Contributions > SumUp settings**, choose:
-
-- **Card Widget**;
-- **Card Widget and wallets**;
-- **Wallets only**;
-- **SumUp Hosted Checkout**.
-
-Drupal Webform mounts Widget and wallet modes directly after the validated form creates the Pending contribution. Hosted Checkout returns Webform's native `WebformRefreshCommand`; an optional Drupal module can decorate payment redirects by using the `paymentRedirect` and `paymentProvider` response metadata. A bundled command remains available only for legacy Webform versions that do not provide the native command.
-
-The extension reads the configured merchant through SumUp's Merchant API. SumUp's customer-facing business name is shown on embedded payment forms, while the returned ISO alpha-2 country and default currency configure wallets and bind the processor to that merchant account. A contribution in another currency is rejected before a checkout is created. Use another CiviCRM processor backed by the corresponding SumUp merchant account for another currency. Wallet checkout requires HTTPS. Apple Pay also requires SumUp/Apple domain verification, and availability of either wallet depends on the merchant account, browser, device, and configured wallet.
-
-The provider-neutral managed Afform, order summary and payment-method
-orchestration belong to the optional `formbuilder-payment-extra` extension.
-SumUp registers its own checkout options and works without that extension;
-when both are installed, the shared single-page form can select the SumUp
-adapter like any other CiviCRM payment processor.
-
-Solo Cloud API requests include the Affiliate Key and matching Application ID assigned to this integration. They identify the distributed application and are not merchant authorization credentials or per-site settings.
-
-The notification URL is generated by MJWShared as:
-
-```text
-https://example.org/civicrm/payment/ipn/{payment_processor_id}
-```
-
-The extension sends this URL to SumUp as the checkout `return_url`. The HTTP request only queues the event in MJWShared and responds immediately; the MJWShared scheduled job retrieves the authoritative checkout state and performs the accounting update.
-
-## Refunds
-
-Full and partial refunds are available from CiviCRM's native payment refund workflow. The extension verifies the authoritative SumUp transaction, currency and remaining refundable balance before sending the request. When a specific payment type rejects a partial amount (e.g. recurring card payments requiring full refunds), the extension displays an explicit error message detailing the minimum required amount. CiviCRM records the associated negative Payment after SumUp accepts the refund.
-
-The SumUp OAuth connection must include the restricted `payments` scope. SumUp does not return the original processing fees when a payment is refunded.
-
-## Recurring cards
-
-Recurring forms use the Card Widget to collect explicit saved-card consent. CiviCRM stores the resulting SumUp token in `PaymentToken` and attaches it to the `ContributionRecur` schedule. Subsequent instalments are charged with the API4 action:
-
-```bash
-cv api4 SumupRecurringCard.run
-```
-
-Use a dry run or target one schedule during validation:
-
-```bash
-cv api4 SumupRecurringCard.run dryRun=1
-cv api4 SumupRecurringCard.run recurId=9 dryRun=1
-```
-
-The extension installs an active daily scheduled job which invokes this API4
-engine. It processes at most 25 due schedules by default, refuses occurrences
-overdue by more than seven days, and uses deterministic contribution and
-checkout references to prevent a retry from creating another charge. The API4
-commands above remain available for dry runs, support and targeted recovery.
-
-Recurring Widget checkouts offer active saved SumUp cards as well as a new-card
-authorisation. The card-replacement page updates the selected schedule by
-default and can apply the verified replacement card to other schedules selected
-by the payer. Under **Contributions > SumUp settings**, the optional strict
-single-plan policy can prevent a contact from creating a second active SumUp
-plan in the same test or live environment.
-
-CiviCRM's native recurring-payment pages let an authorised contact or
-administrator replace the saved card, change the amount of future occurrences,
-or stop future payments. The frequency is not editable. A Pending occurrence
-which has already been created keeps its original amount.
-
-The **SumUp recurring contribution** entity is available under CiviCRM
-Scheduled Reminders. Administrators can configure email or SMS reminders from
-the next scheduled payment date or from the date on which customer action
-became necessary. The extension does not create or enable reminder schedules
-automatically.
-
-## Development
-
-The design contract for each feature lives in [`docs/intents`](docs/intents). Run the maintained-code checks with:
-
-```bash
-composer install
-composer check
-```
-
-The current trust boundaries, administrator and self-service threats, PCI DSS
-considerations, and the planned CMS-aware step-up policy are documented in
-[`docs/security-risk-model.md`](docs/security-risk-model.md).
-
-## Known Issues
-
-- Automated tests will be added from the intent document after the first sandbox integration pass.
-
-This is an [extension for CiviCRM](https://docs.civicrm.org/sysadmin/en/latest/customize/extensions/), licensed under [AGPL-3.0](LICENSE.txt).
+SumUp payment processor is distributed under the [GNU Affero General Public License v3.0](https://www.gnu.org/licenses/agpl-3.0.html).
